@@ -31,18 +31,11 @@ public class Search {
 	private int[] mid4 = new int[20];
 	private int[] ud8e = new int[20];
 
-	private int[] twist = new int[6];
-	private int[] flip = new int[6];
-	private int[] slice = new int[6];
-	
-	private int[] corn0 = new int[6];
-	private int[] ud8e0 = new int[6];
-	private int[] prun = new int[6];
-
 	private byte[] f = new byte[54];
 
 	private int urfIdx;
 	private int depth1;
+	private int realdepth1;
 	private int maxDep2;
 	private int sol;
 	private int valid1;
@@ -52,6 +45,16 @@ public class Search {
 	private long timeMin;
 	private int verbose;
 	private CubieCube cc = new CubieCube();
+	private int slice;
+
+	private CubieCube cur_search = null;
+
+	private int[] ckSym = new int[3];
+
+	private static final int MAXDEP2 = 13;
+	private static final int PRESCR = 2;
+	
+	private int[] prescr = new int[PRESCR];
 	
 	/**
 	 *     Verbose_Mask determines if a " . " separates the phase1 and phase2 parts of the solver string like in F' R B R L2 F .
@@ -170,51 +173,71 @@ public class Search {
 		return cc.verify();
 	}
 
+	private boolean preScramble(CubieCube c, int depth1, int maxPre, int lm) {
+		int twist = c.getTwistSym();
+		int flip = c.getFlipSym();
+		slice = c.getUDSlice();
+
+		if (urfIdx != 0 && twist == ckSym[0] && flip == ckSym[1] && slice == ckSym[2]) {
+			return false;
+		}
+
+		int prun = Math.max(Math.max(
+			CoordCube.getPruning(CoordCube.UDSliceTwistPrun, 
+				(twist>>>3) * 495 + CoordCube.UDSliceConj[slice&0x1ff][twist&7]),
+			CoordCube.getPruning(CoordCube.UDSliceFlipPrun, 
+				(flip>>>3) * 495 + CoordCube.UDSliceConj[slice&0x1ff][flip&7])),
+			Tools.USE_TWIST_FLIP_PRUN ? CoordCube.getPruning(CoordCube.TwistFlipPrun, 
+				(twist>>>3) * 2688 + (flip & 0xfff8 | CubieCube.Sym8MultInv[flip&7][twist&7])) : 0);
+		this.depth1 = depth1;
+
+		this.cur_search = c;
+		this.corn[0] = -1;
+
+		if ((prun <= depth1)
+				&& phase1(twist>>>3, twist&7, flip>>>3, flip&7,
+					slice&0x1ff, depth1, -1) == 0) {
+			return true;
+		}
+
+		if (maxPre > 0) {
+			CubieCube d = new CubieCube();
+			d.temps = new CubieCube();
+			for (int k=0; k<18; k++) {
+				if (k / 3 % 3 == 0 || k % 3 == 1) {
+					continue;
+				}
+				if ((k / 3 == lm / 3) || ((k/3%3 == lm/3%3) && (lm>=k))) {
+					continue;	
+				}
+				prescr[realdepth1 - depth1] = k;
+				CubieCube.CornMult(CubieCube.moveCube[k], c, d);
+				CubieCube.EdgeMult(CubieCube.moveCube[k], c, d);
+				if (preScramble(d, depth1 - 1, maxPre - 1, k)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	private String solve(CubieCube c) {
 		Tools.init();
 		int conjMask = 0;
-		for (int i=0; i<6; i++) {
-			twist[i] = c.getTwistSym();
-			flip[i] = c.getFlipSym();
-			slice[i] = c.getUDSlice();
-			corn0[i] = c.getCPermSym();
-			ud8e0[i] = c.getU4Comb() << 16 | c.getD4Comb();
-			
-			for (int j=0; j<i; j++) {	//If S_i^-1 * C * S_i == C, It's unnecessary to compute it again. 
-				if (twist[i] == twist[j] && flip[i] == flip[j] && slice[i] == slice[j]
-						&& corn0[i] == corn0[j] && ud8e0[i] == ud8e0[j]) {
-					conjMask |= 1 << i;
-					break;
-				}
-			}
-			if ((conjMask & (1 << i)) == 0) {
-				prun[i] = Math.max(Math.max(
-					CoordCube.getPruning(CoordCube.UDSliceTwistPrun, 
-						(twist[i]>>>3) * 495 + CoordCube.UDSliceConj[slice[i]&0x1ff][twist[i]&7]),
-					CoordCube.getPruning(CoordCube.UDSliceFlipPrun, 
-						(flip[i]>>>3) * 495 + CoordCube.UDSliceConj[slice[i]&0x1ff][flip[i]&7])),
-					Tools.USE_TWIST_FLIP_PRUN ? CoordCube.getPruning(CoordCube.TwistFlipPrun, 
-							(twist[i]>>>3) * 2688 + (flip[i] & 0xfff8 | CubieCube.Sym8MultInv[flip[i]&7][twist[i]&7])) : 0);
-			}
-			c.URFConjugate();
-			if (i==2) {
-				c.invCubieCube();
-			}
-		}
-		for (depth1=0; depth1<sol; depth1++) {
-			maxDep2 = Math.min(12, sol-depth1);
+		c.temps = new CubieCube();
+		ckSym[0] = c.getTwistSym();
+		ckSym[1] = c.getFlipSym();
+		ckSym[2] = c.getUDSlice();
+
+		for (realdepth1=0; realdepth1<sol; realdepth1++) {
+			maxDep2 = Math.min(MAXDEP2, sol-realdepth1);
 			for (urfIdx=0; urfIdx<6; urfIdx++) {
-				if ((conjMask & (1 << urfIdx)) != 0) {
-					continue;
-				}
-				corn[0] = corn0[urfIdx];
-				mid4[0] = slice[urfIdx];
-				ud8e[0] = ud8e0[urfIdx];
-				valid1 = 0;
-				if ((prun[urfIdx] <= depth1)
-						&& phase1(twist[urfIdx]>>>3, twist[urfIdx]&7, flip[urfIdx]>>>3, flip[urfIdx]&7,
-							slice[urfIdx]&0x1ff, depth1, -1) == 0) {
+				if (preScramble(c, realdepth1, PRESCR, -3)) {
 					return solution == null ? "Error 8" : solution;
+				}
+				c.URFConjugate();
+				if (urfIdx%3==2) {
+					c.invCubieCube();
 				}
 			}
 		}
@@ -278,6 +301,13 @@ public class Search {
 		}
 		return 1;
 	}
+
+
+	void init_cur() {
+		corn[0] = cur_search.getCPermSym();
+		mid4[0] = slice;
+		ud8e[0] = cur_search.getU4Comb() << 16 | cur_search.getD4Comb();
+	}
 	
 	/**
 	 * @return
@@ -285,9 +315,14 @@ public class Search {
 	 * 		1: Try Next Power
 	 * 		2: Try Next Axis
 	 */
+	public int probe2;
 	private int initPhase2() {
+		probe2++;
 		if (System.currentTimeMillis() >= (solution == null ? timeOut : timeMin)) {
 			return 0;
+		}
+		if (corn[0] == -1) {
+			init_cur();
 		}
 		valid2 = Math.min(valid2, valid1);
 		int cidx = corn[valid1] >>> 4;
@@ -336,8 +371,11 @@ public class Search {
 		int lm = depth1==0 ? 10 : Util.std2ud[move[depth1-1]/3*3+1];
 		for (int depth2=prun; depth2<maxDep2; depth2++) {
 			if (phase2(edge, esym, cidx, csym, mid, depth2, depth1, lm)) {
-				sol = depth1 + depth2;
-				maxDep2 = Math.min(12, sol-depth1);
+				sol = realdepth1 + depth2;
+				for (int i=depth1 + depth2; i<sol; i++) {
+					move[i] = prescr[i - depth1 - depth2];
+				}
+				maxDep2 = Math.min(MAXDEP2, depth2);
 				solution = solutionToString();
 				return System.currentTimeMillis() >= timeMin ? 0 : 1;
 			}

@@ -139,9 +139,11 @@ public class test {
 		Search search = new Search();
 		if ((testValue & 0x10) != 0) {
 			tm = System.nanoTime();
-			System.out.println(search.solution(Tools.superFlip(), 22, 100000, 10, 7));
+			System.out.println(search.solution(Tools.superFlip(), 20, 100000, 10, 7));
 			System.out.println(System.nanoTime()-tm);
 		}
+
+		Tools.setRandomSource(new Random(maxTime));
 		
 		if ((testValue & 0x20) != 0) {
 			tm = System.nanoTime();
@@ -151,18 +153,23 @@ public class test {
 			long minT = 1L << 62;
 			long maxT = 0L;
 			long totalTime = 0;
+			long totalprobe2 = 0;
 			while (System.nanoTime() - tm < 60000000000L && x < nSolves) {
 				long curTime = System.nanoTime();
 				String cube = Tools.randomCube();
+				search.probe2 = 0;
+//				System.out.println(cube);
 				String s = search.solution(cube, maxLength, maxTime, minTime, verbose);
+//				System.out.println(s);
 				curTime = System.nanoTime() - curTime;
 				totalTime += curTime;
+				totalprobe2 += search.probe2;
 				maxT = Math.max(maxT, curTime);
 				minT = Math.min(minT, curTime);
 //				System.out.println(s);
 				x++;
-				System.out.print(String.format("AvgTime: %8.3f ms, MaxTime: %8.3f ms, MinTime: %8.3f ms\r", 
-					(totalTime/1000000d)/x, maxT/1000000d, minT/1000000d));
+				System.out.print(String.format("AvgTime: %8.3f ms, MaxTime: %8.3f ms, MinTime: %8.3f ms, avgProbe2: %8.3f\r", 
+					(totalTime/1000000d)/x, maxT/1000000d, minT/1000000d, totalprobe2/1.0/x));
 			}
 			System.out.println();
 			System.out.println(x + " Random Cube(s) Solved");

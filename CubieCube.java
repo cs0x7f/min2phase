@@ -370,9 +370,6 @@ class CubieCube {
 		return 0;// cube ok
 	}
 
-	void resolve(Random gen) {
-		
-	}
 
 	// ********************************************* Initialization functions *********************************************
 

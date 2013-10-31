@@ -10,7 +10,7 @@ import java.io.IOException;
  */
 public class Tools implements Runnable {
 	
-	static final boolean USE_TWIST_FLIP_PRUN = false;
+	static final boolean USE_TWIST_FLIP_PRUN = true;
 
 	private static boolean inited = false;
 	
@@ -213,24 +213,24 @@ public class Tools implements Runnable {
 		init();
 		write(CubieCube.FlipS2R, out);			//       672 Bytes
 		write(CubieCube.TwistS2R, out);			// +     648 Bytes
-		write(CubieCube.EPermS2R, out);			// +   5, 536 Bytes
-		write(CubieCube.MtoEPerm, out);			// +  80, 640 Bytes
-		write(CoordCube.TwistMove, out);		// +  11, 664 Bytes
-		write(CoordCube.FlipMove, out);			// +  12, 096 Bytes
-		write(CoordCube.UDSliceMove, out);		// +  17, 820 Bytes
-		write(CoordCube.UDSliceConj, out);		// +   7, 920 Bytes
-		write(CoordCube.CPermMove, out);		// +  99, 648 Bytes
-		write(CoordCube.EPermMove, out);		// +  55, 360 Bytes
+		write(CubieCube.EPermS2R, out);			// +   5,536 Bytes
+		write(CubieCube.MtoEPerm, out);			// +  80,640 Bytes
+		write(CoordCube.TwistMove, out);		// +  11,664 Bytes
+		write(CoordCube.FlipMove, out);			// +  12,096 Bytes
+		write(CoordCube.UDSliceMove, out);		// +  17,820 Bytes
+		write(CoordCube.UDSliceConj, out);		// +   7,920 Bytes
+		write(CoordCube.CPermMove, out);		// +  99,648 Bytes
+		write(CoordCube.EPermMove, out);		// +  55,360 Bytes
 		write(CoordCube.MPermMove, out);		// +     480 Bytes
 		write(CoordCube.MPermConj, out);		// +     768 Bytes
-		write(CoordCube.UDSliceTwistPrun, out);	// +  80, 192 Bytes
-		write(CoordCube.UDSliceFlipPrun, out);	// +  83, 160 Bytes
-		write(CoordCube.MCPermPrun, out);		// +  33, 216 Bytes
-		write(CoordCube.MEPermPrun, out);		// +  33, 216 Bytes
-												// = 523, 036 Bytes
+		write(CoordCube.UDSliceTwistPrun, out);	// +  80,192 Bytes
+		write(CoordCube.UDSliceFlipPrun, out);	// +  83,160 Bytes
+		write(CoordCube.MCPermPrun, out);		// +  33,216 Bytes
+		write(CoordCube.MEPermPrun, out);		// +  33,216 Bytes
+												// = 523,036 Bytes
 		if (USE_TWIST_FLIP_PRUN) {
-			write(CoordCube.TwistFlipPrun, out);// + 435, 456 Bytes
-		}										// = 958, 492 Bytes
+			write(CoordCube.TwistFlipPrun, out);// + 435,456 Bytes
+		}										// = 958,492 Bytes
 	}
 	
 	/**
