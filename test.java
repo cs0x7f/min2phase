@@ -151,15 +151,18 @@ public class test {
 			long minT = 1L << 62;
 			long maxT = 0L;
 			long totalTime = 0;
+			Tools.setRandomSource(new Random(42L));
 			while (System.nanoTime() - tm < 60000000000L && x < nSolves) {
 				long curTime = System.nanoTime();
 				String cube = Tools.randomCube();
 				String s = search.solution(cube, maxLength, maxTime, minTime, verbose);
+				if (s.length() > 63) {
+					s = search.next(maxTime, 0, verbose);
+				}
 				curTime = System.nanoTime() - curTime;
 				totalTime += curTime;
 				maxT = Math.max(maxT, curTime);
 				minT = Math.min(minT, curTime);
-//				System.out.println(s);
 				x++;
 				System.out.print(String.format("AvgTime: %8.3f ms, MaxTime: %8.3f ms, MinTime: %8.3f ms\r", 
 					(totalTime/1000000d)/x, maxT/1000000d, minT/1000000d));

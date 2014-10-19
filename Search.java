@@ -45,6 +45,7 @@ public class Search {
 
 	private byte[] f = new byte[54];
 
+	private int conjMask;
 	private int urfIdx;
 	private int depth1;
 	private int maxDep2;
@@ -56,6 +57,8 @@ public class Search {
 	private long timeMin;
 	private int verbose;
 	private CubieCube cc = new CubieCube();
+
+	private boolean isRecovery = false;
 
 	/**
 	 *     Verbose_Mask determines if a " . " separates the phase1 and phase2 parts of the solver string like in F' R B R L2 F .
@@ -143,7 +146,51 @@ public class Search {
 		this.timeMin = this.timeOut + Math.min(timeMin - timeOut, 0);
 		this.verbose = verbose;
 		this.solution = null;
-		return solve(cc);
+
+		init();
+
+		conjMask = 0;
+		for (int i=0; i<6; i++) {
+			twist[i] = cc.getTwistSym();
+			flip[i] = cc.getFlipSym();
+			slice[i] = cc.getUDSlice();
+			corn0[i] = cc.getCPermSym();
+			ud8e0[i] = cc.getU4Comb() << 16 | cc.getD4Comb();
+			cc.URFConjugate();
+			if (i % 3 == 2) {
+				cc.invCubieCube();
+			}
+		}
+
+		for (int i=0; i<6; i++) {
+			for (int j=0; j<i; j++) {	//If S_i^-1 * C * S_i == C, It's unnecessary to compute it again.
+				if (twist[i] == twist[j] && flip[i] == flip[j] && slice[i] == slice[j]
+						&& corn0[i] == corn0[j] && ud8e0[i] == ud8e0[j]) {
+					conjMask |= 1 << i;
+					break;
+				}
+			}
+			if ((conjMask & (1 << i)) == 0) {
+				prun[i] = Math.max(Math.max(
+					CoordCube.getPruning(CoordCube.UDSliceTwistPrun,
+						(twist[i]>>>3) * 495 + CoordCube.UDSliceConj[slice[i]&0x1ff][twist[i]&7]),
+					CoordCube.getPruning(CoordCube.UDSliceFlipPrun,
+						(flip[i]>>>3) * 495 + CoordCube.UDSliceConj[slice[i]&0x1ff][flip[i]&7])),
+					USE_TWIST_FLIP_PRUN ? CoordCube.getPruning(CoordCube.TwistFlipPrun,
+							(twist[i]>>>3) * 2688 + (flip[i] & 0xfff8 | CubieCube.Sym8MultInv[flip[i]&7][twist[i]&7])) : 0);
+			}
+		}
+
+		return search();
+	}
+
+	public synchronized String next(long timeOut, long timeMin, int verbose) {
+		this.timeOut = System.currentTimeMillis() + timeOut;
+		this.timeMin = this.timeOut + Math.min(timeMin - timeOut, 0);
+		this.verbose = verbose;
+		this.solution = null;
+		this.isRecovery = true;
+		return search();
 	}
 
 	public static boolean isInited() {
@@ -206,40 +253,10 @@ public class Search {
 		return cc.verify();
 	}
 
-	private String solve(CubieCube c) {
-		init();
-		int conjMask = 0;
-		for (int i=0; i<6; i++) {
-			twist[i] = c.getTwistSym();
-			flip[i] = c.getFlipSym();
-			slice[i] = c.getUDSlice();
-			corn0[i] = c.getCPermSym();
-			ud8e0[i] = c.getU4Comb() << 16 | c.getD4Comb();
-
-			for (int j=0; j<i; j++) {	//If S_i^-1 * C * S_i == C, It's unnecessary to compute it again.
-				if (twist[i] == twist[j] && flip[i] == flip[j] && slice[i] == slice[j]
-						&& corn0[i] == corn0[j] && ud8e0[i] == ud8e0[j]) {
-					conjMask |= 1 << i;
-					break;
-				}
-			}
-			if ((conjMask & (1 << i)) == 0) {
-				prun[i] = Math.max(Math.max(
-					CoordCube.getPruning(CoordCube.UDSliceTwistPrun,
-						(twist[i]>>>3) * 495 + CoordCube.UDSliceConj[slice[i]&0x1ff][twist[i]&7]),
-					CoordCube.getPruning(CoordCube.UDSliceFlipPrun,
-						(flip[i]>>>3) * 495 + CoordCube.UDSliceConj[slice[i]&0x1ff][flip[i]&7])),
-					USE_TWIST_FLIP_PRUN ? CoordCube.getPruning(CoordCube.TwistFlipPrun,
-							(twist[i]>>>3) * 2688 + (flip[i] & 0xfff8 | CubieCube.Sym8MultInv[flip[i]&7][twist[i]&7])) : 0);
-			}
-			c.URFConjugate();
-			if (i==2) {
-				c.invCubieCube();
-			}
-		}
-		for (depth1=0; depth1<sol; depth1++) {
+	private String search() {
+		for (depth1=isRecovery?depth1:0; depth1<sol; depth1++) {
 			maxDep2 = Math.min(12, sol-depth1);
-			for (urfIdx=0; urfIdx<6; urfIdx++) {
+			for (urfIdx=isRecovery?urfIdx:0; urfIdx<6; urfIdx++) {
 				if ((conjMask & (1 << urfIdx)) != 0) {
 					continue;
 				}
@@ -267,12 +284,17 @@ public class Search {
 		if (twist==0 && flip==0 && slice==0 && maxl<5) {
 			return maxl==0 ? initPhase2() : 1;
 		}
+
 		for (int axis=0; axis<18; axis+=3) {
-			if (axis == lm || axis == lm-9) {
+			if (axis == lm || axis == lm-9 ||  (isRecovery && axis < move[depth1-maxl] - 2)) {
 				continue;
 			}
 			for (int power=0; power<3; power++) {
 				int m = axis + power;
+
+				if (isRecovery && m != move[depth1-maxl]) {
+					continue;
+				}
 
 				int slicex = CoordCube.UDSliceMove[slice][m] & 0x1ff;
 				int twistx = CoordCube.TwistMove[twist][CubieCube.Sym8Move[tsym][m]];
@@ -322,6 +344,7 @@ public class Search {
 	 * 		2: Try Next Axis
 	 */
 	private int initPhase2() {
+		isRecovery = false;
 		if (System.currentTimeMillis() >= (solution == null ? timeOut : timeMin)) {
 			return 0;
 		}
