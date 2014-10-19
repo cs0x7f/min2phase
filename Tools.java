@@ -8,11 +8,7 @@ import java.io.IOException;
 /**
  * Some useful functions.
  */
-public class Tools implements Runnable {
-	
-	static final boolean USE_TWIST_FLIP_PRUN = false;
-
-	private static boolean inited = false;
+public class Tools {
 	
 	private static Random gen = new Random();
 
@@ -56,114 +52,7 @@ public class Tools implements Runnable {
 		}	
 	}
 	
-	private static int[] initState = new int[2];
-	private static int[] require = {0x0, 0x1, 0x2, 0x2,  0x2, 0x7, 0xa, 0x3,  0x13, 0x13, 0x3, 0x6e,  0xca, 0xa6, 0x612, 0x512};
-	
-	private static void initIdx(int idx) {
-		switch (idx) {
-			case 0 : CubieCube.initMove(); break;//-
-			case 1 : CubieCube.initSym(); break;//0
-			case 2 : CubieCube.initFlipSym2Raw(); break;//1
-			case 3 : CubieCube.initTwistSym2Raw(); break;//1
-			
-			case 4 : CubieCube.initPermSym2Raw(); break;//1
-			case 5 : CoordCube.initFlipMove(); break;//0, 1, 2
-			case 6 : CoordCube.initTwistMove(); break;//0, 1, 3
-			case 7 : CoordCube.initUDSliceMoveConj(); break;//0, 1
-			
-			case 8 : CoordCube.initCPermMove(); break;//0, 1, 4
-			case 9 : CoordCube.initEPermMove(); break;//0, 1, 4
-			case 10 : CoordCube.initMPermMoveConj(); break;//0, 1
-			case 11 : if (USE_TWIST_FLIP_PRUN) {CoordCube.initTwistFlipPrun();}	break;//1, 2, 3, 5, 6
-			
-			case 12 : CoordCube.initSliceTwistPrun(); break;//1, 3, 6, 7
-			case 13 : CoordCube.initSliceFlipPrun(); break;//1, 2, 5, 7
-			case 14 : CoordCube.initMEPermPrun(); break;//1, 4, 9, 10
-			case 15 : CoordCube.initMCPermPrun(); break;//1, 4, 8, 10
-		}
-	}
-	
 	protected Tools() {}
-	
-	/**
-	 * Main Initialization Function, can be ignored.
-	 */
-	public void run() {
-		while (true) {
-			int choice = -1;
-			synchronized (initState) {
-				if (initState[0] == 0xffff) {
-					return;
-				}
-				for (int i=0; i<16; i++) {
-					if (((initState[0]>>i)&1)==0 && ((initState[1]&require[i])==require[i])) {
-						choice = i;
-						initState[0] |= 1 << choice;
-						break;
-					}
-				}
-				if (choice == -1) {
-					try {
-						initState.wait();
-						continue;
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-						System.exit(1);
-					}
-				}
-			}
-			long t = System.nanoTime();
-			initIdx(choice);
-			System.out.println(choice + "\t" + (System.nanoTime() - t));
-			synchronized (initState) {
-				initState[1] |= 1 << choice;
-				initState.notifyAll();
-			}
-		}	
-	}
-	
-	private static void initParallel(int N_thread) {
-		Thread[] initThreads = new Thread[N_thread-1];
-		for (int i=0; i<N_thread-1; i++) {
-			initThreads[i] = new Thread(new Tools());
-			initThreads[i].start();
-		}
-		new Tools().run();
-		try {
-			for (int i=0; i<N_thread-1; i++) {
-				initThreads[i].join();
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.exit(0);
-		}
-	}
-	
-	/**
-	 * Initialization of the Solver.<br>
-	 * Always below 0.5 seconds with Multiple-Thread.<br>
-	 * call it before first solving, or it will be called by {@link cs.min2phase.Search#solution(java.lang.String facelets, int maxDepth, long timeOut, long timeMin, int verbose)} at first solving.
-	 */
-	public synchronized static void init() {
-		if (inited) {
-			return;
-		}
-		/**
-		 * Can be replaced by:
-		 *     new Tools().run();
-		 */
-		//initParallel(Runtime.getRuntime().availableProcessors());
-		initParallel(1);
-		
-		inited = true;
-	}
-	
-	/**
-	 * @return whether the package is initialized.
-	 */
-	public static boolean isInited() {
-		return inited;
-	}
 	
 	/**
 	 * initializing from cached tables(move table, pruning table, etc.)
@@ -174,7 +63,7 @@ public class Tools implements Runnable {
 	 * @see cs.min2phase.Tools#saveTo(java.io.DataOutput)
 	 */	
 	public static void initFrom(DataInput in) throws IOException {
-		if (inited) {
+		if (Search.inited) {
 			return;
 		}
 		read(CubieCube.FlipS2R, in);
@@ -193,12 +82,12 @@ public class Tools implements Runnable {
 		read(CoordCube.UDSliceFlipPrun, in);
 		read(CoordCube.MCPermPrun, in);
 		read(CoordCube.MEPermPrun, in);
-		if (USE_TWIST_FLIP_PRUN) {
+		if (Search.USE_TWIST_FLIP_PRUN) {
 			read(CoordCube.TwistFlipPrun, in);
 		}
 		CubieCube.initMove();
 		CubieCube.initSym();
-		inited = true;
+		Search.inited = true;
 	}
 	
 	/**
@@ -210,27 +99,27 @@ public class Tools implements Runnable {
 	 * @see cs.min2phase.Tools#initFrom(java.io.DataInput)
 	 */
 	public static void saveTo(DataOutput out) throws IOException {
-		init();
-		write(CubieCube.FlipS2R, out);			//       672 Bytes
-		write(CubieCube.TwistS2R, out);			// +     648 Bytes
-		write(CubieCube.EPermS2R, out);			// +   5, 536 Bytes
-		write(CubieCube.MtoEPerm, out);			// +  80, 640 Bytes
-		write(CoordCube.TwistMove, out);		// +  11, 664 Bytes
-		write(CoordCube.FlipMove, out);			// +  12, 096 Bytes
-		write(CoordCube.UDSliceMove, out);		// +  17, 820 Bytes
-		write(CoordCube.UDSliceConj, out);		// +   7, 920 Bytes
-		write(CoordCube.CPermMove, out);		// +  99, 648 Bytes
-		write(CoordCube.EPermMove, out);		// +  55, 360 Bytes
-		write(CoordCube.MPermMove, out);		// +     480 Bytes
-		write(CoordCube.MPermConj, out);		// +     768 Bytes
-		write(CoordCube.UDSliceTwistPrun, out);	// +  80, 192 Bytes
-		write(CoordCube.UDSliceFlipPrun, out);	// +  83, 160 Bytes
-		write(CoordCube.MCPermPrun, out);		// +  33, 216 Bytes
-		write(CoordCube.MEPermPrun, out);		// +  33, 216 Bytes
-												// = 523, 036 Bytes
-		if (USE_TWIST_FLIP_PRUN) {
-			write(CoordCube.TwistFlipPrun, out);// + 435, 456 Bytes
-		}										// = 958, 492 Bytes
+		Search.init();
+		write(CubieCube.FlipS2R, out);          //       672 Bytes
+		write(CubieCube.TwistS2R, out);         // +     648 Bytes
+		write(CubieCube.EPermS2R, out);         // +   5,536 Bytes
+		write(CubieCube.MtoEPerm, out);         // +  80,640 Bytes
+		write(CoordCube.TwistMove, out);        // +  11,664 Bytes
+		write(CoordCube.FlipMove, out);         // +  12,096 Bytes
+		write(CoordCube.UDSliceMove, out);      // +  17,820 Bytes
+		write(CoordCube.UDSliceConj, out);      // +   7,920 Bytes
+		write(CoordCube.CPermMove, out);        // +  99,648 Bytes
+		write(CoordCube.EPermMove, out);        // +  55,360 Bytes
+		write(CoordCube.MPermMove, out);        // +     480 Bytes
+		write(CoordCube.MPermConj, out);        // +     768 Bytes
+		write(CoordCube.UDSliceTwistPrun, out); // +  80,192 Bytes
+		write(CoordCube.UDSliceFlipPrun, out);  // +  83,160 Bytes
+		write(CoordCube.MCPermPrun, out);       // +  33,216 Bytes
+		write(CoordCube.MEPermPrun, out);       // +  33,216 Bytes
+		                                        // = 523,036 Bytes
+		if (Search.USE_TWIST_FLIP_PRUN) {
+			write(CoordCube.TwistFlipPrun, out);// + 435,456 Bytes
+		}                                       // = 958,492 Bytes
 	}
 	
 	/**

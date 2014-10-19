@@ -21,7 +21,7 @@ class CoordCube {
 	static char[][] UDSliceConj = new char[N_SLICE][8];
 	static int[] UDSliceTwistPrun = new int[N_SLICE * N_TWIST_SYM / 8 + 1];
 	static int[] UDSliceFlipPrun = new int[N_SLICE * N_FLIP_SYM / 8];
-	static int[] TwistFlipPrun = Tools.USE_TWIST_FLIP_PRUN ? new int[N_FLIP_SYM * N_TWIST_SYM * 8 / 8] : null;
+	static int[] TwistFlipPrun = Search.USE_TWIST_FLIP_PRUN ? new int[N_FLIP_SYM * N_TWIST_SYM * 8 / 8] : null;
 
 	//phase2
 	static char[][] CPermMove = new char[N_PERM_SYM][N_MOVES];

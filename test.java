@@ -131,7 +131,7 @@ public class test {
 		}
 
 		tm = System.nanoTime();
-		Tools.init();
+		Search.init();
 		if ((testValue & 0x08) != 0) {
 			System.out.println(System.nanoTime()-tm);
 		}

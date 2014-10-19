@@ -60,7 +60,8 @@ public class MainProgram extends javax.swing.JFrame {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		if (!Tools.isInited()) {
+		if (!Search.isInited()) {
+			Search.init();
 			try {
 				DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream("data")));
 				Tools.saveTo(dos);
