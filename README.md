@@ -1,5 +1,6 @@
 # min2phase
 - Rubik's Cube solver or scrambler.
+[![Build Status](https://travis-ci.org/cs0x7f/min2phase.svg?branch=master)](https://travis-ci.org/cs0x7f/min2phase)
 
 # two-phase algorithm
 - See Kociemba's [page](http://kociemba.org/cube.htm)
