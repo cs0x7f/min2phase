@@ -51,6 +51,7 @@ public class Search {
 	private int conjMask;
 	private int urfIdx;
 	private int preIdx;
+	private int length1;
 	private int depth1;
 	private int maxDep2;
 	private int sol;
@@ -272,8 +273,8 @@ public class Search {
 	}
 
 	private String search() {
-		for (depth1=isRecovery?depth1:0; depth1<sol; depth1++) {
-			maxDep2 = Math.min(12, sol-depth1);
+		for (length1=isRecovery?length1:0; length1<sol; length1++) {
+			maxDep2 = Math.min(12, sol-length1);
 			for (urfIdx=isRecovery?urfIdx:0; urfIdx<6; urfIdx++) {
 				if ((conjMask & (1 << urfIdx)) != 0) {
 					continue;
@@ -283,16 +284,11 @@ public class Search {
 					mid4[0] = slice[urfIdx][preIdx];
 					ud8e[0] = ud8e0[urfIdx][preIdx];
 					valid1 = 0;
-					if (preIdx != 0) {
-						depth1--;
-					}
+					depth1 = length1 - (preIdx == 0 ? 0 : 1);
 					if ((prun[urfIdx][preIdx] <= depth1)
 							&& phase1(twist[urfIdx][preIdx]>>>3, twist[urfIdx][preIdx]&7, flip[urfIdx][preIdx]>>>3, flip[urfIdx][preIdx]&7,
 								slice[urfIdx][preIdx]&0x1ff, depth1, -1) == 0) {
 						return solution == null ? "Error 8" : solution;
-					}
-					if (preIdx != 0) {
-						depth1++;
 					}
 				}
 			}
@@ -425,7 +421,7 @@ public class Search {
 				if (preIdx != 0) {
 					move[sol++] = Util.preMove[preIdx];
 				}
-				maxDep2 = Math.min(12, sol-depth1);
+				maxDep2 = Math.min(12, sol-length1);
 				solution = solutionToString();
 				return System.currentTimeMillis() >= timeMin ? 0 : 1;
 			}
