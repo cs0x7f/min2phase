@@ -357,8 +357,95 @@ public class Search {
                 move[depth1 - maxl] = m;
                 valid1 = Math.min(valid1, depth1 - maxl);
                 int ret = phase1(twistx, tsymx, flipx, fsymx, slicex, maxl - 1, axis);
-                if (ret != 1) {
-                    return ret >> 1;
+                if (ret == 0) {
+                    return 0;
+                } else if (ret == 2) {
+                    break;
+                }
+            }
+        }
+        return 1;
+    }
+
+    private String searchopt() {
+        for (length1 = isRecovery ? length1 : 0; length1 < sol; length1++) {
+            maxDep2 = 1;
+            urfIdx = 0;
+            preIdx = 0;
+            corn[0] = corn0[0][0];
+            mid4[0] = slice[0][0];
+            ud8e[0] = ud8e0[0][0];
+            valid1 = 0;
+            depth1 = length1;
+            if ((prun[0][0] <= depth1) &&
+                    phase1opt(twist[0][0] >>> 3, twist[0][0] & 7,
+                              flip[0][0] >>> 3, flip[0][0] & 7,
+                              slice[0][0] & 0x1ff, depth1, -1) == 0) {
+                return solution == null ? "Error 8" : solution;
+            }
+        }
+        return solution == null ? "Error 7" : solution;
+    }
+
+    /**
+     * @return
+     *      0: Found or Timeout
+     *      1: Try Next Power
+     *      2: Try Next Axis
+     */
+    private int phase1opt(int twist, int tsym, int flip, int fsym, int slice, int maxl, int lm) {
+        if (twist == 0 && flip == 0 && slice == 0 && maxl == 0) {
+            return initPhase2();
+        }
+
+        for (int axis = 0; axis < 18; axis += 3) {
+            if (axis == lm || axis == lm - 9 || (isRecovery && axis < move[depth1 - maxl] - 2)) {
+                continue;
+            }
+            for (int power = 0; power < 3; power++) {
+                int m = axis + power;
+
+                if (isRecovery && m != move[depth1 - maxl]) {
+                    continue;
+                }
+
+                int slicex = CoordCube.UDSliceMove[slice][m] & 0x1ff;
+                int twistx = CoordCube.TwistMove[twist][CubieCube.Sym8Move[tsym][m]];
+                int tsymx = CubieCube.Sym8Mult[twistx & 7][tsym];
+                twistx >>>= 3;
+                int prun = CoordCube.getPruning(CoordCube.UDSliceTwistPrun,
+                                                twistx * 495 + CoordCube.UDSliceConj[slicex][tsymx]);
+                if (prun > maxl) {
+                    break;
+                } else if (prun == maxl) {
+                    continue;
+                }
+                int flipx = CoordCube.FlipMove[flip][CubieCube.Sym8Move[fsym][m]];
+                int fsymx = CubieCube.Sym8Mult[flipx & 7][fsym];
+                flipx >>>= 3;
+                if (USE_TWIST_FLIP_PRUN) {
+                    prun = CoordCube.getPruning(CoordCube.TwistFlipPrun,
+                                                (twistx * 336 + flipx) << 3 | CubieCube.Sym8MultInv[fsymx][tsymx]);
+                    if (prun > maxl) {
+                        break;
+                    } else if (prun == maxl) {
+                        continue;
+                    }
+                }
+                prun = CoordCube.getPruning(CoordCube.UDSliceFlipPrun,
+                                            flipx * 495 + CoordCube.UDSliceConj[slicex][fsymx]);
+                if (prun > maxl) {
+                    break;
+                } else if (prun == maxl) {
+                    continue;
+                }
+                move[depth1 - maxl] = m;
+                valid1 = Math.min(valid1, depth1 - maxl);
+                int ret = phase1opt(twistx, tsymx, flipx, fsymx, slicex, maxl - 1, axis);
+                if (ret == 0) {
+                    return 0;
+                } else if (ret == 2) {
+                    break;
                 }
             }
         }
