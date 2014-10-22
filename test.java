@@ -84,12 +84,12 @@ public class test {
         }
     }
 
-    static int testOptimal(int maxl, int length, int[] arr, int lm, Search search) {
+    static int testOptimal(int maxl, int length, int[] arr, int lm, Search search, int verbose) {
         if (maxl == 0) {
-            String sol = search.solution(Tools.fromScramble(arr), 10, 100000, 0, 0);
+            String sol = search.solution(Tools.fromScramble(arr), 10, 10, 0, verbose);
             while (sol.length() > length * 3) {
-                sol = search.next(100000, 0, 0);
-                if (sol.startsWith("Error")) {
+                sol = search.next(10, 0, 0);
+                if (sol.startsWith("Error 7")) {
                     throw new RuntimeException("Cannot find the optimal solution.");
                 }
             }
@@ -102,13 +102,13 @@ public class test {
             }
             for (int pow = 0; pow < 3; pow++) {
                 arr[length] = axis + pow;
-                ret += testOptimal(maxl - 1, length + 1, arr, axis, search);
+                ret += testOptimal(maxl - 1, length + 1, arr, axis, search, verbose);
             }
         }
         return ret;
     }
 
-    static void testRandomOptimal(int length, Search search, Random gen) {
+    static void testRandomOptimal(int length, Search search, Random gen, int verbose) {
         int[] arr = new int[length];
         for (int i = 0; i < length; i++) {
             int axis = 0;
@@ -118,13 +118,13 @@ public class test {
             int pow = gen.nextInt(3);
             arr[i] = axis + pow;
         }
-        String sol = search.solution(Tools.fromScramble(arr), 20, 100000, 0, 0);
+        String sol = search.solution(Tools.fromScramble(arr), 20, 10, 0, verbose);
         while (sol.length() > length * 3 || sol.startsWith("Error")) {
-            if (sol.startsWith("Error")) {
+            if (sol.startsWith("Error 7")) {
                 System.out.println(sol);
                 throw new RuntimeException("Cannot find the optimal solution.");
             }
-            sol = search.next(100000, 0, 0);
+            sol = search.next(10, 0, verbose);
         }
     }
 
@@ -184,10 +184,10 @@ public class test {
         Search search = new Search();
         String sol;
         if ((testValue & 0x10) != 0) {
-            System.out.println("========== Selected Scramble Solving Test ==========");
+            System.out.println("========== Selected Scramble Solving Test (Optimal Solver) ==========");
             System.out.print("IdCube Test: \"");
             String scr = Tools.fromScramble(new int[0]);
-            System.out.print(search.solution(scr, 21, 100000, 0, 0));
+            System.out.print(search.solution(scr, 21, 100000, 0, Search.OPTIMAL_SOLUTION));
             System.out.println("\"");
 
             int n_test = 0;
@@ -195,20 +195,57 @@ public class test {
             for (int length = 1; length < 5; length++) {
                 System.out.print(String.format("%d-Move: ", length));
                 curTime = System.nanoTime();
-                n_test = testOptimal(length, 0, new int[length], -1, search);
+                n_test = testOptimal(length, 0, new int[length], -1, search, Search.OPTIMAL_SOLUTION);
                 System.out.println(String.format("OK, All %d Cube(s) Solved Optimally. AvgTime: %1.3f ms.", n_test, (System.nanoTime() - curTime) / 1000000d / n_test));
             }
 
-            for (int length = 5; length < 13; length++) {
+            for (int length = 5; length < 14; length++) {
                 System.out.print(String.format("%d-Move: ", length));
                 Random gen = new Random(42L);
                 curTime = System.nanoTime();
-                n_test = 1000;
+                if (length > 12) {
+                	n_test = 10;
+                } else if (length > 10) {
+                	n_test = 100;
+                } else {
+                	n_test = 1000;
+                }
                 for (int i = 0; i < n_test; i++) {
-                    testRandomOptimal(length, search, gen);
+                    testRandomOptimal(length, search, gen, Search.OPTIMAL_SOLUTION);
                 }
                 System.out.println(String.format("OK, %d Cube(s) Solved Optimally. AvgTime: %1.3f ms.", n_test, (System.nanoTime() - curTime) / 1000000d / n_test));
             }
+
+            System.out.println("========== Selected Scramble Solving Test (Two-phase Solver) ==========");
+            System.out.print("IdCube Test: \"");
+            scr = Tools.fromScramble(new int[0]);
+            System.out.print(search.solution(scr, 21, 100000, 0, Search.OPTIMAL_SOLUTION));
+            System.out.println("\"");
+
+            for (int length = 1; length < 5; length++) {
+                System.out.print(String.format("%d-Move: ", length));
+                curTime = System.nanoTime();
+                n_test = testOptimal(length, 0, new int[length], -1, search, 0);
+                System.out.println(String.format("OK, All %d Cube(s) Solved Optimally. AvgTime: %1.3f ms.", n_test, (System.nanoTime() - curTime) / 1000000d / n_test));
+            }
+
+            for (int length = 5; length < 15; length++) {
+                System.out.print(String.format("%d-Move: ", length));
+                Random gen = new Random(42L);
+                curTime = System.nanoTime();
+                if (length > 12) {
+                	n_test = 10;
+                } else if (length > 10) {
+                	n_test = 100;
+                } else {
+                	n_test = 1000;
+                }
+                for (int i = 0; i < n_test; i++) {
+                    testRandomOptimal(length, search, gen, 0);
+                }
+                System.out.println(String.format("OK, %d Cube(s) Solved Optimally. AvgTime: %1.3f ms.", n_test, (System.nanoTime() - curTime) / 1000000d / n_test));
+            }
+
             System.out.print("SuperFlip: ");
             curTime = System.nanoTime();
             sol = search.solution(Tools.superFlip(), 20, 100000, 0, 0);
@@ -235,7 +272,7 @@ public class test {
         }
 
         if ((testValue & 0x20) != 0) {
-            System.out.println("========== Random Cube Solving Test ==========");
+            System.out.println("========== Random Scramble Solving Test (Two-phase Solver) ==========");
             System.out.println(String.format("Solve Random %d Cubes:", nSolves));
             System.out.println(
                 "MaxLength: " + maxLength + "\n" +
