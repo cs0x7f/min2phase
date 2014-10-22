@@ -183,8 +183,8 @@ public class Search {
 
         for (int i = 0; i < 6; i++) {
             for (int j = 0; j < i; j++) { //If S_i^-1 * C * S_i == C, It's unnecessary to compute it again.
-                if (twist[i] == twist[j] && flip[i] == flip[j] && slice[i] == slice[j]
-                        && corn0[i] == corn0[j] && ud8e0[i] == ud8e0[j]) {
+                if (twist[i][0] == twist[j][0] && flip[i][0] == flip[j][0] && slice[i][0] == slice[j][0]
+                        && corn0[i][0] == corn0[j][0] && ud8e0[i][0] == ud8e0[j][0]) {
                     conjMask |= 1 << i;
                     break;
                 }
