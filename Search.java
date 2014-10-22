@@ -153,6 +153,7 @@ public class Search {
         this.timeMin = this.timeOut + Math.min(timeMin - timeOut, 0);
         this.verbose = verbose;
         this.solution = null;
+        this.isRecovery = false;
 
         init();
 
