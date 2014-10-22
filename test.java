@@ -199,19 +199,14 @@ public class test {
                 System.out.println(String.format("OK, All %d Cube(s) Solved Optimally. AvgTime: %1.3f ms.", n_test, (System.nanoTime() - curTime) / 1000000d / n_test));
             }
 
-            for (int length = 5; length < 14; length++) {
+            for (int length = 5; length < 15; length++) {
                 System.out.print(String.format("%d-Move: ", length));
                 Random gen = new Random(42L);
                 curTime = System.nanoTime();
-                if (length > 12) {
-                	n_test = 10;
-                } else if (length > 10) {
-                	n_test = 100;
-                } else {
-                	n_test = 1000;
-                }
-                for (int i = 0; i < n_test; i++) {
+                n_test = 0;
+                while (System.nanoTime() - curTime < 1e9) {
                     testRandomOptimal(length, search, gen, Search.OPTIMAL_SOLUTION);
+                    ++n_test;
                 }
                 System.out.println(String.format("OK, %d Cube(s) Solved Optimally. AvgTime: %1.3f ms.", n_test, (System.nanoTime() - curTime) / 1000000d / n_test));
             }
@@ -233,15 +228,10 @@ public class test {
                 System.out.print(String.format("%d-Move: ", length));
                 Random gen = new Random(42L);
                 curTime = System.nanoTime();
-                if (length > 12) {
-                	n_test = 10;
-                } else if (length > 10) {
-                	n_test = 100;
-                } else {
-                	n_test = 1000;
-                }
-                for (int i = 0; i < n_test; i++) {
+                n_test = 0;
+                while (System.nanoTime() - curTime < 1e9) {
                     testRandomOptimal(length, search, gen, 0);
+                    ++n_test;
                 }
                 System.out.println(String.format("OK, %d Cube(s) Solved Optimally. AvgTime: %1.3f ms.", n_test, (System.nanoTime() - curTime) / 1000000d / n_test));
             }
