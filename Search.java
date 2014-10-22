@@ -278,7 +278,7 @@ public class Search {
 				if ((conjMask & (1 << urfIdx)) != 0) {
 					continue;
 				}
-				for (preIdx=0; preIdx<(USE_PRE_MOVE ? 9 : 1); preIdx++) {
+				for (preIdx=isRecovery?preIdx:0; preIdx<(USE_PRE_MOVE ? 9 : 1); preIdx++) {
 					corn[0] = corn0[urfIdx][preIdx];
 					mid4[0] = slice[urfIdx][preIdx];
 					ud8e[0] = ud8e0[urfIdx][preIdx];
