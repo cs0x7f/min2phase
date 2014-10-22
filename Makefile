@@ -22,7 +22,7 @@ run: build
 
 test: build
 	javac -d . -cp twophase.jar test.java
-	java -cp .:twophase.jar test 40
+	java -cp .:twophase.jar test 56
 
 rebuild: clean build
 

@@ -336,6 +336,51 @@ public class Tools {
         return Util.toFaceCube(new CubieCube(0, 0, 0, 2047));
     }
 
+
+    public static String fromScramble(int[] scramble) {
+        CubieCube c1 = new CubieCube();
+        CubieCube c2 = new CubieCube();
+        CubieCube tmp;
+        for (int i = 0; i < scramble.length; i++) {
+            CubieCube.CornMult(c1, CubieCube.moveCube[scramble[i]], c2);
+            CubieCube.EdgeMult(c1, CubieCube.moveCube[scramble[i]], c2);
+            tmp = c1; c1 = c2; c2 = tmp;
+        }
+        return Util.toFaceCube(c1);
+    }
+
+    public static String fromScramble(String s) {
+        int[] arr = new int[s.length()];
+        int j = 0;
+        int axis = -1;
+        for (int i = 0, length = s.length(); i < length; i++) {
+            switch (s.charAt(i)) {
+            case 'U':   axis = 0;   break;
+            case 'R':   axis = 3;   break;
+            case 'F':   axis = 6;   break;
+            case 'D':   axis = 9;   break;
+            case 'L':   axis = 12;  break;
+            case 'B':   axis = 15;  break;
+            case ' ':
+                if (axis != -1) {
+                    arr[j++] = axis;
+                }
+                axis = -1;
+                break;
+            case '2':   axis++; break;
+            case '\'':  axis += 2; break;
+            default:    continue;
+            }
+
+        }
+        if (axis != -1) arr[j++] = axis;
+        int[] ret = new int[j];
+        while (--j >= 0) {
+            ret[j] = arr[j];
+        }
+        return fromScramble(ret);
+    }
+
     /**
      * Check whether the cube definition string s represents a solvable cube.
      *
