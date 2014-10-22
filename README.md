@@ -5,6 +5,8 @@
 # two-phase algorithm
 - See Kociemba's [page](http://kociemba.org/cube.htm)
 
+# Pre-Scramble 
+
 # Feature
 - Memory: ~1M with twist-flip-pruning table, ~0.5M without twist-flip-pruning table. See [Tools.java line 13](https://github.com/ChenShuang/min2phase/blob/master/Tools.java#L13)
 - Average Solving Time @21 moves: ~10ms without T-F-P table, ~7ms with T-F-P table.
@@ -35,3 +37,12 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# Some improvements
+Conventional two-phase algorithm only find (sub-)optimal solutions to &lt;U,R2,F2,D,L2,B2&gt;. However, If we are able to find more phase1 solutions within a limited depth, the probability of a short solution will increased. 
+## Try different axes
+The target of phase1 can be either &lt;U,R2,F2,D,L2,B2&gt;, &lt;U2,R,F2,D2,L,B2&gt;, or &lt;U2,R2,F,D2,L2,B&gt;.
+## Try the inverse of the state
+We will try to solve the inverse state simultaneously to find more phase1 solutions. 
+## Try pre-scramble
+We can also use pre-scramble technique (which is widely used in fewest-move challenge) to find more phase1 solutions.
