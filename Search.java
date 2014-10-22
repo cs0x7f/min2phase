@@ -27,6 +27,8 @@ public class Search {
 
 	static final boolean USE_TWIST_FLIP_PRUN = true;
 
+	static final boolean USE_PRE_MOVE = true;
+
 	static boolean inited = false;
 
 	private int[] move = new int[31];
@@ -35,18 +37,20 @@ public class Search {
 	private int[] mid4 = new int[20];
 	private int[] ud8e = new int[20];
 
-	private int[] twist = new int[6];
-	private int[] flip = new int[6];
-	private int[] slice = new int[6];
+	private int[][] twist = new int[6][9];
+	private int[][] flip = new int[6][9];
+	private int[][] slice = new int[6][9];
 
-	private int[] corn0 = new int[6];
-	private int[] ud8e0 = new int[6];
-	private int[] prun = new int[6];
+	private int[][] corn0 = new int[6][9];
+	private int[][] ud8e0 = new int[6][9];
+	private int[][] prun = new int[6][9];
+
 
 	private byte[] f = new byte[54];
 
 	private int conjMask;
 	private int urfIdx;
+	private int preIdx;
 	private int depth1;
 	private int maxDep2;
 	private int sol;
@@ -150,12 +154,24 @@ public class Search {
 		init();
 
 		conjMask = 0;
+		CubieCube pc = new CubieCube();
+		CubieCube[] preList = new CubieCube[] {new CubieCube(), CubieCube.moveCube[3], CubieCube.moveCube[5],
+			CubieCube.moveCube[6], CubieCube.moveCube[8], CubieCube.moveCube[12],
+			CubieCube.moveCube[14], CubieCube.moveCube[15], CubieCube.moveCube[17]
+		};
 		for (int i=0; i<6; i++) {
-			twist[i] = cc.getTwistSym();
-			flip[i] = cc.getFlipSym();
-			slice[i] = cc.getUDSlice();
-			corn0[i] = cc.getCPermSym();
-			ud8e0[i] = cc.getU4Comb() << 16 | cc.getD4Comb();
+
+			for (int j=0; j<9; j++) {
+				CubieCube.CornMult(preList[j], cc, pc);
+				CubieCube.EdgeMult(preList[j], cc, pc);
+				twist[i][j] = pc.getTwistSym();
+				flip[i][j] = pc.getFlipSym();
+				slice[i][j] = pc.getUDSlice();
+				corn0[i][j] = pc.getCPermSym();
+				ud8e0[i][j] = pc.getU4Comb() << 16 | pc.getD4Comb();
+
+			}
+
 			cc.URFConjugate();
 			if (i % 3 == 2) {
 				cc.invCubieCube();
@@ -171,13 +187,15 @@ public class Search {
 				}
 			}
 			if ((conjMask & (1 << i)) == 0) {
-				prun[i] = Math.max(Math.max(
-					CoordCube.getPruning(CoordCube.UDSliceTwistPrun,
-						(twist[i]>>>3) * 495 + CoordCube.UDSliceConj[slice[i]&0x1ff][twist[i]&7]),
-					CoordCube.getPruning(CoordCube.UDSliceFlipPrun,
-						(flip[i]>>>3) * 495 + CoordCube.UDSliceConj[slice[i]&0x1ff][flip[i]&7])),
-					USE_TWIST_FLIP_PRUN ? CoordCube.getPruning(CoordCube.TwistFlipPrun,
-							(twist[i]>>>3) * 2688 + (flip[i] & 0xfff8 | CubieCube.Sym8MultInv[flip[i]&7][twist[i]&7])) : 0);
+				for (int j=0; j<9; j++) {
+					prun[i][j] = Math.max(Math.max(
+						CoordCube.getPruning(CoordCube.UDSliceTwistPrun,
+							(twist[i][j]>>>3) * 495 + CoordCube.UDSliceConj[slice[i][j]&0x1ff][twist[i][j]&7]),
+						CoordCube.getPruning(CoordCube.UDSliceFlipPrun,
+							(flip[i][j]>>>3) * 495 + CoordCube.UDSliceConj[slice[i][j]&0x1ff][flip[i][j]&7])),
+						USE_TWIST_FLIP_PRUN ? CoordCube.getPruning(CoordCube.TwistFlipPrun,
+								(twist[i][j]>>>3) * 2688 + (flip[i][j] & 0xfff8 | CubieCube.Sym8MultInv[flip[i][j]&7][twist[i][j]&7])) : 0);
+				}
 			}
 		}
 
@@ -260,14 +278,22 @@ public class Search {
 				if ((conjMask & (1 << urfIdx)) != 0) {
 					continue;
 				}
-				corn[0] = corn0[urfIdx];
-				mid4[0] = slice[urfIdx];
-				ud8e[0] = ud8e0[urfIdx];
-				valid1 = 0;
-				if ((prun[urfIdx] <= depth1)
-						&& phase1(twist[urfIdx]>>>3, twist[urfIdx]&7, flip[urfIdx]>>>3, flip[urfIdx]&7,
-							slice[urfIdx]&0x1ff, depth1, -1) == 0) {
-					return solution == null ? "Error 8" : solution;
+				for (preIdx=0; preIdx<(USE_PRE_MOVE ? 9 : 1); preIdx++) {
+					corn[0] = corn0[urfIdx][preIdx];
+					mid4[0] = slice[urfIdx][preIdx];
+					ud8e[0] = ud8e0[urfIdx][preIdx];
+					valid1 = 0;
+					if (preIdx != 0) {
+						depth1--;
+					}
+					if ((prun[urfIdx][preIdx] <= depth1)
+							&& phase1(twist[urfIdx][preIdx]>>>3, twist[urfIdx][preIdx]&7, flip[urfIdx][preIdx]>>>3, flip[urfIdx][preIdx]&7,
+								slice[urfIdx][preIdx]&0x1ff, depth1, -1) == 0) {
+						return solution == null ? "Error 8" : solution;
+					}
+					if (preIdx != 0) {
+						depth1++;
+					}
 				}
 			}
 		}
@@ -396,6 +422,9 @@ public class Search {
 		for (int depth2=prun; depth2<maxDep2; depth2++) {
 			if (phase2(edge, esym, cidx, csym, mid, depth2, depth1, lm)) {
 				sol = depth1 + depth2;
+				if (preIdx != 0) {
+					move[sol++] = Util.preMove[preIdx];
+				}
 				maxDep2 = Math.min(12, sol-depth1);
 				solution = solutionToString();
 				return System.currentTimeMillis() >= timeMin ? 0 : 1;
