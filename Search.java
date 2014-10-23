@@ -27,9 +27,12 @@ public class Search {
 
     static final boolean USE_TWIST_FLIP_PRUN = true;
 
-    static final boolean USE_PRE_MOVE = true;
+    //Options for research purpose.
+    static final boolean TRY_PRE_MOVE = true;
+    static final boolean TRY_INVERSE = true;
+    static final boolean TRY_THREE_AXES = true;
 
-    private static final int PRE_IDX_MAX = USE_PRE_MOVE ? 9 : 1;
+    private static final int PRE_IDX_MAX = TRY_PRE_MOVE ? 9 : 1;
 
     static boolean inited = false;
 
@@ -60,8 +63,9 @@ public class Search {
     private int valid1;
     private int valid2;
     private String solution;
-    private long timeOut;
-    private long timeMin;
+    private long probe;
+    private long probeMax;
+    private long probeMin;
     private int verbose;
     private CubieCube cc = new CubieCube();
 
@@ -127,16 +131,16 @@ public class Search {
      *      solution in less than 0.02 seconds on average. With a maxDepth of 20 it takes about 0.1 seconds on average to find a
      *      solution, but it may take much longer for specific cubes.
      *
-     * @param timeOut
-     *      defines the maximum computing time of the method in milliseconds. If it does not return with a solution, it returns with
+     * @param probeMax
+     *      defines the maximum number of the probes of phase 2. If it does not return with a solution, it returns with
      *      an error code.
      *
-     * @param timeMin
-     *      defines the minimum computing time of the method in milliseconds. So, if a solution is found within given time, the
-     *      computing will continue to find shorter solution(s). Btw, if timeMin > timeOut, timeMin will be set to timeOut.
+     * @param probeMin
+     *      defines the minimum number of the probes of phase 2. So, if a solution is found within given probes, the
+     *      computing will continue to find shorter solution(s). Btw, if probeMin > probeMax, probeMin will be set to probeMax.
      *
      * @param verbose
-     *      determins the format of the solution(s). see USE_SEPARATOR, INVERSE_SOLUTION, APPEND_LENGTH
+     *      determins the format of the solution(s). see USE_SEPARATOR, INVERSE_SOLUTION, APPEND_LENGTH, OPTIMAL_SOLUTION
      *
      * @return The solution string or an error code:<br>
      *      Error 1: There is not exactly one facelet of each colour<br>
@@ -146,23 +150,24 @@ public class Search {
      *      Error 5: Twist error: One corner has to be twisted<br>
      *      Error 6: Parity error: Two corners or two edges have to be exchanged<br>
      *      Error 7: No solution exists for the given maxDepth<br>
-     *      Error 8: Timeout, no solution within given time
+     *      Error 8: Probe limit exceeded, no solution within given probMax
      */
-    public synchronized String solution(String facelets, int maxDepth, long timeOut, long timeMin, int verbose) {
+    public synchronized String solution(String facelets, int maxDepth, long probeMax, long probeMin, int verbose) {
         int check = verify(facelets);
         if (check != 0) {
             return "Error " + Math.abs(check);
         }
         this.sol = maxDepth + 1;
-        this.timeOut = System.currentTimeMillis() + timeOut;
-        this.timeMin = this.timeOut + Math.min(timeMin - timeOut, 0);
+        this.probe = 0;
+        this.probeMax = probeMax;
+        this.probeMin = Math.min(probeMin, probeMax);
         this.verbose = verbose;
         this.solution = null;
         this.isRecovery = false;
 
         init();
 
-        conjMask = 0;
+        conjMask = (TRY_INVERSE ? 0 : 0x38) | (TRY_THREE_AXES ? 0 : 0x36);
         CubieCube pc = new CubieCube();
         CubieCube[] preList = new CubieCube[] {
             new CubieCube(), CubieCube.moveCube[3], CubieCube.moveCube[5],
@@ -211,9 +216,10 @@ public class Search {
         return (verbose & OPTIMAL_SOLUTION) == 0 ? search() : searchopt();
     }
 
-    public synchronized String next(long timeOut, long timeMin, int verbose) {
-        this.timeOut = System.currentTimeMillis() + timeOut;
-        this.timeMin = this.timeOut + Math.min(timeMin - timeOut, 0);
+    public synchronized String next(long probeMax, long probeMin, int verbose) {
+        this.probe = 0;
+        this.probeMax = probeMax;
+        this.probeMin = Math.min(probeMin, probeMax);
         this.solution = null;
         this.isRecovery = (this.verbose & OPTIMAL_SOLUTION) == (verbose & OPTIMAL_SOLUTION);
         this.verbose = verbose;
@@ -222,6 +228,10 @@ public class Search {
 
     public static boolean isInited() {
         return inited;
+    }
+
+    public long numberOfProbes() {
+        return probe;
     }
 
     public synchronized static void init() {
@@ -309,7 +319,7 @@ public class Search {
 
     /**
      * @return
-     *      0: Found or Timeout
+     *      0: Found or Probe limit exceeded
      *      1: Try Next Power
      *      2: Try Next Axis
      */
@@ -393,7 +403,7 @@ public class Search {
 
     /**
      * @return
-     *      0: Found or Timeout
+     *      0: Found or Probe limit exceeded
      *      1: Try Next Power
      *      2: Try Next Axis
      */
@@ -544,13 +554,14 @@ public class Search {
 
     /**
      * @return
-     *      0: Found or Timeout
+     *      0: Found or Probe limit exceeded
      *      1: Try Next Power
      *      2: Try Next Axis
      */
     private int initPhase2() {
         isRecovery = false;
-        if (System.currentTimeMillis() >= (solution == null ? timeOut : timeMin)) {
+        ++probe;
+        if (probe > (solution == null ? probeMax : probeMin)) {
             return 0;
         }
         valid2 = Math.min(valid2, valid1);
@@ -606,7 +617,7 @@ public class Search {
                 }
                 maxDep2 = Math.min(12, sol - length1);
                 solution = solutionToString();
-                return System.currentTimeMillis() >= timeMin ? 0 : 1;
+                return probe >= probeMin ? 0 : 1;
             }
         }
         return 1;
