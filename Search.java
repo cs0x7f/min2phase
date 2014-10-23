@@ -560,10 +560,10 @@ public class Search {
      */
     private int initPhase2() {
         isRecovery = false;
-        ++probe;
-        if (probe > (solution == null ? probeMax : probeMin)) {
+        if (probe >= (solution == null ? probeMax : probeMin)) {
             return 0;
         }
+        ++probe;
         valid2 = Math.min(valid2, valid1);
         int cidx = corn[valid1] >>> 4;
         int csym = corn[valid1] & 0xf;

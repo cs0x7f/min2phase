@@ -293,8 +293,13 @@ public class MainProgram extends javax.swing.JFrame {
 		mask |= inverse ? Search.INVERSE_SOLUTION : 0;
 		mask |= showLength ? Search.APPEND_LENGTH : 0;
 		long t = System.nanoTime();
+		String result = search.solution(cubeString, maxDepth, 100, 0, mask);;
+		long n_probe = search.numberOfProbes();
 		// ++++++++++++++++++++++++ Call Search.solution method from package org.kociemba.twophase ++++++++++++++++++++++++
-		String result = search.solution(cubeString, maxDepth, maxTime << 10, 0, mask);
+		while (result.startsWith("Error 8") && ((System.nanoTime() - t) < maxTime * 1.0e9)) {
+			result = search.next(100, 0, mask);
+			n_probe += search.numberOfProbes();
+		}
 		t = System.nanoTime() - t;
 
 		// +++++++++++++++++++ Replace the error messages with more meaningful ones in your language ++++++++++++++++++++++
@@ -325,7 +330,7 @@ public class MainProgram extends javax.swing.JFrame {
 				result = "Timeout, no solution found within given maximum time!";
 				break;
 			}
-		JOptionPane.showMessageDialog(null, result, Double.toString((t/1000)/1000.0) + "ms", JOptionPane.INFORMATION_MESSAGE);
+		JOptionPane.showMessageDialog(null, result, Double.toString((t/1000)/1000.0) + " ms | " + n_probe + " probes", JOptionPane.INFORMATION_MESSAGE);
 		// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	}
 }

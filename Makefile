@@ -6,7 +6,7 @@ Search.java \
 Util.java \
 Tools.java
 
-nprobe = 0;
+nprobe = 0
 ifdef probe
 	nprobe = $(probe)
 endif
