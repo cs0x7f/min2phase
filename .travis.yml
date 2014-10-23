@@ -6,6 +6,7 @@ jdk:
   - openjdk6
 script:
   - make testSel
+  - make testRnd probe=0
   - make testRnd probe=100
   - make testRnd probe=200
   - make testRnd probe=500
