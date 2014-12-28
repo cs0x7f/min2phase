@@ -26,7 +26,7 @@ run: build
 	@java -jar twophase.jar
 
 testRnd: test.class
-	@java -cp .:twophase.jar test 40 1000 21 100000 $(nprobe) 0
+	@java -cp .:twophase.jar test 40 1000 30 100000 $(nprobe) 0
 
 testSel: test.class
 	@java -cp .:twophase.jar test 24
