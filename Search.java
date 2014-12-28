@@ -612,8 +612,20 @@ public class Search {
         for (int depth2 = prun; depth2 < maxDep2; depth2++) {
             if (phase2(edge, esym, cidx, csym, mid, depth2, depth1, lm)) {
                 sol = depth1 + depth2;
-                if (preIdx != 0) {
-                    move[sol++] = Util.preMove[preIdx];
+                if (preIdx != 0 && depth2 > 0) {
+                    int axisPre = Util.preMove[preIdx] / 3;
+                    int axisLast = move[sol - 1] / 3;
+                    if (axisPre == axisLast) {
+                        int pow = (Util.preMove[preIdx] % 3 + move[sol - 1] % 3 + 1) % 4;
+                        move[sol - 1] = axisPre * 3 + pow;
+                    } else if (depth2 > 1 &&
+                               axisPre % 3 == axisLast % 3 &&
+                               move[sol - 2] / 3 == axisPre) {
+                        int pow = (Util.preMove[preIdx] % 3 + move[sol - 2] % 3 + 1) % 4;
+                        move[sol - 2] = axisPre * 3 + pow;
+                    } else {
+                        move[sol++] = Util.preMove[preIdx];
+                    }
                 }
                 maxDep2 = Math.min(12, sol - length1);
                 solution = solutionToString();
