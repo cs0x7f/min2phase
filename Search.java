@@ -612,7 +612,8 @@ public class Search {
         for (int depth2 = prun; depth2 < maxDep2; depth2++) {
             if (phase2(edge, esym, cidx, csym, mid, depth2, depth1, lm)) {
                 sol = depth1 + depth2;
-                if (preIdx != 0 && depth2 > 0) {
+                if (preIdx != 0) {
+                    assert depth2 > 0; //If depth2 == 0, the solution is optimal. In this case, we won't try preScramble to find shorter solutions.
                     int axisPre = Util.preMove[preIdx] / 3;
                     int axisLast = move[sol - 1] / 3;
                     if (axisPre == axisLast) {
