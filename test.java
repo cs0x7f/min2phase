@@ -237,14 +237,14 @@ public class test {
 
             System.out.print("SuperFlip: ");
             curTime = System.nanoTime();
-            sol = search.solution(Tools.superFlip(), 20, 100000, 0, 0);
+            sol = search.solution(Tools.superFlip(), 20, 1000000000, 0, 0);
             while (sol.length() > 60 || sol.startsWith("Error")) {
                 if (sol.startsWith("Error") && !sol.startsWith("Error 8")) {
                     throw new RuntimeException(String.format("Cannot find the optimal solution: %s", sol));
                 }
                 sol = search.next(100000, 0, 0);
             }
-            System.out.println(String.format("OK. Time: %1.3f ms.", (System.nanoTime() - curTime) / 1000000d));
+            System.out.println(String.format("OK:\n%s\nTime: %1.3f ms.", sol, (System.nanoTime() - curTime) / 1000000d));
             System.out.print("20-Depth: ");
             String[] depth20 = new String[] {
                 "B2 L  B2 R' F' U' B' L  D' F' L  U  L2 B2 L' D2 B2 D2 R2 B2",
