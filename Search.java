@@ -42,13 +42,13 @@ public class Search {
     private int[] mid4 = new int[20];
     private int[] ud8e = new int[20];
 
-    private int[][] twist = new int[6][9];
-    private int[][] flip = new int[6][9];
-    private int[][] slice = new int[6][9];
+    private int[][] twist = new int[6][PRE_IDX_MAX];
+    private int[][] flip = new int[6][PRE_IDX_MAX];
+    private int[][] slice = new int[6][PRE_IDX_MAX];
 
-    private int[][] corn0 = new int[6][9];
-    private int[][] ud8e0 = new int[6][9];
-    private int[][] prun = new int[6][9];
+    private int[][] corn0 = new int[6][PRE_IDX_MAX];
+    private int[][] ud8e0 = new int[6][PRE_IDX_MAX];
+    private int[][] prun = new int[6][PRE_IDX_MAX];
 
 
     private byte[] f = new byte[54];

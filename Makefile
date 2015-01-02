@@ -11,6 +11,11 @@ ifdef probe
 	nprobe = $(probe)
 endif
 
+nmaxl = 30
+ifdef maxl
+	nmaxl = $(maxl)
+endif
+
 DIST = twophase.jar
 
 .PHONY: build clean run testRnd testSel
@@ -26,7 +31,7 @@ run: build
 	@java -jar twophase.jar
 
 testRnd: test.class
-	@java -ea -cp .:twophase.jar test 40 1000 30 100000 $(nprobe) 0
+	@java -ea -cp .:twophase.jar test 40 1000 $(nmaxl) 10000000 $(nprobe) 0
 
 testSel: test.class
 	@java -ea -cp .:twophase.jar test 24
