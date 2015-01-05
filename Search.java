@@ -38,10 +38,6 @@ public class Search {
 
     private int[] move = new int[31];
 
-    private int[] corn = new int[20];
-    private int[] mid4 = new int[20];
-    private int[] ud8e = new int[20];
-
     private int[][] twist = new int[6][PRE_IDX_MAX];
     private int[][] flip = new int[6][PRE_IDX_MAX];
     private int[][] slice = new int[6][PRE_IDX_MAX];
@@ -60,8 +56,6 @@ public class Search {
     private int depth1;
     private int maxDep2;
     private int sol;
-    private int valid1;
-    private int valid2;
     private String solution;
     private long probe;
     private long probeMax;
@@ -293,6 +287,7 @@ public class Search {
     }
 
     private String search() {
+        // time = System.nanoTime();
         for (length1 = isRecovery ? length1 : 0; length1 < sol; length1++) {
             maxDep2 = Math.min(12, sol - length1);
             for (urfIdx = isRecovery ? urfIdx : 0; urfIdx < 6; urfIdx++) {
@@ -300,10 +295,12 @@ public class Search {
                     continue;
                 }
                 for (preIdx = isRecovery ? preIdx : 0; preIdx < PRE_IDX_MAX; preIdx++) {
-                    corn[0] = corn0[urfIdx][preIdx];
-                    mid4[0] = slice[urfIdx][preIdx];
-                    ud8e[0] = ud8e0[urfIdx][preIdx];
-                    valid1 = 0;
+                    if (preIdx != 0 && preIdx % 2 == 0) {
+                        assert twist[urfIdx][preIdx] == twist[urfIdx][preIdx - 1]
+                            && flip[urfIdx][preIdx] == flip[urfIdx][preIdx - 1]
+                            && (slice[urfIdx][preIdx] & 0x1ff) == (slice[urfIdx][preIdx - 1] & 0x1ff);
+                        continue;
+                    }
                     depth1 = length1 - (preIdx == 0 ? 0 : 1);
                     if ((prun[urfIdx][preIdx] <= depth1) &&
                             phase1(twist[urfIdx][preIdx] >>> 3, twist[urfIdx][preIdx] & 7,
@@ -325,7 +322,18 @@ public class Search {
      */
     private int phase1(int twist, int tsym, int flip, int fsym, int slice, int maxl, int lm) {
         if (twist == 0 && flip == 0 && slice == 0 && maxl < 5) {
-            return maxl == 0 ? initPhase2() : 1;
+            if (maxl == 0) {
+                int ret = initPhase2();
+                if (ret == 0 || preIdx == 0) {
+                    return ret;
+                }
+                preIdx++;
+                ret = Math.min(initPhase2(), ret);
+                preIdx--;
+                return ret;
+            } else {
+                return 1;
+            }
         }
 
         for (int axis = 0; axis < 18; axis += 3) {
@@ -370,7 +378,6 @@ public class Search {
                     continue;
                 }
                 move[depth1 - maxl] = m;
-                valid1 = Math.min(valid1, depth1 - maxl);
                 int ret = phase1(twistx, tsymx, flipx, fsymx, slicex, maxl - 1, axis);
                 if (ret == 0) {
                     return 0;
@@ -386,10 +393,6 @@ public class Search {
         for (length1 = isRecovery ? length1 : 0; length1 < sol; length1++) {
             urfIdx = 0;
             preIdx = 0;
-            corn[0] = corn0[0][0];
-            mid4[0] = slice[0][0];
-            ud8e[0] = ud8e0[0][0];
-            valid1 = 0;
             if ((prun[0][0] <= length1) &&
                     phase1opt(twist[0][0] >>> 3, twist[0][0] & 7, flip[0][0] >>> 3, flip[0][0] & 7, slice[0][0] & 0x1ff,
                               twist[1][0] >>> 3, twist[1][0] & 7, flip[1][0] >>> 3, flip[1][0] & 7, slice[1][0] & 0x1ff,
@@ -536,7 +539,6 @@ public class Search {
                 m = CubieCube.urfMove[2][m];
 
                 move[length1 - maxl] = m;
-                valid1 = Math.min(valid1, length1 - maxl);
                 int ret = phase1opt(
                               ud_twistx, ud_tsymx, ud_flipx, ud_fsymx, ud_slicex,
                               rl_twistx, rl_tsymx, rl_flipx, rl_fsymx, rl_slicex,
@@ -564,29 +566,27 @@ public class Search {
             return 0;
         }
         ++probe;
-        valid2 = Math.min(valid2, valid1);
-        int cidx = corn[valid1] >>> 4;
-        int csym = corn[valid1] & 0xf;
-        for (int i = valid1; i < depth1; i++) {
+        int cidx = corn0[urfIdx][preIdx] >>> 4;
+        int csym = corn0[urfIdx][preIdx] & 0xf;
+        int mid = slice[urfIdx][preIdx];
+        for (int i = 0; i < depth1; i++) {
             int m = move[i];
             cidx = CoordCube.CPermMove[cidx][CubieCube.SymMove[csym][m]];
             csym = CubieCube.SymMult[cidx & 0xf][csym];
             cidx >>>= 4;
-            corn[i + 1] = cidx << 4 | csym;
 
-            int cx = CoordCube.UDSliceMove[mid4[i] & 0x1ff][m];
-            mid4[i + 1] = Util.permMult[mid4[i] >>> 9][cx >>> 9] << 9 | cx & 0x1ff;
+            int cx = CoordCube.UDSliceMove[mid & 0x1ff][m];
+            mid = Util.permMult[mid >>> 9][cx >>> 9] << 9 | cx & 0x1ff;
         }
-        valid1 = depth1;
-        int mid = mid4[depth1] >>> 9;
+        mid >>>= 9;
         int prun = CoordCube.getPruning(CoordCube.MCPermPrun, cidx * 24 + CoordCube.MPermConj[mid][csym]);
         if (prun >= maxDep2) {
             return prun > maxDep2 ? 2 : 1;
         }
 
-        int u4e = ud8e[valid2] >>> 16;
-        int d4e = ud8e[valid2] & 0xffff;
-        for (int i = valid2; i < depth1; i++) {
+        int u4e = ud8e0[urfIdx][preIdx] >>> 16;
+        int d4e = ud8e0[urfIdx][preIdx] & 0xffff;
+        for (int i = 0; i < depth1; i++) {
             int m = move[i];
 
             int cx = CoordCube.UDSliceMove[u4e & 0x1ff][m];
@@ -594,10 +594,7 @@ public class Search {
 
             cx = CoordCube.UDSliceMove[d4e & 0x1ff][m];
             d4e = Util.permMult[d4e >>> 9][cx >>> 9] << 9 | cx & 0x1ff;
-
-            ud8e[i + 1] = u4e << 16 | d4e;
         }
-        valid2 = depth1;
 
         int edge = CubieCube.MtoEPerm[494 - (u4e & 0x1ff) + (u4e >>> 9) * 70 + (d4e >>> 9) * 1680];
         int esym = edge & 15;
