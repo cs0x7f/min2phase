@@ -287,7 +287,6 @@ public class Search {
     }
 
     private String search() {
-        // time = System.nanoTime();
         for (length1 = isRecovery ? length1 : 0; length1 < sol; length1++) {
             maxDep2 = Math.min(12, sol - length1);
             for (urfIdx = isRecovery ? urfIdx : 0; urfIdx < 6; urfIdx++) {
@@ -419,7 +418,7 @@ public class Search {
         if (ud_twist == 0 && ud_flip == 0 && ud_slice == 0 && maxl < 5) {
             maxDep2 = maxl + 1;
             depth1 = length1 - maxl;
-            return initPhase2();
+            return initPhase2() == 0 ? 0 : 1;
         }
 
         for (int axis = 0; axis < 18; axis += 3) {
@@ -605,7 +604,16 @@ public class Search {
             return prun > maxDep2 ? 2 : 1;
         }
 
-        int lm = depth1 == 0 ? 10 : Util.std2ud[move[depth1 - 1] / 3 * 3 + 1];
+        int lm = 10;
+        if (depth1 > 2 && move[depth1 - 1] / 3 % 3 == move[depth1 - 2] / 3 % 3) {
+            lm = Util.std2ud[Math.max(move[depth1 - 1], move[depth1 - 2]) / 3 * 3 + 1];
+        } else if (depth1 > 1) {
+            lm = Util.std2ud[move[depth1 - 1] / 3 * 3 + 1];
+            if (move[depth1 - 1] > Util.Fx3) {
+                lm = -lm;
+            }
+        }
+
         for (int depth2 = prun; depth2 < maxDep2; depth2++) {
             if (phase2(edge, esym, cidx, csym, mid, depth2, depth1, lm)) {
                 sol = depth1 + depth2;
@@ -638,7 +646,7 @@ public class Search {
             return true;
         }
         for (int m = 0; m < 10; m++) {
-            if (Util.ckmv2[lm][m]) {
+            if (lm < 0 ? (m == -lm) : Util.ckmv2[lm][m]) {
                 continue;
             }
             int midx = CoordCube.MPermMove[mid][m];
@@ -656,7 +664,7 @@ public class Search {
                                      eidxx * 24 + CoordCube.MPermConj[midx][esymx]) >= maxl) {
                 continue;
             }
-            if (phase2(eidxx, esymx, cidxx, csymx, midx, maxl - 1, depth + 1, m)) {
+            if (phase2(eidxx, esymx, cidxx, csymx, midx, maxl - 1, depth + 1, (lm < 0 && m + lm == -5) ? -lm : m)) {
                 move[depth] = Util.ud2std[m];
                 return true;
             }
