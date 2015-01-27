@@ -14,12 +14,19 @@ Conventional two-phase algorithm only find (sub-)optimal solutions to &lt;U,R2,F
 
 # Benchmark
 - Memory: ~1M with twist-flip-pruning (TFP) table, ~0.5M without TFP table. See [Search.java line 28](https://github.com/cs0x7f/min2phase/blob/master/Search.java#L28).
-- Average solving time (CPU: Intel Core i7-2670QM): 
+- Average solving time (CPU: Intel Core i7-2670QM. Flag: T=TFP table, A=three axes, I=inverse, P=pre-scramble. Kociemba: Kociemba's [twophase.jar](http://kociemba.org/twophase.jar)): 
 
-    |          | With TFP Table | Without TFP Table |
-    |:--------:|:--------------:|:-----------------:|
-    | 21 moves |      6 ms      |       8.5 ms      |
-    | 20 moves |      21 ms     |       40 ms       |
+    |   Flag   | Unlimited | 21 moves | 20 moves |
+    |:--------:|:---------:|:--------:|:--------:|
+    | Kociemba |   45 ms   |  70 ms   | >1000 ms |
+    |   TAIP   |   6.5 ms  |  6.5 ms  |   21 ms  |
+    |   -AIP   |   8.5 ms  |  8.5 ms  |   40 ms  |
+    |   T-IP   |   6.5 ms  |  8.0 ms  |   75 ms  |
+    |   TA-P   |   6.5 ms  |  7.1 ms  |   50 ms  |
+    |   TAI-   |   6.2 ms  |  6.7 ms  |   40 ms  |
+    |   -AI-   |   8.5 ms  |  9.6 ms  |   85 ms  |
+    |   T---   |   6.4 ms  |  19 ms   |  700 ms  |
+    |   ----   |   8.5 ms  |  33 ms   | >1000 ms |
 
 - Initialization Time: 160 ms without TFP table, 240 ms with TFP table.
 
