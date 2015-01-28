@@ -284,7 +284,7 @@ public class test {
             Tools.setRandomSource(new Random(42L));
             int totalLength = 0;
             int[] lengthDis = new int[30];
-            while (System.nanoTime() - tm < 60000000000L && x < nSolves) {
+            while (System.nanoTime() - tm < 6000000000000L && x < nSolves) {
                 long curTime = System.nanoTime();
                 String cube = Tools.randomCube();
                 String s = search.solution(cube, maxLength, probeMax, probeMin, verbose);
@@ -298,13 +298,13 @@ public class test {
                 totalLength += s.length() / 3;
                 lengthDis[s.length() / 3]++;
                 x++;
-                System.out.print(String.format("AvgTime: %8.3f ms, MaxTime: %8.3f ms, MinTime: %8.3f ms, AvgLen: %8.3f\r",
+                System.out.print(String.format("%6d AvgT: %6.3f ms, MaxT: %8.3f ms, MinT: %6.3f ms, AvgL: %6.3f\r", x,
                                                (totalTime / 1000000d) / x, maxT / 1000000d, minT / 1000000d, totalLength / 1.0d / x));
             }
             System.out.println();
             System.out.println(x + " Random Cube(s) Solved");
             System.out.println("Length Distribution: ");
-            for (int i=0; i<30; i++) {
+            for (int i = 0; i < 30; i++) {
                 if (lengthDis[i] != 0) {
                     System.out.println(String.format("%2d: %d", i, lengthDis[i]));
                 }

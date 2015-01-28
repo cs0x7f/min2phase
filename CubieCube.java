@@ -28,6 +28,8 @@ class CubieCube {
     static char[] FlipS2R = new char[336];
     static char[] TwistS2R = new char[324];
     static char[] EPermS2R = new char[2768];
+    static int[] UDSliceFlipS2R = Search.USE_FULL_PRUN ? new int[64430] : null;
+
 
     /**
      * Notice that Edge Perm Coordnate and Corner Perm Coordnate are the same symmetry structure.
@@ -52,6 +54,7 @@ class CubieCube {
     static char[] SymStateTwist = new char[324];
     static char[] SymStateFlip = new char[336];
     static char[] SymStatePerm = new char[2768];
+    static char[] SymStateUDSliceFlip = Search.USE_FULL_PRUN ? new char[64430] : null;
 
     static CubieCube urf1 = new CubieCube(2531, 1373, 67026819, 1367);
     static CubieCube urf2 = new CubieCube(2089, 1906, 322752913, 2040);
@@ -372,8 +375,27 @@ class CubieCube {
         return 0;// cube ok
     }
 
-    void resolve(Random gen) {
+    void setUDSliceFlip(int idx) {
+        setFlip(idx & 0x7ff);
+        setUDSlice(idx >> 11);
+    }
 
+    int getUDSliceFlip() {
+        return (getUDSlice() & 0x1ff) << 11 | getFlip();
+    }
+
+    int getUDSliceFlipSym() {
+        if (temps == null) {
+            temps = new CubieCube();
+        }
+        for (int k = 0; k < 16; k++) {
+            EdgeConjugate(this, SymInv[k], temps);
+            int idx = Util.binarySearch(UDSliceFlipS2R, temps.getUDSliceFlip());
+            if (idx != 0xffff) {
+                return (idx << 4) | k;
+            }
+        }
+        return 0;
     }
 
     // ********************************************* Initialization functions *********************************************
@@ -489,6 +511,7 @@ class CubieCube {
                 FlipS2R[count++] = (char) i;
             }
         }
+        assert count == 336;
     }
 
     static void initTwistSym2Raw() {
@@ -513,6 +536,7 @@ class CubieCube {
                 TwistS2R[count++] = (char) i;
             }
         }
+        assert count == 324;
     }
 
     static void initPermSym2Raw() {
@@ -540,5 +564,29 @@ class CubieCube {
                 EPermS2R[count++] = (char) i;
             }
         }
+        assert count == 2768;
+    }
+
+    static void initUDSliceFlipSym2Raw() {
+        CubieCube c = new CubieCube();
+        CubieCube d = new CubieCube();
+        int[] occ = new int[2048 * 495 >> 5];
+        int count = 0;
+        for (int i = 0; i<2048 * 495 >> 5; occ[i++] = 0);
+        for (int i = 0; i < 2048 * 495; i++) {
+            if ((occ[i >> 5] & (1 << (i & 0x1f))) == 0) {
+                c.setUDSliceFlip(i);
+                for (int s = 0; s < 16; s++) {
+                    EdgeConjugate(c, s, d);
+                    int idx = d.getUDSliceFlip();
+                    if (idx == i) {
+                        SymStateUDSliceFlip[count] |= 1 << s;
+                    }
+                    occ[idx >> 5] |= 1 << (idx & 0x1f);
+                }
+                UDSliceFlipS2R[count++] = i;
+            }
+        }
+        assert count == 64430;
     }
 }

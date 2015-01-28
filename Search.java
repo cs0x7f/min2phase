@@ -26,6 +26,7 @@ package cs.min2phase;
 public class Search {
 
     static final boolean USE_TWIST_FLIP_PRUN = true;
+    static final boolean USE_FULL_PRUN = false;
 
     //Options for research purpose.
     static final boolean TRY_PRE_MOVE = true;
@@ -198,13 +199,17 @@ public class Search {
                 continue;
             }
             for (int j = 0; j < PRE_IDX_MAX; j++) {
-                prun[i][j] = Math.max(Math.max(
-                                          CoordCube.getPruning(CoordCube.UDSliceTwistPrun,
-                                                  (twist[i][j] >>> 3) * 495 + CoordCube.UDSliceConj[slice[i][j] & 0x1ff][twist[i][j] & 7]),
-                                          CoordCube.getPruning(CoordCube.UDSliceFlipPrun,
-                                                  (flip[i][j] >>> 3) * 495 + CoordCube.UDSliceConj[slice[i][j] & 0x1ff][flip[i][j] & 7])),
-                                      USE_TWIST_FLIP_PRUN ? CoordCube.getPruning(CoordCube.TwistFlipPrun,
-                                              (twist[i][j] >>> 3) * 2688 + (flip[i][j] & 0xfff8 | CubieCube.Sym8MultInv[flip[i][j] & 7][twist[i][j] & 7])) : 0);
+                if (USE_FULL_PRUN) {
+                    prun[i][j] = CoordCube.getUDSliceFlipSymPrun(twist[i][j] >>> 3, twist[i][j] & 7, flip[i][j] >>> 3, flip[i][j] & 7, slice[i][j] & 0x1ff);
+                } else {
+                    prun[i][j] = Math.max(Math.max(
+                                              CoordCube.getPruning(CoordCube.UDSliceTwistPrun,
+                                                      (twist[i][j] >>> 3) * 495 + CoordCube.UDSliceConj[slice[i][j] & 0x1ff][twist[i][j] & 7]),
+                                              CoordCube.getPruning(CoordCube.UDSliceFlipPrun,
+                                                      (flip[i][j] >>> 3) * 495 + CoordCube.UDSliceConj[slice[i][j] & 0x1ff][flip[i][j] & 7])),
+                                          USE_TWIST_FLIP_PRUN ? CoordCube.getPruning(CoordCube.TwistFlipPrun,
+                                                  (twist[i][j] >>> 3) * 2688 + (flip[i][j] & 0xfff8 | CubieCube.Sym8MultInv[flip[i][j] & 7][twist[i][j] & 7])) : 0);
+                }
             }
         }
         return (verbose & OPTIMAL_SOLUTION) == 0 ? search() : searchopt();
@@ -238,6 +243,10 @@ public class Search {
         CubieCube.initTwistSym2Raw();
         CubieCube.initPermSym2Raw();
 
+        if (USE_FULL_PRUN) {
+            CubieCube.initUDSliceFlipSym2Raw();
+        }
+
         CoordCube.initFlipMove();
         CoordCube.initTwistMove();
         CoordCube.initUDSliceMoveConj();
@@ -253,6 +262,14 @@ public class Search {
         CoordCube.initSliceFlipPrun();
         CoordCube.initMEPermPrun();
         CoordCube.initMCPermPrun();
+
+        if (USE_FULL_PRUN) {
+            CoordCube.initUDSliceFlipMove();
+            CoordCube.initTwistMoveConj();
+            CoordCube.flipSlice2UDSliceFlip();
+            CoordCube.initUDSliceFlipTwistPrun();
+        }
+
         inited = true;
     }
 
@@ -295,9 +312,9 @@ public class Search {
                 }
                 for (preIdx = isRecovery ? preIdx : 0; preIdx < PRE_IDX_MAX; preIdx++) {
                     if (preIdx != 0 && preIdx % 2 == 0) {
-                        assert twist[urfIdx][preIdx] == twist[urfIdx][preIdx - 1]
-                            && flip[urfIdx][preIdx] == flip[urfIdx][preIdx - 1]
-                            && (slice[urfIdx][preIdx] & 0x1ff) == (slice[urfIdx][preIdx - 1] & 0x1ff);
+                        assert (twist[urfIdx][preIdx] == twist[urfIdx][preIdx - 1]
+                                && flip[urfIdx][preIdx] == flip[urfIdx][preIdx - 1]
+                                && (slice[urfIdx][preIdx] & 0x1ff) == (slice[urfIdx][preIdx - 1] & 0x1ff));
                         continue;
                     }
                     depth1 = length1 - (preIdx == 0 ? 0 : 1);
@@ -347,35 +364,52 @@ public class Search {
                 }
 
                 int slicex = CoordCube.UDSliceMove[slice][m] & 0x1ff;
+
                 int twistx = CoordCube.TwistMove[twist][CubieCube.Sym8Move[tsym][m]];
                 int tsymx = CubieCube.Sym8Mult[twistx & 7][tsym];
                 twistx >>>= 3;
-                int prun = CoordCube.getPruning(CoordCube.UDSliceTwistPrun,
-                                                twistx * 495 + CoordCube.UDSliceConj[slicex][tsymx]);
-                if (prun > maxl) {
-                    break;
-                } else if (prun == maxl) {
-                    continue;
-                }
+
                 int flipx = CoordCube.FlipMove[flip][CubieCube.Sym8Move[fsym][m]];
                 int fsymx = CubieCube.Sym8Mult[flipx & 7][fsym];
                 flipx >>>= 3;
-                if (USE_TWIST_FLIP_PRUN) {
-                    prun = CoordCube.getPruning(CoordCube.TwistFlipPrun,
-                                                (twistx * 336 + flipx) << 3 | CubieCube.Sym8MultInv[fsymx][tsymx]);
+
+                int prun;
+
+                if (USE_FULL_PRUN) {
+                    prun = CoordCube.getUDSliceFlipSymPrun(twistx, tsymx, flipx, fsymx, slicex);
+                    if (prun > maxl) {
+                        break;
+                    } else if (prun == maxl) {
+                        continue;
+                    }
+                } else {
+                    if (USE_TWIST_FLIP_PRUN) {
+                        prun = CoordCube.getPruning(CoordCube.TwistFlipPrun,
+                                                    (twistx * 336 + flipx) << 3 | CubieCube.Sym8MultInv[fsymx][tsymx]);
+                        if (prun > maxl) {
+                            break;
+                        } else if (prun == maxl) {
+                            continue;
+                        }
+                    }
+
+                    prun = CoordCube.getPruning(CoordCube.UDSliceTwistPrun,
+                                                twistx * 495 + CoordCube.UDSliceConj[slicex][tsymx]);
+                    if (prun > maxl) {
+                        break;
+                    } else if (prun == maxl) {
+                        continue;
+                    }
+
+                    prun = CoordCube.getPruning(CoordCube.UDSliceFlipPrun,
+                                                flipx * 495 + CoordCube.UDSliceConj[slicex][fsymx]);
                     if (prun > maxl) {
                         break;
                     } else if (prun == maxl) {
                         continue;
                     }
                 }
-                prun = CoordCube.getPruning(CoordCube.UDSliceFlipPrun,
-                                            flipx * 495 + CoordCube.UDSliceConj[slicex][fsymx]);
-                if (prun > maxl) {
-                    break;
-                } else if (prun == maxl) {
-                    continue;
-                }
+
                 move[depth1 - maxl] = m;
                 int ret = phase1(twistx, tsymx, flipx, fsymx, slicex, maxl - 1, axis);
                 if (ret == 0) {
@@ -437,31 +471,42 @@ public class Search {
                 int ud_twistx = CoordCube.TwistMove[ud_twist][CubieCube.Sym8Move[ud_tsym][m]];
                 int ud_tsymx = CubieCube.Sym8Mult[ud_twistx & 7][ud_tsym];
                 ud_twistx >>>= 3;
-                int ud_prun = CoordCube.getPruning(CoordCube.UDSliceTwistPrun,
-                                                   ud_twistx * 495 + CoordCube.UDSliceConj[ud_slicex][ud_tsymx]);
-                if (ud_prun > maxl) {
-                    break;
-                } else if (ud_prun == maxl) {
-                    continue;
-                }
                 int ud_flipx = CoordCube.FlipMove[ud_flip][CubieCube.Sym8Move[ud_fsym][m]];
                 int ud_fsymx = CubieCube.Sym8Mult[ud_flipx & 7][ud_fsym];
                 ud_flipx >>>= 3;
-                if (USE_TWIST_FLIP_PRUN) {
-                    ud_prun = Math.max(ud_prun, CoordCube.getPruning(CoordCube.TwistFlipPrun,
-                                       (ud_twistx * 336 + ud_flipx) << 3 | CubieCube.Sym8MultInv[ud_fsymx][ud_tsymx]));
+
+                int ud_prun;
+                if (USE_FULL_PRUN) {
+                    ud_prun = CoordCube.getUDSliceFlipSymPrun(ud_twistx, ud_tsymx, ud_flipx, ud_fsymx, ud_slicex);
                     if (ud_prun > maxl) {
                         break;
                     } else if (ud_prun == maxl) {
                         continue;
                     }
-                }
-                ud_prun = Math.max(ud_prun, CoordCube.getPruning(CoordCube.UDSliceFlipPrun,
-                                   ud_flipx * 495 + CoordCube.UDSliceConj[ud_slicex][ud_fsymx]));
-                if (ud_prun > maxl) {
-                    break;
-                } else if (ud_prun == maxl) {
-                    continue;
+                } else {
+                    ud_prun = CoordCube.getPruning(CoordCube.UDSliceTwistPrun,
+                                                   ud_twistx * 495 + CoordCube.UDSliceConj[ud_slicex][ud_tsymx]);
+                    if (ud_prun > maxl) {
+                        break;
+                    } else if (ud_prun == maxl) {
+                        continue;
+                    }
+                    if (USE_TWIST_FLIP_PRUN) {
+                        ud_prun = Math.max(ud_prun, CoordCube.getPruning(CoordCube.TwistFlipPrun,
+                                           (ud_twistx * 336 + ud_flipx) << 3 | CubieCube.Sym8MultInv[ud_fsymx][ud_tsymx]));
+                        if (ud_prun > maxl) {
+                            break;
+                        } else if (ud_prun == maxl) {
+                            continue;
+                        }
+                    }
+                    ud_prun = Math.max(ud_prun, CoordCube.getPruning(CoordCube.UDSliceFlipPrun,
+                                       ud_flipx * 495 + CoordCube.UDSliceConj[ud_slicex][ud_fsymx]));
+                    if (ud_prun > maxl) {
+                        break;
+                    } else if (ud_prun == maxl) {
+                        continue;
+                    }
                 }
 
                 // RL Axis
@@ -470,31 +515,42 @@ public class Search {
                 int rl_twistx = CoordCube.TwistMove[rl_twist][CubieCube.Sym8Move[rl_tsym][m]];
                 int rl_tsymx = CubieCube.Sym8Mult[rl_twistx & 7][rl_tsym];
                 rl_twistx >>>= 3;
-                int rl_prun = CoordCube.getPruning(CoordCube.UDSliceTwistPrun,
-                                                   rl_twistx * 495 + CoordCube.UDSliceConj[rl_slicex][rl_tsymx]);
-                if (rl_prun > maxl) {
-                    break;
-                } else if (rl_prun == maxl) {
-                    continue;
-                }
                 int rl_flipx = CoordCube.FlipMove[rl_flip][CubieCube.Sym8Move[rl_fsym][m]];
                 int rl_fsymx = CubieCube.Sym8Mult[rl_flipx & 7][rl_fsym];
                 rl_flipx >>>= 3;
-                if (USE_TWIST_FLIP_PRUN) {
-                    rl_prun = Math.max(rl_prun, CoordCube.getPruning(CoordCube.TwistFlipPrun,
-                                       (rl_twistx * 336 + rl_flipx) << 3 | CubieCube.Sym8MultInv[rl_fsymx][rl_tsymx]));
+
+                int rl_prun;
+                if (USE_FULL_PRUN) {
+                    rl_prun = CoordCube.getUDSliceFlipSymPrun(rl_twistx, rl_tsymx, rl_flipx, rl_fsymx, rl_slicex);
                     if (rl_prun > maxl) {
                         break;
                     } else if (rl_prun == maxl) {
                         continue;
                     }
-                }
-                rl_prun = Math.max(rl_prun, CoordCube.getPruning(CoordCube.UDSliceFlipPrun,
-                                   rl_flipx * 495 + CoordCube.UDSliceConj[rl_slicex][rl_fsymx]));
-                if (rl_prun > maxl) {
-                    break;
-                } else if (rl_prun == maxl) {
-                    continue;
+                } else {
+                    rl_prun = CoordCube.getPruning(CoordCube.UDSliceTwistPrun,
+                                                   rl_twistx * 495 + CoordCube.UDSliceConj[rl_slicex][rl_tsymx]);
+                    if (rl_prun > maxl) {
+                        break;
+                    } else if (rl_prun == maxl) {
+                        continue;
+                    }
+                    if (USE_TWIST_FLIP_PRUN) {
+                        rl_prun = Math.max(rl_prun, CoordCube.getPruning(CoordCube.TwistFlipPrun,
+                                           (rl_twistx * 336 + rl_flipx) << 3 | CubieCube.Sym8MultInv[rl_fsymx][rl_tsymx]));
+                        if (rl_prun > maxl) {
+                            break;
+                        } else if (rl_prun == maxl) {
+                            continue;
+                        }
+                    }
+                    rl_prun = Math.max(rl_prun, CoordCube.getPruning(CoordCube.UDSliceFlipPrun,
+                                       rl_flipx * 495 + CoordCube.UDSliceConj[rl_slicex][rl_fsymx]));
+                    if (rl_prun > maxl) {
+                        break;
+                    } else if (rl_prun == maxl) {
+                        continue;
+                    }
                 }
 
                 // FB Axis
@@ -503,27 +559,33 @@ public class Search {
                 int fb_twistx = CoordCube.TwistMove[fb_twist][CubieCube.Sym8Move[fb_tsym][m]];
                 int fb_tsymx = CubieCube.Sym8Mult[fb_twistx & 7][fb_tsym];
                 fb_twistx >>>= 3;
-                int fb_prun = CoordCube.getPruning(CoordCube.UDSliceTwistPrun,
-                                                   fb_twistx * 495 + CoordCube.UDSliceConj[fb_slicex][fb_tsymx]);
-                if (fb_prun > maxl) {
-                    break;
-                } else if (fb_prun == maxl) {
-                    continue;
-                }
                 int fb_flipx = CoordCube.FlipMove[fb_flip][CubieCube.Sym8Move[fb_fsym][m]];
                 int fb_fsymx = CubieCube.Sym8Mult[fb_flipx & 7][fb_fsym];
                 fb_flipx >>>= 3;
-                if (USE_TWIST_FLIP_PRUN) {
-                    fb_prun = Math.max(fb_prun, CoordCube.getPruning(CoordCube.TwistFlipPrun,
-                                       (fb_twistx * 336 + fb_flipx) << 3 | CubieCube.Sym8MultInv[fb_fsymx][fb_tsymx]));
+
+                int fb_prun;
+                if (USE_FULL_PRUN) {
+                    fb_prun = CoordCube.getUDSliceFlipSymPrun(fb_twistx, fb_tsymx, fb_flipx, fb_fsymx, fb_slicex);
+                } else {
+                    fb_prun = CoordCube.getPruning(CoordCube.UDSliceTwistPrun,
+                                                   fb_twistx * 495 + CoordCube.UDSliceConj[fb_slicex][fb_tsymx]);
                     if (fb_prun > maxl) {
                         break;
                     } else if (fb_prun == maxl) {
                         continue;
                     }
+                    if (USE_TWIST_FLIP_PRUN) {
+                        fb_prun = Math.max(fb_prun, CoordCube.getPruning(CoordCube.TwistFlipPrun,
+                                           (fb_twistx * 336 + fb_flipx) << 3 | CubieCube.Sym8MultInv[fb_fsymx][fb_tsymx]));
+                        if (fb_prun > maxl) {
+                            break;
+                        } else if (fb_prun == maxl) {
+                            continue;
+                        }
+                    }
+                    fb_prun = Math.max(fb_prun, CoordCube.getPruning(CoordCube.UDSliceFlipPrun,
+                                       fb_flipx * 495 + CoordCube.UDSliceConj[fb_slicex][fb_fsymx]));
                 }
-                fb_prun = Math.max(fb_prun, CoordCube.getPruning(CoordCube.UDSliceFlipPrun,
-                                   fb_flipx * 495 + CoordCube.UDSliceConj[fb_slicex][fb_fsymx]));
 
                 if (ud_prun == rl_prun && rl_prun == fb_prun && fb_prun != 0) {
                     fb_prun++;
@@ -533,7 +595,6 @@ public class Search {
                 } else if (fb_prun == maxl) {
                     continue;
                 }
-
 
                 m = CubieCube.urfMove[2][m];
 
@@ -614,36 +675,46 @@ public class Search {
             }
         }
 
-        for (int depth2 = prun; depth2 < maxDep2; depth2++) {
-            if (phase2(edge, esym, cidx, csym, mid, depth2, depth1, lm)) {
-                sol = depth1 + depth2;
-                if (preIdx != 0) {
-                    assert depth2 > 0; //If depth2 == 0, the solution is optimal. In this case, we won't try preScramble to find shorter solutions.
-                    int axisPre = Util.preMove[preIdx] / 3;
-                    int axisLast = move[sol - 1] / 3;
-                    if (axisPre == axisLast) {
-                        int pow = (Util.preMove[preIdx] % 3 + move[sol - 1] % 3 + 1) % 4;
-                        move[sol - 1] = axisPre * 3 + pow;
-                    } else if (depth2 > 1 &&
-                               axisPre % 3 == axisLast % 3 &&
-                               move[sol - 2] / 3 == axisPre) {
-                        int pow = (Util.preMove[preIdx] % 3 + move[sol - 2] % 3 + 1) % 4;
-                        move[sol - 2] = axisPre * 3 + pow;
-                    } else {
-                        move[sol++] = Util.preMove[preIdx];
-                    }
-                }
-                maxDep2 = Math.min(12, sol - length1);
-                solution = solutionToString();
-                return probe >= probeMin ? 0 : 1;
+        int depth2;
+        for (depth2 = maxDep2 - 1; depth2 >= prun; depth2--) {
+            int ret = phase2(edge, esym, cidx, csym, mid, depth2, depth1, lm);
+            if (ret < 0) {
+                break;
             }
+            depth2 = depth2 - ret;
+            sol = depth1 + depth2;
+            if (preIdx != 0) {
+                assert depth2 > 0; //If depth2 == 0, the solution is optimal. In this case, we won't try preScramble to find shorter solutions.
+                int axisPre = Util.preMove[preIdx] / 3;
+                int axisLast = move[sol - 1] / 3;
+                if (axisPre == axisLast) {
+                    int pow = (Util.preMove[preIdx] % 3 + move[sol - 1] % 3 + 1) % 4;
+                    move[sol - 1] = axisPre * 3 + pow;
+                } else if (depth2 > 1 &&
+                           axisPre % 3 == axisLast % 3 &&
+                           move[sol - 2] / 3 == axisPre) {
+                    int pow = (Util.preMove[preIdx] % 3 + move[sol - 2] % 3 + 1) % 4;
+                    move[sol - 2] = axisPre * 3 + pow;
+                } else {
+                    move[sol++] = Util.preMove[preIdx];
+                }
+            }
+            solution = solutionToString();
         }
-        return 1;
+
+        if (depth2 != maxDep2 - 1) { //At least one solution has been found.
+            maxDep2 = Math.min(12, sol - length1);
+            return probe >= probeMin ? 0 : 1;
+        } else {
+            return 1;
+        }
     }
 
-    private boolean phase2(int eidx, int esym, int cidx, int csym, int mid, int maxl, int depth, int lm) {
+    //-1: no solution found
+    // X: solution with X moves shorter than expectation. Hence, the length of the solution is  depth - X
+    private int phase2(int eidx, int esym, int cidx, int csym, int mid, int maxl, int depth, int lm) {
         if (eidx == 0 && cidx == 0 && mid == 0) {
-            return true;
+            return maxl;
         }
         for (int m = 0; m < 10; m++) {
             if (lm < 0 ? (m == -lm) : Util.ckmv2[lm][m]) {
@@ -664,36 +735,31 @@ public class Search {
                                      eidxx * 24 + CoordCube.MPermConj[midx][esymx]) >= maxl) {
                 continue;
             }
-            if (phase2(eidxx, esymx, cidxx, csymx, midx, maxl - 1, depth + 1, (lm < 0 && m + lm == -5) ? -lm : m)) {
+            int ret = phase2(eidxx, esymx, cidxx, csymx, midx, maxl - 1, depth + 1, (lm < 0 && m + lm == -5) ? -lm : m);
+            if (ret >= 0) {
                 move[depth] = Util.ud2std[m];
-                return true;
+                return ret;
             }
         }
-        return false;
+        return -1;
     }
 
     private String solutionToString() {
         StringBuffer sb = new StringBuffer();
         int urf = (verbose & INVERSE_SOLUTION) != 0 ? (urfIdx + 3) % 6 : urfIdx;
         if (urf < 3) {
-            for (int s = 0; s < depth1; s++) {
-                sb.append(Util.move2str[CubieCube.urfMove[urf][move[s]]]).append(' ');
-            }
-            if ((verbose & USE_SEPARATOR) != 0) {
-                sb.append(".  ");
-            }
-            for (int s = depth1; s < sol; s++) {
+            for (int s = 0; s < sol; s++) {
+                if ((verbose & USE_SEPARATOR) != 0 && s == depth1) {
+                    sb.append(".  ");
+                }
                 sb.append(Util.move2str[CubieCube.urfMove[urf][move[s]]]).append(' ');
             }
         } else {
-            for (int s = sol - 1; s >= depth1; s--) {
+            for (int s = sol - 1; s >= 0; s--) {
                 sb.append(Util.move2str[CubieCube.urfMove[urf][move[s]]]).append(' ');
-            }
-            if ((verbose & USE_SEPARATOR) != 0) {
-                sb.append(".  ");
-            }
-            for (int s = depth1 - 1; s >= 0; s--) {
-                sb.append(Util.move2str[CubieCube.urfMove[urf][move[s]]]).append(' ');
+                if ((verbose & USE_SEPARATOR) != 0 && s == depth1) {
+                    sb.append(".  ");
+                }
             }
         }
         if ((verbose & APPEND_LENGTH) != 0) {
