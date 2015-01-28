@@ -342,7 +342,7 @@ class CoordCube {
         }
     }
 
-    private static final int MAXDEPTH = 9;
+    private static final int MAXDEPTH = 16;
 
     static int getUDSliceFlipSymPrun(int twist, int tsym, int flip, int fsym, int slice) {
         int udsliceflip = fs2sf[flip * 495 + UDSliceConj[slice][fsym]];
