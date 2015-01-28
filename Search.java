@@ -243,10 +243,6 @@ public class Search {
         CubieCube.initTwistSym2Raw();
         CubieCube.initPermSym2Raw();
 
-        if (USE_FULL_PRUN) {
-            CubieCube.initUDSliceFlipSym2Raw();
-        }
-
         CoordCube.initFlipMove();
         CoordCube.initTwistMove();
         CoordCube.initUDSliceMoveConj();
@@ -264,6 +260,7 @@ public class Search {
         CoordCube.initMCPermPrun();
 
         if (USE_FULL_PRUN) {
+            CubieCube.initUDSliceFlipSym2Raw();
             CoordCube.initUDSliceFlipMove();
             CoordCube.initTwistMoveConj();
             CoordCube.flipSlice2UDSliceFlip();

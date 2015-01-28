@@ -20,6 +20,7 @@ class CoordCube {
     static int[][] UDSliceFlipMove = Search.USE_FULL_PRUN ? new int[N_UDSLICEFLIP_SYM][N_MOVES] : null;
     static char[][] TwistMoveF = Search.USE_FULL_PRUN ? new char[N_TWIST][N_MOVES] : null;
     static char[][] TwistConj = Search.USE_FULL_PRUN ? new char[N_TWIST][16] : null;
+    static int[] UDSliceFlipTwistPrun = Search.USE_FULL_PRUN ? new int[N_UDSLICEFLIP_SYM * N_TWIST / 8 + 1] : null;
 
     //phase1
     static char[][] UDSliceMove = new char[N_SLICE][N_MOVES];
@@ -30,9 +31,6 @@ class CoordCube {
     static int[] UDSliceFlipPrun = new int[N_SLICE * N_FLIP_SYM / 8];
     static int[] TwistFlipPrun = Search.USE_TWIST_FLIP_PRUN ? new int[N_FLIP_SYM * N_TWIST_SYM * 8 / 8] : null;
 
-    static int[] UDSliceFlipTwistPrun = Search.USE_FULL_PRUN ? new int[(140908410 + 7) / 8] : null;
-
-
     //phase2
     static char[][] CPermMove = new char[N_PERM_SYM][N_MOVES];
     static char[][] EPermMove = new char[N_PERM_SYM][N_MOVES2];
@@ -42,11 +40,11 @@ class CoordCube {
     static int[] MEPermPrun = new int[N_MPERM * N_PERM_SYM / 8];
 
     static void setPruning(int[] table, int index, int value) {
-        table[index >> 3] ^= (0x0f ^ value) << ((index & 7) << 2);
+        table[index >> 3] ^= (0xf ^ value) << ((index & 7) << 2);
     }
 
     static int getPruning(int[] table, int index) {
-        return (table[index >> 3] >> ((index & 7) << 2)) & 0x0f;
+        return (table[index >> 3] >> ((index & 7) << 2)) & 0xf;
     }
 
     static void initUDSliceMoveConj() {
@@ -182,19 +180,28 @@ class CoordCube {
         boolean inv;
         int select;
         int check;
+        final int N_SIZE = N_FLIP_SYM * N_TWIST_SYM * 8;
         for (int i = 0; i < N_FLIP_SYM * N_TWIST_SYM * 8 / 8; i++) {
             TwistFlipPrun[i] = -1;
         }
         for (int i = 0; i < 8; i++) {
             setPruning(TwistFlipPrun, i, 0);
         }
-        while (done < N_FLIP_SYM * N_TWIST_SYM * 8) {
+        while (done < N_SIZE) {
             inv = depth > 6;
-            select = inv ? 0x0f : depth;
-            check = inv ? depth : 0x0f;
+            select = inv ? 0xf : depth;
+            check = inv ? depth : 0xf;
             depth++;
-            for (int i = 0; i < N_FLIP_SYM * N_TWIST_SYM * 8; i++) {
-                if (getPruning(TwistFlipPrun, i) != select) {
+            int val = 0;
+            for (int i = 0; i < N_SIZE; i++, val >>= 4) {
+                if ((i & 7) == 0) {
+                    val = TwistFlipPrun[i >> 3];
+                    if (!inv && val == -1) {
+                        i += 7;
+                        continue;
+                    }
+                }
+                if ((val & 0xf) != select) {
                     continue;
                 }
                 int twist = i / 2688;
@@ -216,27 +223,26 @@ class CoordCube {
                     if (inv) {
                         setPruning(TwistFlipPrun, i, depth);
                         break;
-                    } else {
-                        setPruning(TwistFlipPrun, idx, depth);
-                        char sym = CubieCube.SymStateTwist[twistx];
-                        char symF = CubieCube.SymStateFlip[flipx];
-                        if (sym == 1 && symF == 1) {
+                    }
+                    setPruning(TwistFlipPrun, idx, depth);
+                    char sym = CubieCube.SymStateTwist[twistx];
+                    char symF = CubieCube.SymStateFlip[flipx];
+                    if (sym == 1 && symF == 1) {
+                        continue;
+                    }
+                    for (int j = 0; j < 8; j++, symF >>= 1) {
+                        if ((symF & 1) != 1) {
                             continue;
                         }
-                        for (int j = 0; j < 8; j++, symF >>= 1) {
-                            if ((symF & 1) != 1) {
+                        int fsymxx = CubieCube.Sym8MultInv[fsymx][j];
+                        for (int k = 0; k < 8; k++) {
+                            if ((sym & (1 << k)) == 0) {
                                 continue;
                             }
-                            int fsymxx = CubieCube.Sym8MultInv[fsymx][j];
-                            for (int k = 0; k < 8; k++) {
-                                if ((sym & (1 << k)) == 0) {
-                                    continue;
-                                }
-                                int idxx = twistx * 2688 + (flipx << 3 | CubieCube.Sym8MultInv[fsymxx][k]);
-                                if (getPruning(TwistFlipPrun, idxx) == 0x0f) {
-                                    setPruning(TwistFlipPrun, idxx, depth);
-                                    done++;
-                                }
+                            int idxx = twistx * 2688 + (flipx << 3 | CubieCube.Sym8MultInv[fsymxx][k]);
+                            if (getPruning(TwistFlipPrun, idxx) == 0xf) {
+                                setPruning(TwistFlipPrun, idxx, depth);
+                                done++;
                             }
                         }
                     }
@@ -267,50 +273,50 @@ class CoordCube {
 
         while (done < N_SIZE) {
             boolean inv = depth > INV_DEPTH;
-            int select = inv ? 0x0f : depth;
-            int check = inv ? depth : 0x0f;
+            int select = inv ? 0xf : depth;
+            int check = inv ? depth : 0xf;
             depth++;
-            for (int i = 0; i < N_SIZE;) {
-                int val = PrunTable[i >> 3];
-                if (!inv && val == -1) {
-                    i += 8;
-                    continue;
-                }
-                for (int end = Math.min(i + 8, N_SIZE); i < end; i++, val >>= 4) {
-                    if ((val & 0x0f)/*getPruning(PrunTable, i)*/ != select) {
+            int val = 0;
+            for (int i = 0; i < N_SIZE; i++, val >>= 4) {
+                if ((i & 7) == 0) {
+                    val = PrunTable[i >> 3];
+                    if (!inv && val == -1) {
+                        i += 7;
                         continue;
                     }
-                    int raw = i % N_RAW;
-                    int sym = i / N_RAW;
-                    for (int m = 0; m < N_MOVES; m++) {
-                        int symx = SymMove[sym][moveMap == null ? m : moveMap[m]];
-                        int rawx = RawConj[RawMove[raw][m] & 0x1ff][symx & SYM_MASK];
-                        symx >>>= SYM_SHIFT;
-                        int idx = symx * N_RAW + rawx;
-                        if (getPruning(PrunTable, idx) != check) {
+                }
+                if ((val & 0xf) != select) {
+                    continue;
+                }
+                int raw = i % N_RAW;
+                int sym = i / N_RAW;
+                for (int m = 0; m < N_MOVES; m++) {
+                    int symx = SymMove[sym][moveMap == null ? m : moveMap[m]];
+                    int rawx = RawConj[RawMove[raw][m] & 0x1ff][symx & SYM_MASK];
+                    symx >>>= SYM_SHIFT;
+                    int idx = symx * N_RAW + rawx;
+                    if (getPruning(PrunTable, idx) != check) {
+                        continue;
+                    }
+                    done++;
+                    if (inv) {
+                        setPruning(PrunTable, i, depth);
+                        break;
+                    }
+                    setPruning(PrunTable, idx, depth);
+                    for (int j = 1, symState = SymState[symx]; (symState >>= 1) != 0; j++) {
+                        if ((symState & 1) != 1) {
                             continue;
                         }
-                        done++;
-                        if (inv) {
-                            setPruning(PrunTable, i, depth);
-                            break;
-                        } else {
-                            setPruning(PrunTable, idx, depth);
-                            for (int j = 1, symState = SymState[symx]; (symState >>= 1) != 0; j++) {
-                                if ((symState & 1) != 1) {
-                                    continue;
-                                }
-                                int idxx = symx * N_RAW + RawConj[rawx][j ^ (SymSwitch == null ? 0 : SymSwitch[j])];
-                                if (getPruning(PrunTable, idxx) == 0x0f) {
-                                    setPruning(PrunTable, idxx, depth);
-                                    done++;
-                                }
-                            }
+                        int idxx = symx * N_RAW + RawConj[rawx][j ^ (SymSwitch == null ? 0 : SymSwitch[j])];
+                        if (getPruning(PrunTable, idxx) == 0xf) {
+                            setPruning(PrunTable, idxx, depth);
+                            done++;
                         }
                     }
                 }
             }
-            //          System.out.println(String.format("%2d%10d", depth, done));
+            // System.out.println(String.format("%2d%10d", depth, done));
         }
     }
 
@@ -353,62 +359,57 @@ class CoordCube {
         final int N_RAW = N_TWIST;
         final int N_SYM = N_UDSLICEFLIP_SYM;
         final int N_SIZE = N_RAW * N_SYM;
-        int[][] SymMove = UDSliceFlipMove;
-        char[][] RawMove = TwistMoveF;
-        char[][] RawConj = TwistConj;
-        char[] SymState = CubieCube.SymStateUDSliceFlip;
-        int[] PrunTable = UDSliceFlipTwistPrun = new int[(140908410 + 7) / 8];
+
         for (int i = 0; i < (N_TWIST * N_SYM + 7) / 8; i++) {
-            PrunTable[i] = -1;
+            UDSliceFlipTwistPrun[i] = -1;
         }
-        setPruning(PrunTable, 0, 0);
+        setPruning(UDSliceFlipTwistPrun, 0, 0);
 
         int depth = 0;
         int done = 1;
 
         while (done < N_SIZE) {
             boolean inv = depth > 8;
-            int select = inv ? 0x0f : depth;
-            int check = inv ? depth : 0x0f;
+            int select = inv ? 0xf : depth;
+            int check = inv ? depth : 0xf;
             depth++;
             if (depth >= MAXDEPTH) {
                 break;
             }
             for (int i = 0; i < N_SIZE;) {
-                int val = PrunTable[i >> 3];
+                int val = UDSliceFlipTwistPrun[i >> 3];
                 if (!inv && val == -1) {
                     i += 8;
                     continue;
                 }
                 for (int end = Math.min(i + 8, N_SIZE); i < end; i++, val >>= 4) {
-                    if ((val & 0x0f) != select) {
+                    if ((val & 0xf) != select) {
                         continue;
                     }
                     int raw = i % N_TWIST;
                     int sym = i / N_TWIST;
                     for (int m = 0; m < N_MOVES; m++) {
-                        int symx = SymMove[sym][m];
-                        int rawx = RawConj[RawMove[raw][m]][symx & 0xf];
+                        int symx = UDSliceFlipMove[sym][m];
+                        int rawx = TwistConj[TwistMoveF[raw][m]][symx & 0xf];
                         symx >>>= 4;
                         int idx = symx * N_TWIST + rawx;
-                        if (getPruning(PrunTable, idx) != check) {
+                        if (getPruning(UDSliceFlipTwistPrun, idx) != check) {
                             continue;
                         }
                         done++;
                         if (inv) {
-                            setPruning(PrunTable, i, depth);
+                            setPruning(UDSliceFlipTwistPrun, i, depth);
                             break;
-                        } else {
-                            setPruning(PrunTable, idx, depth);
-                            for (int j = 1, symState = SymState[symx]; (symState >>= 1) != 0; j++) {
-                                if ((symState & 1) != 1) {
-                                    continue;
-                                }
-                                int idxx = symx * N_TWIST + RawConj[rawx][j];
-                                if (getPruning(PrunTable, idxx) == 0x0f) {
-                                    setPruning(PrunTable, idxx, depth);
-                                    done++;
-                                }
+                        }
+                        setPruning(UDSliceFlipTwistPrun, idx, depth);
+                        for (int j = 1, symState = CubieCube.SymStateUDSliceFlip[symx]; (symState >>= 1) != 0; j++) {
+                            if ((symState & 1) != 1) {
+                                continue;
+                            }
+                            int idxx = symx * N_TWIST + TwistConj[rawx][j];
+                            if (getPruning(UDSliceFlipTwistPrun, idxx) == 0xf) {
+                                setPruning(UDSliceFlipTwistPrun, idxx, depth);
+                                done++;
                             }
                         }
                     }
