@@ -34,7 +34,7 @@ Conventional two-phase algorithm only find (sub-)optimal solutions to &lt;U,R2,F
     |   FA--   |   3.7 ms  |  3.8 ms  |  9.1 ms  |
     |   F---   |   3.7 ms  |  3.9 ms  |   32 ms  |
 
-- Initialization Time: 160 ms without TFP table, 240 ms with TFP table.
+- Initialization Time: 160 ms without TFP table, 220 ms with TFP table.
 
 # File Description
 - Tools.java Many useful functions, can be excluded.

@@ -473,7 +473,7 @@ public class Search {
                 int ud_fsymx = CubieCube.Sym8Mult[ud_flipx & 7][ud_fsym];
                 ud_flipx >>>= 3;
 
-                int ud_prun;
+                int ud_prun = 0;
                 if (USE_FULL_PRUN) {
                     ud_prun = CoordCube.getUDSliceFlipSymPrun(ud_twistx, ud_tsymx, ud_flipx, ud_fsymx, ud_slicex);
                     if (ud_prun > maxl) {
@@ -517,7 +517,7 @@ public class Search {
                 int rl_fsymx = CubieCube.Sym8Mult[rl_flipx & 7][rl_fsym];
                 rl_flipx >>>= 3;
 
-                int rl_prun;
+                int rl_prun = 0;
                 if (USE_FULL_PRUN) {
                     rl_prun = CoordCube.getUDSliceFlipSymPrun(rl_twistx, rl_tsymx, rl_flipx, rl_fsymx, rl_slicex);
                     if (rl_prun > maxl) {
@@ -561,7 +561,7 @@ public class Search {
                 int fb_fsymx = CubieCube.Sym8Mult[fb_flipx & 7][fb_fsym];
                 fb_flipx >>>= 3;
 
-                int fb_prun;
+                int fb_prun = 0;
                 if (USE_FULL_PRUN) {
                     fb_prun = CoordCube.getUDSliceFlipSymPrun(fb_twistx, fb_tsymx, fb_flipx, fb_fsymx, fb_slicex);
                 } else {
@@ -664,9 +664,9 @@ public class Search {
         }
 
         int lm = 10;
-        if (depth1 > 2 && move[depth1 - 1] / 3 % 3 == move[depth1 - 2] / 3 % 3) {
+        if (depth1 >= 2 && move[depth1 - 1] / 3 % 3 == move[depth1 - 2] / 3 % 3) {
             lm = Util.std2ud[Math.max(move[depth1 - 1], move[depth1 - 2]) / 3 * 3 + 1];
-        } else if (depth1 > 1) {
+        } else if (depth1 >= 1) {
             lm = Util.std2ud[move[depth1 - 1] / 3 * 3 + 1];
             if (move[depth1 - 1] > Util.Fx3) {
                 lm = -lm;
