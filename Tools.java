@@ -83,6 +83,7 @@ public class Tools {
         read(CoordCube.MCPermPrun, in);
         read(CoordCube.MEPermPrun, in);
         if (Search.USE_TWIST_FLIP_PRUN) {
+            read(CubieCube.FlipS2RF, in);
             read(CoordCube.TwistFlipPrun, in);
         }
         CubieCube.initMove();
@@ -118,8 +119,9 @@ public class Tools {
         write(CoordCube.MEPermPrun, out);       // +  33,216 Bytes
         // = 523,036 Bytes
         if (Search.USE_TWIST_FLIP_PRUN) {
-            write(CoordCube.TwistFlipPrun, out);// + 435,456 Bytes
-        }                                       // = 958,492 Bytes
+            write(CubieCube.FlipS2RF, out);     // +   5,376 Bytes
+            write(CoordCube.TwistFlipPrun, out);// + 331,776 Bytes
+        }                                       // = 860,188 Bytes
     }
 
     /**

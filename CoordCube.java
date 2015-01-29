@@ -6,6 +6,7 @@ class CoordCube {
 
     static final int N_SLICE = 495;
     static final int N_TWIST_SYM = 324;
+    static final int N_FLIP = 2048;
     static final int N_FLIP_SYM = 336;
     static final int N_PERM_SYM = 2768;
     static final int N_MPERM = 24;
@@ -29,7 +30,7 @@ class CoordCube {
     static char[][] UDSliceConj = new char[N_SLICE][8];
     static int[] UDSliceTwistPrun = new int[N_SLICE * N_TWIST_SYM / 8 + 1];
     static int[] UDSliceFlipPrun = new int[N_SLICE * N_FLIP_SYM / 8];
-    static int[] TwistFlipPrun = Search.USE_TWIST_FLIP_PRUN ? new int[N_FLIP_SYM * N_TWIST_SYM * 8 / 8] : null;
+    static int[] TwistFlipPrun = Search.USE_TWIST_FLIP_PRUN ? new int[N_FLIP * N_TWIST_SYM / 8] : null;
 
     //phase2
     static char[][] CPermMove = new char[N_PERM_SYM][N_MOVES];
@@ -176,17 +177,16 @@ class CoordCube {
 
     static void initTwistFlipPrun() {
         int depth = 0;
-        int done = 8;
+        int done = 1;
         boolean inv;
         int select;
         int check;
-        final int N_SIZE = N_FLIP_SYM * N_TWIST_SYM * 8;
-        for (int i = 0; i < N_FLIP_SYM * N_TWIST_SYM * 8 / 8; i++) {
+        final int N_SIZE = N_FLIP * N_TWIST_SYM;
+        for (int i = 0; i < N_SIZE / 8; i++) {
             TwistFlipPrun[i] = -1;
         }
-        for (int i = 0; i < 8; i++) {
-            setPruning(TwistFlipPrun, i, 0);
-        }
+        setPruning(TwistFlipPrun, 0, 0);
+
         while (done < N_SIZE) {
             inv = depth > 6;
             select = inv ? 0xf : depth;
@@ -204,9 +204,9 @@ class CoordCube {
                 if ((val & 0xf) != select) {
                     continue;
                 }
-                int twist = i / 2688;
-                int flip = i % 2688;
-                int fsym = i & 7;
+                int twist = i >> 11;
+                int flip = CubieCube.FlipR2S[i & 0x7ff];
+                int fsym = flip & 7;
                 flip >>>= 3;
                 for (int m = 0; m < N_MOVES; m++) {
                     int twistx = TwistMove[twist][m];
@@ -215,7 +215,7 @@ class CoordCube {
                     int flipx = FlipMove[flip][CubieCube.Sym8Move[fsym][m]];
                     int fsymx = CubieCube.Sym8MultInv[CubieCube.Sym8Mult[flipx & 7][fsym]][tsymx];
                     flipx >>>= 3;
-                    int idx = ((twistx * 336 + flipx) << 3 | fsymx);
+                    int idx = twistx << 11 | CubieCube.FlipS2RF[flipx << 3 | fsymx];
                     if (getPruning(TwistFlipPrun, idx) != check) {
                         continue;
                     }
@@ -226,29 +226,22 @@ class CoordCube {
                     }
                     setPruning(TwistFlipPrun, idx, depth);
                     char sym = CubieCube.SymStateTwist[twistx];
-                    char symF = CubieCube.SymStateFlip[flipx];
-                    if (sym == 1 && symF == 1) {
+                    if (sym == 1) {
                         continue;
                     }
-                    for (int j = 0; j < 8; j++, symF >>= 1) {
-                        if ((symF & 1) != 1) {
+                    for (int k = 0; k < 8; k++) {
+                        if ((sym & (1 << k)) == 0) {
                             continue;
                         }
-                        int fsymxx = CubieCube.Sym8MultInv[fsymx][j];
-                        for (int k = 0; k < 8; k++) {
-                            if ((sym & (1 << k)) == 0) {
-                                continue;
-                            }
-                            int idxx = twistx * 2688 + (flipx << 3 | CubieCube.Sym8MultInv[fsymxx][k]);
-                            if (getPruning(TwistFlipPrun, idxx) == 0xf) {
-                                setPruning(TwistFlipPrun, idxx, depth);
-                                done++;
-                            }
+                        int idxx = twistx << 11 | CubieCube.FlipS2RF[flipx << 3 | CubieCube.Sym8MultInv[fsymx][k]];
+                        if (getPruning(TwistFlipPrun, idxx) == 0xf) {
+                            setPruning(TwistFlipPrun, idxx, depth);
+                            done++;
                         }
                     }
                 }
             }
-            //          System.out.println(String.format("%2d%10d", depth, done));
+            // System.out.println(String.format("%2d%10d", depth, done));
         }
     }
 
