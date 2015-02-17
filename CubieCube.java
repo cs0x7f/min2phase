@@ -48,6 +48,7 @@ class CubieCube {
     static char[] TwistR2S;// = new char[2187];
     static char[] EPermR2S;// = new char[40320];
     static char[] FlipS2RF = Search.USE_TWIST_FLIP_PRUN ? new char[336 * 8] : null;
+    static char[] TwistS2RF = Search.USE_FULL_PRUN ? new char[324 * 8] : null;
 
     /**
      *
@@ -536,6 +537,9 @@ class CubieCube {
                     }
                     occ[idx >> 5] |= 1 << (idx & 0x1f);
                     TwistR2S[idx] = (char) ((count << 3) | (s >> 1));
+                    if (Search.USE_FULL_PRUN) {
+                        TwistS2RF[(count << 3) | (s >> 1)] = (char) idx;
+                    }
                 }
                 TwistS2R[count++] = (char) i;
             }

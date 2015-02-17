@@ -78,13 +78,21 @@ public class Tools {
         read(CoordCube.EPermMove, in);
         read(CoordCube.MPermMove, in);
         read(CoordCube.MPermConj, in);
-        read(CoordCube.UDSliceTwistPrun, in);
-        read(CoordCube.UDSliceFlipPrun, in);
         read(CoordCube.MCPermPrun, in);
         read(CoordCube.MEPermPrun, in);
-        if (Search.USE_TWIST_FLIP_PRUN) {
-            read(CubieCube.FlipS2RF, in);
-            read(CoordCube.TwistFlipPrun, in);
+        if (Search.USE_FULL_PRUN) {
+            read(CubieCube.UDSliceFlipS2R, in);
+            read(CubieCube.TwistS2RF, in);
+            read(CoordCube.TwistConj, in);
+            read(CoordCube.FlipSlice2UDSliceFlip, in);
+            read(CoordCube.UDSliceFlipTwistPrun, in);
+        } else {
+            read(CoordCube.UDSliceTwistPrun, in);
+            read(CoordCube.UDSliceFlipPrun, in);
+            if (Search.USE_TWIST_FLIP_PRUN) {
+                read(CubieCube.FlipS2RF, in);
+                read(CoordCube.TwistFlipPrun, in);
+            }
         }
         CubieCube.initMove();
         CubieCube.initSym();
@@ -101,27 +109,34 @@ public class Tools {
      */
     public static void saveTo(DataOutput out) throws IOException {
         Search.init();
-        write(CubieCube.FlipS2R, out);          //       672 Bytes
-        write(CubieCube.TwistS2R, out);         // +     648 Bytes
-        write(CubieCube.EPermS2R, out);         // +   5,536 Bytes
-        write(CubieCube.MtoEPerm, out);         // +  80,640 Bytes
-        write(CoordCube.TwistMove, out);        // +  11,664 Bytes
-        write(CoordCube.FlipMove, out);         // +  12,096 Bytes
-        write(CoordCube.UDSliceMove, out);      // +  17,820 Bytes
-        write(CoordCube.UDSliceConj, out);      // +   7,920 Bytes
-        write(CoordCube.CPermMove, out);        // +  99,648 Bytes
-        write(CoordCube.EPermMove, out);        // +  55,360 Bytes
-        write(CoordCube.MPermMove, out);        // +     480 Bytes
-        write(CoordCube.MPermConj, out);        // +     768 Bytes
-        write(CoordCube.UDSliceTwistPrun, out); // +  80,192 Bytes
-        write(CoordCube.UDSliceFlipPrun, out);  // +  83,160 Bytes
-        write(CoordCube.MCPermPrun, out);       // +  33,216 Bytes
-        write(CoordCube.MEPermPrun, out);       // +  33,216 Bytes
-        // = 523,036 Bytes
-        if (Search.USE_TWIST_FLIP_PRUN) {
-            write(CubieCube.FlipS2RF, out);     // +   5,376 Bytes
-            write(CoordCube.TwistFlipPrun, out);// + 331,776 Bytes
-        }                                       // = 860,188 Bytes
+        write(CubieCube.FlipS2R, out);                  //          672
+        write(CubieCube.TwistS2R, out);                 // +        648
+        write(CubieCube.EPermS2R, out);                 // +      5,536
+        write(CubieCube.MtoEPerm, out);                 // +     80,640
+        write(CoordCube.TwistMove, out);                // +     11,664
+        write(CoordCube.FlipMove, out);                 // +     12,096
+        write(CoordCube.UDSliceMove, out);              // +     17,820
+        write(CoordCube.UDSliceConj, out);              // +      7,920
+        write(CoordCube.CPermMove, out);                // +     99,648
+        write(CoordCube.EPermMove, out);                // +     55,360
+        write(CoordCube.MPermMove, out);                // +        480
+        write(CoordCube.MPermConj, out);                // +        768
+        write(CoordCube.MCPermPrun, out);               // +     33,216
+        write(CoordCube.MEPermPrun, out);               // +     33,216
+        if (Search.USE_FULL_PRUN) {
+            write(CubieCube.UDSliceFlipS2R, out);       // +    257,720
+            write(CubieCube.TwistS2RF, out);            // +      5,184
+            write(CoordCube.TwistConj, out);            // +     69,984
+            write(CoordCube.FlipSlice2UDSliceFlip, out);// +    665,280
+            write(CoordCube.UDSliceFlipTwistPrun, out); // + 35,227,104
+        } else {                                        // = 36,584,956 Bytes
+            write(CoordCube.UDSliceTwistPrun, out);     // +     80,192
+            write(CoordCube.UDSliceFlipPrun, out);      // +     83,160
+            if (Search.USE_TWIST_FLIP_PRUN) {           // =    523,036 Bytes
+                write(CubieCube.FlipS2RF, out);         // +      5,376
+                write(CoordCube.TwistFlipPrun, out);    // +    331,776
+            }                                           // =    860,188 Bytes
+        }
     }
 
     /**
