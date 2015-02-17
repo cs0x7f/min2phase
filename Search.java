@@ -242,11 +242,6 @@ public class Search {
         CoordCube.initEPermMove();
         CoordCube.initMPermMoveConj();
 
-        if (USE_TWIST_FLIP_PRUN) {
-            CoordCube.initTwistFlipPrun();
-        }
-        CoordCube.initSliceTwistPrun();
-        CoordCube.initSliceFlipPrun();
         CoordCube.initMEPermPrun();
         CoordCube.initMCPermPrun();
 
@@ -256,6 +251,12 @@ public class Search {
             CoordCube.initUDSliceFlipMove();
             CoordCube.initTwistMoveConj();
             CoordCube.initUDSliceFlipTwistPrun();
+        } else {
+            if (USE_TWIST_FLIP_PRUN) {
+                CoordCube.initTwistFlipPrun();
+            }
+            CoordCube.initSliceTwistPrun();
+            CoordCube.initSliceFlipPrun();
         }
 
         inited = true;
@@ -293,7 +294,7 @@ public class Search {
 
     private void fillprun(int i, int j) {
         if (USE_FULL_PRUN) {
-            prun[i][j] = CoordCube.getUDSliceFlipSymPrun(twist[i][j] >>> 3, twist[i][j] & 7, flip[i][j] >>> 3, flip[i][j] & 7, slice[i][j] & 0x1ff);
+            prun[i][j] = CoordCube.getUDSliceFlipTwistPrun(twist[i][j] >>> 3, twist[i][j] & 7, flip[i][j] >>> 3, flip[i][j] & 7, slice[i][j] & 0x1ff);
         } else {
             prun[i][j] = Math.max(
                              Math.max(
@@ -379,8 +380,8 @@ public class Search {
                 int prunx;
 
                 if (USE_FULL_PRUN) {
-                    prunx = CoordCube.getUDSliceFlipSymPrun(twistx, tsymx, flipx, fsymx, slicex, prun);
-                    // prun = CoordCube.getUDSliceFlipSymPrun(twistx, tsymx, flipx, fsymx, slicex);
+                    prunx = CoordCube.getUDSliceFlipTwistPrun(twistx, tsymx, flipx, fsymx, slicex, prun);
+                    // prun = CoordCube.getUDSliceFlipTwistPrun(twistx, tsymx, flipx, fsymx, slicex);
                     if (prunx > maxl) {
                         break;
                     } else if (prunx == maxl) {
@@ -493,7 +494,7 @@ public class Search {
 
                 int ud_prunx = 0;
                 if (USE_FULL_PRUN) {
-                    ud_prunx = CoordCube.getUDSliceFlipSymPrun(ud_twistx, ud_tsymx, ud_flipx, ud_fsymx, ud_slicex, ud_prun);
+                    ud_prunx = CoordCube.getUDSliceFlipTwistPrun(ud_twistx, ud_tsymx, ud_flipx, ud_fsymx, ud_slicex, ud_prun);
                     if (ud_prunx > maxl) {
                         break;
                     } else if (ud_prunx == maxl) {
@@ -537,7 +538,7 @@ public class Search {
 
                 int rl_prunx = 0;
                 if (USE_FULL_PRUN) {
-                    rl_prunx = CoordCube.getUDSliceFlipSymPrun(rl_twistx, rl_tsymx, rl_flipx, rl_fsymx, rl_slicex, rl_prun);
+                    rl_prunx = CoordCube.getUDSliceFlipTwistPrun(rl_twistx, rl_tsymx, rl_flipx, rl_fsymx, rl_slicex, rl_prun);
                     if (rl_prunx > maxl) {
                         break;
                     } else if (rl_prunx == maxl) {
@@ -581,7 +582,7 @@ public class Search {
 
                 int fb_prunx = 0;
                 if (USE_FULL_PRUN) {
-                    fb_prunx = CoordCube.getUDSliceFlipSymPrun(fb_twistx, fb_tsymx, fb_flipx, fb_fsymx, fb_slicex, fb_prun);
+                    fb_prunx = CoordCube.getUDSliceFlipTwistPrun(fb_twistx, fb_tsymx, fb_flipx, fb_fsymx, fb_slicex, fb_prun);
                 } else {
                     if (USE_TWIST_FLIP_PRUN) {
                         fb_prunx = CoordCube.getPruning(CoordCube.TwistFlipPrun,

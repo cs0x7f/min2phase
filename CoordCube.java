@@ -351,8 +351,8 @@ class CoordCube {
 
     private static final int MAXDEPTH = 16;
 
-    static int getUDSliceFlipSymPrun(int twist, int tsym, int flip, int fsym, int slice) {
-        int nextpm3 = getUDSliceFlipSymPrunMod3(twist, tsym, flip, fsym, slice);
+    static int getUDSliceFlipTwistPrun(int twist, int tsym, int flip, int fsym, int slice) {
+        int nextpm3 = getUDSliceFlipTwistPrunMod3(twist, tsym, flip, fsym, slice);
         if (nextpm3 == 0x3) {
             return MAXDEPTH;
         }
@@ -371,7 +371,7 @@ class CoordCube {
                 int fsymx = CubieCube.Sym8Mult[flipx & 7][fsym];
                 flipx >>>= 3;
 
-                if (nextpm3 == getUDSliceFlipSymPrunMod3(twistx, tsymx, flipx, fsymx, slicex)) {
+                if (nextpm3 == getUDSliceFlipTwistPrunMod3(twistx, tsymx, flipx, fsymx, slicex)) {
                     twist = twistx;
                     tsym = tsymx;
                     flip = flipx;
@@ -384,7 +384,7 @@ class CoordCube {
         return prun;
     }
 
-    static int getUDSliceFlipSymPrunMod3(int twist, int tsym, int flip, int fsym, int slice) {
+    static int getUDSliceFlipTwistPrunMod3(int twist, int tsym, int flip, int fsym, int slice) {
         int udsliceflip = fs2sf[flip * 495 + UDSliceConj[slice][fsym]];
         int twistr = twist2raw[twist << 3 | CubieCube.Sym8MultInv[fsym][tsym]];
         int udsfsym = udsliceflip & 0xf;
@@ -392,8 +392,8 @@ class CoordCube {
         return getPruning2(UDSliceFlipTwistPrun, udsliceflip * 2187 + TwistConj[twistr][udsfsym]);
     }
 
-    static int getUDSliceFlipSymPrun(int twist, int tsym, int flip, int fsym, int slice, int prun) {
-        int prunm3 = getUDSliceFlipSymPrunMod3(twist, tsym, flip, fsym, slice);
+    static int getUDSliceFlipTwistPrun(int twist, int tsym, int flip, int fsym, int slice, int prun) {
+        int prunm3 = getUDSliceFlipTwistPrunMod3(twist, tsym, flip, fsym, slice);
         // prun = (prunm3 - prun + 16) % 3 + prun - 1;
         return prunm3 == 0x3 ? MAXDEPTH : ((0x24924924 >> prun - prunm3 + 2) & 3) + prun - 1;
     }
