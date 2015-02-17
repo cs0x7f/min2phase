@@ -5,83 +5,7 @@ import cs.min2phase.Search;
 
 public class test {
 
-    static int[] fact = {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800, 39916800, 479001600};
-
-    static void set8Perm(byte[] arr, int idx) {
-        int val = 0x76543210;
-        for (int i = 0; i < 7; i++) {
-            int p = fact[7 - i];
-            int v = idx / p;
-            idx -= v * p;
-            v <<= 2;
-            arr[i] = (byte) ((val >> v) & 0xf);
-            int m = (1 << v) - 1;
-            val = (val & m) + ((val >> 4) & ~m);
-        }
-        arr[7] = (byte)val;
-    }
-
-
-    static int get8Perm(byte[] arr) {
-        int idx = arr[0];
-        int val = 0x76543210 - (0x11111110 << (idx << 2));
-        for (int i = 1; i < 7; i++) {
-            int v = arr[i] << 2;
-            val -= 0x11111110 << v;
-            idx = (8 - i) * idx + ((val >> v) & 0xf);
-        }
-        return idx;
-    }
-
-    static void set8PermX(byte[] arr, int idx) {
-        int val = 0x76543210;
-        for (int i = 8; i > 1; i--) {
-            int v = (idx % i) << 2;
-            idx /= i;
-            arr[8 - i] = (byte) ((val >> v) & 0xf);
-            int m = (1 << v) - 1;
-            val = (val & m) + ((val >> 4) & ~m);
-        }
-        arr[7] = (byte)val;
-    }
-
-    static int get8PermX(byte[] arr) {
-        int idx = 0;
-        int val = 0x11111110 << (arr[7] << 2);
-        for (int i = 6; i >= 0; i--) {
-            int v = arr[i] << 2;
-            idx = (8 - i) * idx + ((val >> v) & 0xf);
-            val += 0x11111110 << v;
-        }
-        return idx;
-    }
-
     static void other() {
-        for (int ix = 0; ix < 100; ix++) {
-            byte[] cp = {0, 1, 2, 3, 4, 5, 6, 7};
-            byte[] co = {0, 0, 0, 0, 0, 0, 0, 0};
-            byte[] ep = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
-            byte[] eo = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
-            //          Tools.randomState(cp, co, ep, eo);
-
-            for (int i = 0; i < 8; ++i) {
-                System.out.print(String.format("%2s", cp[i]));
-            }
-            System.out.print("\t");
-            for (int i = 0; i < 8; ++i) {
-                System.out.print(String.format("%2s", co[i]));
-            }
-            System.out.print("\t");
-            for (int i = 0; i < 12; ++i) {
-                System.out.print(String.format("%3s", ep[i]));
-            }
-            System.out.print("\t");
-            for (int i = 0; i < 12; ++i) {
-                System.out.print(String.format("%2s", eo[i]));
-            }
-            System.out.println();
-        }
     }
 
     static int testOptimal(int maxl, int length, int[] arr, int lm, Search search, int verbose) {
@@ -114,7 +38,7 @@ public class test {
             int axis = 0;
             do {
                 axis = gen.nextInt(6) * 3;
-            } while (i != 0 && (axis == arr[i - 1] || axis == arr[i - 1] - 9));
+            } while (i != 0 && (axis == arr[i - 1] / 3 * 3 || axis == arr[i - 1] / 3 * 3 - 9));
             int pow = gen.nextInt(3);
             arr[i] = axis + pow;
         }
@@ -261,7 +185,7 @@ public class test {
             n_test = 10;
             curTime = System.nanoTime();
             for (int i = 0; i < depth20.length; i++) {
-                sol = search.solution(Tools.fromScramble(depth20[0]), 20, 100000, 0, 0);
+                sol = search.solution(Tools.fromScramble(depth20[i]), 20, 100000, 0, 0);
             }
             System.out.println(String.format("OK, Random %d Cube(s) Solved. AvgTime: %1.3f ms.", n_test, (System.nanoTime() - curTime) / 1000000d / n_test));
         }

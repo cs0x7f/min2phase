@@ -21,7 +21,7 @@ class CoordCube {
     static int[][] UDSliceFlipMove = Search.USE_FULL_PRUN ? new int[N_UDSLICEFLIP_SYM][N_MOVES] : null;
     static char[][] TwistMoveF = Search.USE_FULL_PRUN ? new char[N_TWIST][N_MOVES] : null;
     static char[][] TwistConj = Search.USE_FULL_PRUN ? new char[N_TWIST][16] : null;
-    static int[] UDSliceFlipTwistPrun = Search.USE_FULL_PRUN ? new int[N_UDSLICEFLIP_SYM * N_TWIST / 8 + 1] : null;
+    static int[] UDSliceFlipTwistPrun = Search.USE_FULL_PRUN ? new int[N_UDSLICEFLIP_SYM * N_TWIST / 16 + 1] : null;
 
     //phase1
     static char[][] UDSliceMove = new char[N_SLICE][N_MOVES];
@@ -46,6 +46,14 @@ class CoordCube {
 
     static int getPruning(int[] table, int index) {
         return (table[index >> 3] >> ((index & 7) << 2)) & 0xf;
+    }
+
+    static void setPruning2(int[] table, int index, int value) {
+        table[index >> 4] ^= (0x3 ^ value) << ((index & 0xf) << 1);
+    }
+
+    static int getPruning2(int[] table, int index) {
+        return (table[index >> 4] >> ((index & 0xf) << 1)) & 0x3;
     }
 
     static void initUDSliceMoveConj() {
@@ -145,7 +153,13 @@ class CoordCube {
             c.setUDSliceFlip(CubieCube.UDSliceFlipS2R[i]);
             for (int j = 0; j < N_MOVES; j++) {
                 CubieCube.EdgeMult(c, CubieCube.moveCube[j], d);
-                UDSliceFlipMove[i][j] = d.getUDSliceFlipSym();
+                // UDSliceFlipMove[i][j] = d.getUDSliceFlipSym();
+
+                int flip = d.getFlipSym();
+                int fsym = flip & 0x7;
+                flip >>= 3;
+                int udsliceflip = fs2sf[flip * 495 + UDSliceConj[d.getUDSlice() & 0x1ff][fsym]];
+                UDSliceFlipMove[i][j] = udsliceflip & 0xfffffff0 | CubieCube.SymMult[udsliceflip & 0xf][fsym << 1];
             }
         }
     }
@@ -338,45 +352,81 @@ class CoordCube {
     private static final int MAXDEPTH = 16;
 
     static int getUDSliceFlipSymPrun(int twist, int tsym, int flip, int fsym, int slice) {
+        int nextpm3 = getUDSliceFlipSymPrunMod3(twist, tsym, flip, fsym, slice);
+        if (nextpm3 == 0x3) {
+            return MAXDEPTH;
+        }
+        int prun = 0;
+        while (twist != 0 || flip != 0 || slice != 0) {
+            ++prun;
+            nextpm3 = (nextpm3 + 2) % 3;
+            for (int m = 0; m < 18; m++) {
+                int slicex = CoordCube.UDSliceMove[slice][m] & 0x1ff;
+
+                int twistx = CoordCube.TwistMove[twist][CubieCube.Sym8Move[tsym][m]];
+                int tsymx = CubieCube.Sym8Mult[twistx & 7][tsym];
+                twistx >>>= 3;
+
+                int flipx = CoordCube.FlipMove[flip][CubieCube.Sym8Move[fsym][m]];
+                int fsymx = CubieCube.Sym8Mult[flipx & 7][fsym];
+                flipx >>>= 3;
+
+                if (nextpm3 == getUDSliceFlipSymPrunMod3(twistx, tsymx, flipx, fsymx, slicex)) {
+                    twist = twistx;
+                    tsym = tsymx;
+                    flip = flipx;
+                    fsym = fsymx;
+                    slice = slicex;
+                    break;
+                }
+            }
+        }
+        return prun;
+    }
+
+    static int getUDSliceFlipSymPrunMod3(int twist, int tsym, int flip, int fsym, int slice) {
         int udsliceflip = fs2sf[flip * 495 + UDSliceConj[slice][fsym]];
         int twistr = twist2raw[twist << 3 | CubieCube.Sym8MultInv[fsym][tsym]];
         int udsfsym = udsliceflip & 0xf;
         udsliceflip >>= 4;
+        return getPruning2(UDSliceFlipTwistPrun, udsliceflip * 2187 + TwistConj[twistr][udsfsym]);
+    }
 
-        int prun = getPruning(UDSliceFlipTwistPrun, udsliceflip * 2187 + TwistConj[twistr][udsfsym]);
-        return prun == 0xf ? MAXDEPTH : prun;
+    static int getUDSliceFlipSymPrun(int twist, int tsym, int flip, int fsym, int slice, int prun) {
+        int prunm3 = getUDSliceFlipSymPrunMod3(twist, tsym, flip, fsym, slice);
+        // prun = (prunm3 - prun + 16) % 3 + prun - 1;
+        return prunm3 == 0x3 ? MAXDEPTH : ((0x24924924 >> prun - prunm3 + 2) & 3) + prun - 1;
     }
 
     static void initUDSliceFlipTwistPrun() {
 
-        final int N_RAW = N_TWIST;
-        final int N_SYM = N_UDSLICEFLIP_SYM;
-        final int N_SIZE = N_RAW * N_SYM;
+        final int N_SIZE = N_TWIST * N_UDSLICEFLIP_SYM;
 
-        for (int i = 0; i < (N_TWIST * N_SYM + 7) / 8; i++) {
+        for (int i = 0; i < (N_SIZE + 15) / 16; i++) {
             UDSliceFlipTwistPrun[i] = -1;
         }
-        setPruning(UDSliceFlipTwistPrun, 0, 0);
+        setPruning2(UDSliceFlipTwistPrun, 0, 0);
 
         int depth = 0;
         int done = 1;
 
         while (done < N_SIZE) {
             boolean inv = depth > 8;
-            int select = inv ? 0xf : depth;
-            int check = inv ? depth : 0xf;
+            int select = inv ? 0x3 : depth % 3;
+            int check = inv ? depth % 3 : 0x3;
             depth++;
+            int depm3 = depth % 3;
             if (depth >= MAXDEPTH) {
                 break;
             }
             for (int i = 0; i < N_SIZE;) {
-                int val = UDSliceFlipTwistPrun[i >> 3];
+                int val = UDSliceFlipTwistPrun[i >> 4];
                 if (!inv && val == -1) {
-                    i += 8;
+                    i += 16;
                     continue;
                 }
-                for (int end = Math.min(i + 8, N_SIZE); i < end; i++, val >>= 4) {
-                    if ((val & 0xf) != select) {
+                for (int end = Math.min(i + 16, N_SIZE); i < end; i++, val >>= 2) {
+                    if ((val & 0x3) != select) {
                         continue;
                     }
                     int raw = i % N_TWIST;
@@ -386,22 +436,22 @@ class CoordCube {
                         int rawx = TwistConj[TwistMoveF[raw][m]][symx & 0xf];
                         symx >>>= 4;
                         int idx = symx * N_TWIST + rawx;
-                        if (getPruning(UDSliceFlipTwistPrun, idx) != check) {
+                        if (getPruning2(UDSliceFlipTwistPrun, idx) != check) {
                             continue;
                         }
                         done++;
                         if (inv) {
-                            setPruning(UDSliceFlipTwistPrun, i, depth);
+                            setPruning2(UDSliceFlipTwistPrun, i, depm3);
                             break;
                         }
-                        setPruning(UDSliceFlipTwistPrun, idx, depth);
+                        setPruning2(UDSliceFlipTwistPrun, idx, depm3);
                         for (int j = 1, symState = CubieCube.SymStateUDSliceFlip[symx]; (symState >>= 1) != 0; j++) {
                             if ((symState & 1) != 1) {
                                 continue;
                             }
                             int idxx = symx * N_TWIST + TwistConj[rawx][j];
-                            if (getPruning(UDSliceFlipTwistPrun, idxx) == 0xf) {
-                                setPruning(UDSliceFlipTwistPrun, idxx, depth);
+                            if (getPruning2(UDSliceFlipTwistPrun, idxx) == 0x3) {
+                                setPruning2(UDSliceFlipTwistPrun, idxx, depm3);
                                 done++;
                             }
                         }
@@ -410,20 +460,7 @@ class CoordCube {
             }
             System.out.println(String.format("%2d%10d", depth, done));
         }
-
-        // for (int i=0; i<140908410/5; i++) {
-        //     int n = 1;
-        //     int value = 0;
-        //     for (int j=0; j<4; j++) {
-        //         value += n * (getPruning(UDSliceFlipTwistPrun, 4*i+j) % 3);
-        //         n *= 3;
-        //     }
-        //     value += n * (getPruning(UDSliceFlipTwistPrun, 140908410/5*4+i) % 3);
-        //     UDSliceFlipTwistPrunP[i] = (byte) value;
-        // }
-        // UDSliceFlipTwistPrun = null;
     }
-
 
     static void initSliceTwistPrun() {
         initRawSymPrun(
