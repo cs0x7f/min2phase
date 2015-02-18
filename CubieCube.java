@@ -14,6 +14,8 @@ class CubieCube {
      */
     static CubieCube[] moveCube = new CubieCube[18];
 
+    static CubieCube[] preList = null;
+
     static int[] SymInv = new int[16];
     static int[][] SymMult = new int[16][16];
     static int[][] SymMove = new int[16][18];
@@ -416,6 +418,11 @@ class CubieCube {
                 CornMult(moveCube[a + p], moveCube[a], moveCube[a + p + 1]);
             }
         }
+        preList = new CubieCube[] {
+            new CubieCube(), CubieCube.moveCube[3], CubieCube.moveCube[5],
+            CubieCube.moveCube[6], CubieCube.moveCube[8], CubieCube.moveCube[12],
+            CubieCube.moveCube[14], CubieCube.moveCube[15], CubieCube.moveCube[17]
+        };
     }
 
     static void initSym() {

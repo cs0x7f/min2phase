@@ -203,7 +203,7 @@ class Util {
             int l = 0;
             int r = length - 1;
             while (l <= r) {
-                int mid = (l + r) >>> 1;
+                int mid = (l + r) >> 1;
                 char val = arr[mid];
                 if (key > val) {
                     l = mid + 1;
@@ -223,7 +223,7 @@ class Util {
             int l = 0;
             int r = length - 1;
             while (l <= r) {
-                int mid = (l + r) >>> 1;
+                int mid = (l + r) >> 1;
                 int val = arr[mid];
                 if (key > val) {
                     l = mid + 1;
@@ -312,7 +312,7 @@ class Util {
     static void setComb(byte[] arr, int idx, int mask) {
         int r = 4, fill = 11, val = 0x123;
         int idxC = 494 - (idx & 0x1ff);
-        int idxP = idx >>> 9;
+        int idxP = idx >> 9;
         for (int i = 11; i >= 0; i--) {
             if (idxC >= Cnk[i][r]) {
                 idxC -= Cnk[i][r--];

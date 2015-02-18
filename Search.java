@@ -162,18 +162,20 @@ public class Search {
 
         init();
 
+        initSearch();
+
+        return (verbose & OPTIMAL_SOLUTION) == 0 ? search() : searchopt();
+    }
+
+    private void initSearch() {
         conjMask = (TRY_INVERSE ? 0 : 0x38) | (TRY_THREE_AXES ? 0 : 0x36);
         CubieCube pc = new CubieCube();
-        CubieCube[] preList = new CubieCube[] {
-            new CubieCube(), CubieCube.moveCube[3], CubieCube.moveCube[5],
-            CubieCube.moveCube[6], CubieCube.moveCube[8], CubieCube.moveCube[12],
-            CubieCube.moveCube[14], CubieCube.moveCube[15], CubieCube.moveCube[17]
-        };
+
         for (int i = 0; i < 6; i++) {
 
             for (int j = 0; j < PRE_IDX_MAX; j++) {
-                CubieCube.CornMult(preList[j], cc, pc);
-                CubieCube.EdgeMult(preList[j], cc, pc);
+                CubieCube.CornMult(CubieCube.preList[j], cc, pc);
+                CubieCube.EdgeMult(CubieCube.preList[j], cc, pc);
                 twist[i][j] = pc.getTwistSym();
                 flip[i][j] = pc.getFlipSym();
                 slice[i][j] = pc.getUDSlice();
@@ -203,7 +205,6 @@ public class Search {
                 fillprun(i, j);
             }
         }
-        return (verbose & OPTIMAL_SOLUTION) == 0 ? search() : searchopt();
     }
 
     public synchronized String next(long probeMax, long probeMin, int verbose) {
@@ -294,16 +295,16 @@ public class Search {
 
     private void fillprun(int i, int j) {
         if (USE_FULL_PRUN) {
-            prun[i][j] = CoordCube.getUDSliceFlipTwistPrun(twist[i][j] >>> 3, twist[i][j] & 7, flip[i][j] >>> 3, flip[i][j] & 7, slice[i][j] & 0x1ff);
+            prun[i][j] = CoordCube.getUDSliceFlipTwistPrun(twist[i][j] >> 3, twist[i][j] & 7, flip[i][j] >> 3, flip[i][j] & 7, slice[i][j] & 0x1ff);
         } else {
             prun[i][j] = Math.max(
                              Math.max(
                                  CoordCube.getPruning(CoordCube.UDSliceTwistPrun,
-                                         (twist[i][j] >>> 3) * 495 + CoordCube.UDSliceConj[slice[i][j] & 0x1ff][twist[i][j] & 7]),
+                                         (twist[i][j] >> 3) * 495 + CoordCube.UDSliceConj[slice[i][j] & 0x1ff][twist[i][j] & 7]),
                                  CoordCube.getPruning(CoordCube.UDSliceFlipPrun,
-                                         (flip[i][j] >>> 3) * 495 + CoordCube.UDSliceConj[slice[i][j] & 0x1ff][flip[i][j] & 7])),
+                                         (flip[i][j] >> 3) * 495 + CoordCube.UDSliceConj[slice[i][j] & 0x1ff][flip[i][j] & 7])),
                              USE_TWIST_FLIP_PRUN ? CoordCube.getPruning(CoordCube.TwistFlipPrun,
-                                     (twist[i][j] >>> 3) << 11 | CubieCube.FlipS2RF[flip[i][j] & 0xfff8 | CubieCube.Sym8MultInv[flip[i][j] & 7][twist[i][j] & 7]]) : 0);
+                                     (twist[i][j] >> 3) << 11 | CubieCube.FlipS2RF[flip[i][j] & 0xfff8 | CubieCube.Sym8MultInv[flip[i][j] & 7][twist[i][j] & 7]]) : 0);
         }
     }
 
@@ -323,8 +324,8 @@ public class Search {
                     }
                     depth1 = length1 - (preIdx == 0 ? 0 : 1);
                     if ((prun[urfIdx][preIdx] <= depth1) &&
-                            phase1(twist[urfIdx][preIdx] >>> 3, twist[urfIdx][preIdx] & 7,
-                                   flip[urfIdx][preIdx] >>> 3, flip[urfIdx][preIdx] & 7,
+                            phase1(twist[urfIdx][preIdx] >> 3, twist[urfIdx][preIdx] & 7,
+                                   flip[urfIdx][preIdx] >> 3, flip[urfIdx][preIdx] & 7,
                                    slice[urfIdx][preIdx] & 0x1ff, prun[urfIdx][preIdx], depth1, -1) == 0) {
                         return solution == null ? "Error 8" : solution;
                     }
@@ -371,11 +372,11 @@ public class Search {
 
                 int twistx = CoordCube.TwistMove[twist][CubieCube.Sym8Move[tsym][m]];
                 int tsymx = CubieCube.Sym8Mult[twistx & 7][tsym];
-                twistx >>>= 3;
+                twistx >>= 3;
 
                 int flipx = CoordCube.FlipMove[flip][CubieCube.Sym8Move[fsym][m]];
                 int fsymx = CubieCube.Sym8Mult[flipx & 7][fsym];
-                flipx >>>= 3;
+                flipx >>= 3;
 
                 int prunx;
 
@@ -444,9 +445,9 @@ public class Search {
         preIdx = 0;
         for (length1 = isRecovery ? length1 : 0; length1 < sol; length1++) {
             if (prun[0][0] <= length1 && prun[1][0] <= length1 && prun[2][0] <= length1 &&
-                    phase1opt(twist[0 + urfIdx][0] >>> 3, twist[0 + urfIdx][0] & 7, flip[0 + urfIdx][0] >>> 3, flip[0 + urfIdx][0] & 7, slice[0 + urfIdx][0] & 0x1ff, prun[0 + urfIdx][0],
-                              twist[1 + urfIdx][0] >>> 3, twist[1 + urfIdx][0] & 7, flip[1 + urfIdx][0] >>> 3, flip[1 + urfIdx][0] & 7, slice[1 + urfIdx][0] & 0x1ff, prun[1 + urfIdx][0],
-                              twist[2 + urfIdx][0] >>> 3, twist[2 + urfIdx][0] & 7, flip[2 + urfIdx][0] >>> 3, flip[2 + urfIdx][0] & 7, slice[2 + urfIdx][0] & 0x1ff, prun[2 + urfIdx][0],
+                    phase1opt(twist[0 + urfIdx][0] >> 3, twist[0 + urfIdx][0] & 7, flip[0 + urfIdx][0] >> 3, flip[0 + urfIdx][0] & 7, slice[0 + urfIdx][0] & 0x1ff, prun[0 + urfIdx][0],
+                              twist[1 + urfIdx][0] >> 3, twist[1 + urfIdx][0] & 7, flip[1 + urfIdx][0] >> 3, flip[1 + urfIdx][0] & 7, slice[1 + urfIdx][0] & 0x1ff, prun[1 + urfIdx][0],
+                              twist[2 + urfIdx][0] >> 3, twist[2 + urfIdx][0] & 7, flip[2 + urfIdx][0] >> 3, flip[2 + urfIdx][0] & 7, slice[2 + urfIdx][0] & 0x1ff, prun[2 + urfIdx][0],
                               length1, -1) == 0) {
                 return solution == null ? "Error 8" : solution;
             }
@@ -487,10 +488,10 @@ public class Search {
                 int ud_slicex = CoordCube.UDSliceMove[ud_slice][m] & 0x1ff;
                 int ud_twistx = CoordCube.TwistMove[ud_twist][CubieCube.Sym8Move[ud_tsym][m]];
                 int ud_tsymx = CubieCube.Sym8Mult[ud_twistx & 7][ud_tsym];
-                ud_twistx >>>= 3;
+                ud_twistx >>= 3;
                 int ud_flipx = CoordCube.FlipMove[ud_flip][CubieCube.Sym8Move[ud_fsym][m]];
                 int ud_fsymx = CubieCube.Sym8Mult[ud_flipx & 7][ud_fsym];
-                ud_flipx >>>= 3;
+                ud_flipx >>= 3;
 
                 int ud_prunx = 0;
                 if (USE_FULL_PRUN) {
@@ -531,10 +532,10 @@ public class Search {
                 int rl_slicex = CoordCube.UDSliceMove[rl_slice][m] & 0x1ff;
                 int rl_twistx = CoordCube.TwistMove[rl_twist][CubieCube.Sym8Move[rl_tsym][m]];
                 int rl_tsymx = CubieCube.Sym8Mult[rl_twistx & 7][rl_tsym];
-                rl_twistx >>>= 3;
+                rl_twistx >>= 3;
                 int rl_flipx = CoordCube.FlipMove[rl_flip][CubieCube.Sym8Move[rl_fsym][m]];
                 int rl_fsymx = CubieCube.Sym8Mult[rl_flipx & 7][rl_fsym];
-                rl_flipx >>>= 3;
+                rl_flipx >>= 3;
 
                 int rl_prunx = 0;
                 if (USE_FULL_PRUN) {
@@ -575,10 +576,10 @@ public class Search {
                 int fb_slicex = CoordCube.UDSliceMove[fb_slice][m] & 0x1ff;
                 int fb_twistx = CoordCube.TwistMove[fb_twist][CubieCube.Sym8Move[fb_tsym][m]];
                 int fb_tsymx = CubieCube.Sym8Mult[fb_twistx & 7][fb_tsym];
-                fb_twistx >>>= 3;
+                fb_twistx >>= 3;
                 int fb_flipx = CoordCube.FlipMove[fb_flip][CubieCube.Sym8Move[fb_fsym][m]];
                 int fb_fsymx = CubieCube.Sym8Mult[fb_flipx & 7][fb_fsym];
-                fb_flipx >>>= 3;
+                fb_flipx >>= 3;
 
                 int fb_prunx = 0;
                 if (USE_FULL_PRUN) {
@@ -641,39 +642,39 @@ public class Search {
             return 0;
         }
         ++probe;
-        int cidx = corn0[urfIdx][preIdx] >>> 4;
+        int cidx = corn0[urfIdx][preIdx] >> 4;
         int csym = corn0[urfIdx][preIdx] & 0xf;
         int mid = slice[urfIdx][preIdx];
         for (int i = 0; i < depth1; i++) {
             int m = move[i];
             cidx = CoordCube.CPermMove[cidx][CubieCube.SymMove[csym][m]];
             csym = CubieCube.SymMult[cidx & 0xf][csym];
-            cidx >>>= 4;
+            cidx >>= 4;
 
             int cx = CoordCube.UDSliceMove[mid & 0x1ff][m];
-            mid = Util.permMult[mid >>> 9][cx >>> 9] << 9 | cx & 0x1ff;
+            mid = Util.permMult[mid >> 9][cx >> 9] << 9 | cx & 0x1ff;
         }
-        mid >>>= 9;
+        mid >>= 9;
         int prun = CoordCube.getPruning(CoordCube.MCPermPrun, cidx * 24 + CoordCube.MPermConj[mid][csym]);
         if (prun >= maxDep2) {
             return prun > maxDep2 ? 2 : 1;
         }
 
-        int u4e = ud8e0[urfIdx][preIdx] >>> 16;
+        int u4e = ud8e0[urfIdx][preIdx] >> 16;
         int d4e = ud8e0[urfIdx][preIdx] & 0xffff;
         for (int i = 0; i < depth1; i++) {
             int m = move[i];
 
             int cx = CoordCube.UDSliceMove[u4e & 0x1ff][m];
-            u4e = Util.permMult[u4e >>> 9][cx >>> 9] << 9 | cx & 0x1ff;
+            u4e = Util.permMult[u4e >> 9][cx >> 9] << 9 | cx & 0x1ff;
 
             cx = CoordCube.UDSliceMove[d4e & 0x1ff][m];
-            d4e = Util.permMult[d4e >>> 9][cx >>> 9] << 9 | cx & 0x1ff;
+            d4e = Util.permMult[d4e >> 9][cx >> 9] << 9 | cx & 0x1ff;
         }
 
-        int edge = CubieCube.MtoEPerm[494 - (u4e & 0x1ff) + (u4e >>> 9) * 70 + (d4e >>> 9) * 1680];
-        int esym = edge & 15;
-        edge >>>= 4;
+        int edge = CubieCube.MtoEPerm[494 - (u4e & 0x1ff) + (u4e >> 9) * 70 + (d4e >> 9) * 1680];
+        int esym = edge & 0xf;
+        edge >>= 4;
 
         prun = Math.max(CoordCube.getPruning(CoordCube.MEPermPrun, edge * 24 + CoordCube.MPermConj[mid][esym]), prun);
         if (prun >= maxDep2) {
@@ -737,15 +738,15 @@ public class Search {
             }
             int midx = CoordCube.MPermMove[mid][m];
             int cidxx = CoordCube.CPermMove[cidx][CubieCube.SymMove[csym][Util.ud2std[m]]];
-            int csymx = CubieCube.SymMult[cidxx & 15][csym];
-            cidxx >>>= 4;
+            int csymx = CubieCube.SymMult[cidxx & 0xf][csym];
+            cidxx >>= 4;
             if (CoordCube.getPruning(CoordCube.MCPermPrun,
                                      cidxx * 24 + CoordCube.MPermConj[midx][csymx]) >= maxl) {
                 continue;
             }
             int eidxx = CoordCube.EPermMove[eidx][CubieCube.SymMoveUD[esym][m]];
-            int esymx = CubieCube.SymMult[eidxx & 15][esym];
-            eidxx >>>= 4;
+            int esymx = CubieCube.SymMult[eidxx & 0xf][esym];
+            eidxx >>= 4;
             if (CoordCube.getPruning(CoordCube.MEPermPrun,
                                      eidxx * 24 + CoordCube.MPermConj[midx][esymx]) >= maxl) {
                 continue;

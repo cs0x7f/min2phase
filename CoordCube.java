@@ -69,7 +69,7 @@ class CoordCube {
             }
             for (int j = 0; j < 16; j += 2) {
                 CubieCube.EdgeConjugate(c, CubieCube.SymInv[j], d);
-                UDSliceConj[i][j >>> 1] = (char) (d.getUDSlice() & 0x1ff);
+                UDSliceConj[i][j >> 1] = (char) (d.getUDSlice() & 0x1ff);
             }
         }
         for (int i = 0; i < N_SLICE; i++) {
@@ -77,7 +77,7 @@ class CoordCube {
                 int udslice = UDSliceMove[i][j];
                 for (int k = 1; k < 3; k++) {
                     int cx = UDSliceMove[udslice & 0x1ff][j];
-                    udslice = Util.permMult[udslice >>> 9][cx >>> 9] << 9 | cx & 0x1ff;
+                    udslice = Util.permMult[udslice >> 9][cx >> 9] << 9 | cx & 0x1ff;
                     UDSliceMove[i][j + k] = (char)(udslice);
                 }
             }
@@ -223,14 +223,14 @@ class CoordCube {
                 int twist = i >> 11;
                 int flip = CubieCube.FlipR2S[i & 0x7ff];
                 int fsym = flip & 7;
-                flip >>>= 3;
+                flip >>= 3;
                 for (int m = 0; m < N_MOVES; m++) {
                     int twistx = TwistMove[twist][m];
                     int tsymx = twistx & 7;
-                    twistx >>>= 3;
+                    twistx >>= 3;
                     int flipx = FlipMove[flip][CubieCube.Sym8Move[fsym][m]];
                     int fsymx = CubieCube.Sym8MultInv[CubieCube.Sym8Mult[flipx & 7][fsym]][tsymx];
-                    flipx >>>= 3;
+                    flipx >>= 3;
                     int idx = twistx << 11 | CubieCube.FlipS2RF[flipx << 3 | fsymx];
                     if (getPruning(TwistFlipPrun, idx) != check) {
                         continue;
@@ -302,7 +302,7 @@ class CoordCube {
                 for (int m = 0; m < N_MOVES; m++) {
                     int symx = SymMove[sym][moveMap == null ? m : moveMap[m]];
                     int rawx = RawConj[RawMove[raw][m] & 0x1ff][symx & SYM_MASK];
-                    symx >>>= SYM_SHIFT;
+                    symx >>= SYM_SHIFT;
                     int idx = symx * N_RAW + rawx;
                     if (getPruning(PrunTable, idx) != check) {
                         continue;
@@ -357,11 +357,11 @@ class CoordCube {
 
                 int twistx = CoordCube.TwistMove[twist][CubieCube.Sym8Move[tsym][m]];
                 int tsymx = CubieCube.Sym8Mult[twistx & 7][tsym];
-                twistx >>>= 3;
+                twistx >>= 3;
 
                 int flipx = CoordCube.FlipMove[flip][CubieCube.Sym8Move[fsym][m]];
                 int fsymx = CubieCube.Sym8Mult[flipx & 7][fsym];
-                flipx >>>= 3;
+                flipx >>= 3;
 
                 if (nextpm3 == getUDSliceFlipTwistPrunMod3(twistx, tsymx, flipx, fsymx, slicex)) {
                     twist = twistx;
@@ -426,7 +426,7 @@ class CoordCube {
                     for (int m = 0; m < N_MOVES; m++) {
                         int symx = UDSliceFlipMove[sym][m];
                         int rawx = TwistConj[TwistMoveF[raw][m]][symx & 0xf];
-                        symx >>>= 4;
+                        symx >>= 4;
                         int idx = symx * N_TWIST + rawx;
                         if (getPruning2(UDSliceFlipTwistPrun, idx) != check) {
                             continue;
