@@ -13,28 +13,16 @@ Conventional two-phase algorithm only find (sub-)optimal solutions to &lt;U,R2,F
 - Try pre-scramble: We can also use pre-scramble technique (which is widely used in fewest-move challenge) to find more phase1 solutions.
 
 # Benchmark
-- Memory: ~1M with twist-flip-pruning (TFP) table, ~0.5M without TFP table. See [Search.java line 28](https://github.com/cs0x7f/min2phase/blob/master/Search.java#L28).
+- Memory: ~1M with twist-flip-pruning (TFP) table, ~0.7M without TFP table, ~37M with Full table. See [Search.java line 28](https://github.com/cs0x7f/min2phase/blob/master/Search.java#L28).
 - Average solving time (CPU: Intel Core i7-2670QM. Flag: F=Full P1 table, T=TFP table, A=three axes, I=inverse, P=pre-scramble. Kociemba: Kociemba's [twophase.jar](http://kociemba.org/twophase.jar)): 
 
     |   Flag   | Unlimited | 21 moves | 20 moves |
     |:--------:|:---------:|:--------:|:--------:|
     | Kociemba |    45 ms  |   70 ms  | >1000 ms |
-    |   TAIP   |   5.6 ms  |  5.7 ms  |   19 ms  |
-    |   -AIP   |   7.4 ms  |  7.7 ms  |   37 ms  |
-    |   T-IP   |   5.6 ms  |  6.9 ms  |   66 ms  |
-    |   TA-P   |   5.6 ms  |  6.3 ms  |   43 ms  |
-    |   TA--   |   5.6 ms  |  7.8 ms  |  113 ms  |
-    |   -A--   |   7.7 ms  |   13 ms  |  240 ms  |
-    |   TAI-   |   5.5 ms  |  6.2 ms  |   44 ms  |
-    |   -AI-   |   7.6 ms  |  9.0 ms  |   89 ms  |
-    |   T---   |   5.6 ms  |   17 ms  |  700 ms  |
-    |   ----   |   7.7 ms  |   30 ms  | >1000 ms |
-    |   FAIP   |   4.0 ms  |  3.9 ms  |  4.5 ms  |
-    |   FAI-   |   3.8 ms  |  3.7 ms  |  5.4 ms  |
-    |   FA--   |   3.7 ms  |  3.8 ms  |  9.1 ms  |
-    |   F---   |   3.7 ms  |  3.9 ms  |   32 ms  |
+    |   TAIP   |   3.0 ms  |  3.2 ms  |   18 ms  |
+    |   FAIP   |   1.5 ms  |  1.5 ms  |  2.4 ms  |
 
-- Initialization Time: 160 ms without TFP table, 220 ms with TFP table.
+- Initialization Time: 170 ms without TFP table, 240 ms with TFP table, 1200 ms with Full table.
 
 # File Description
 - Tools.java Many useful functions, can be excluded.
