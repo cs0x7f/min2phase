@@ -242,9 +242,11 @@ public class Search {
         CoordCube.initCPermMove();
         CoordCube.initEPermMove();
         CoordCube.initMPermMoveConj();
+        CoordCube.initCombMoveConj();
 
         CoordCube.initMEPermPrun();
         CoordCube.initMCPermPrun();
+        CoordCube.initPermCombPrun();
 
         if (USE_FULL_PRUN) {
             CubieCube.initUDSliceFlipSym2Raw();
@@ -747,6 +749,15 @@ public class Search {
             int eidxx = CoordCube.EPermMove[eidx][CubieCube.SymMoveUD[esym][m]];
             int esymx = CubieCube.SymMult[eidxx & 0xf][esym];
             eidxx >>= 4;
+
+            // if (CoordCube.getPruning(CoordCube.CPermECombPrun,
+            //                          cidxx * 70 + CoordCube.ECombConj[CubieCube.Perm2Comb[eidxx]][CubieCube.SymMultInv[csymx][esymx]]) >= maxl) {
+            //     continue;
+            // }
+            if (CoordCube.getPruning(CoordCube.EPermCCombPrun,
+                                     eidxx * 70 + CoordCube.CCombConj[CubieCube.Perm2Comb[cidxx]][CubieCube.SymMultInv[esymx][csymx]]) >= maxl) {
+                continue;
+            }
             if (CoordCube.getPruning(CoordCube.MEPermPrun,
                                      eidxx * 24 + CoordCube.MPermConj[midx][esymx]) >= maxl) {
                 continue;

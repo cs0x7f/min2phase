@@ -19,6 +19,7 @@ class CubieCube {
     static int[] SymInv = new int[16];
     static int[][] SymMult = new int[16][16];
     static int[][] SymMove = new int[16][18];
+    static int[][] SymMultInv = new int[16][16];
     static int[][] Sym8Mult = new int[8][8];
     static int[][] Sym8Move = new int[8][18];
     static int[][] Sym8MultInv = new int[8][8];
@@ -485,6 +486,11 @@ class CubieCube {
                 SymMoveUD[s][j] = Util.std2ud[SymMove[s][Util.ud2std[j]]];
             }
         }
+        for (int j = 0; j < 16; j++) {
+            for (int s = 0; s < 16; s++) {
+                SymMultInv[j][s] = SymMult[j][SymInv[s]];
+            }
+        }
         for (int j = 0; j < 8; j++) {
             for (int s = 0; s < 8; s++) {
                 Sym8Mult[j][s] = SymMult[j << 1][s << 1]>>1;
@@ -554,6 +560,8 @@ class CubieCube {
         assert count == 324;
     }
 
+    static byte[] Perm2Comb = new byte[2768];
+
     static void initPermSym2Raw() {
         CubieCube c = new CubieCube();
         CubieCube d = new CubieCube();
@@ -561,6 +569,7 @@ class CubieCube {
         int count = 0;
         for (int i = 0; i < 40320 / 32; occ[i++] = 0);
         EPermR2S = new char[40320];
+
         for (int i = 0; i < 40320; i++) {
             if ((occ[i >> 5] & (1 << (i & 0x1f))) == 0) {
                 c.setEPerm(i);
@@ -575,6 +584,9 @@ class CubieCube {
                     int b = d.getD4Comb() >> 9;
                     int m = 494 - (a & 0x1ff) + (a >> 9) * 70 + b * 1680;
                     MtoEPerm[m] = EPermR2S[idx] = (char) (count << 4 | s);
+                    if (s == 0) {
+                        Perm2Comb[count] = (byte) (494 - (a & 0x1ff));
+                    }
                 }
                 EPermS2R[count++] = (char) i;
             }

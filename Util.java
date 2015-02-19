@@ -118,8 +118,8 @@ class Util {
         { D4, L8 }, { D8, B8 }, { F6, R4 }, { F4, L6 }, { B6, L4 }, { B4, R6 }
     };
 
-    static int[][] Cnk = new int[12][12];
-    static int[] fact = new int[13];
+    static int[][] Cnk = new int[13][13];
+    static int[] fact = new int[14];
     static int[][] permMult = new int[24][24];
     static String[] move2str = {
         "U ", "U2", "U'", "R ", "R2", "R'", "F ", "F2", "F'",
@@ -297,26 +297,28 @@ class Util {
     }
 
     static int getComb(byte[] arr, int mask) {
-        int idxC = 0, idxP = 0, r = 4, val = 0x123;
-        for (int i = 11; i >= 0; i--) {
+        int end = arr.length - 1;
+        int idxC = 0, idxP = 0, r = 4, val = 0x0123;
+        for (int i = end; i >= 0; i--) {
             if ((arr[i] & 0xc) == mask) {
                 int v = (arr[i] & 3) << 2;
-                idxP = r * idxP + ((val >> v) & 0x0f);
+                idxP = r * idxP + ((val >> v) & 0xf);
                 val -= 0x0111 >> (12 - v);
                 idxC += Cnk[i][r--];
             }
         }
-        return idxP << 9 | (494 - idxC);
+        return idxP << 9 | (Cnk[arr.length][4] - 1 - idxC);
     }
 
     static void setComb(byte[] arr, int idx, int mask) {
-        int r = 4, fill = 11, val = 0x123;
-        int idxC = 494 - (idx & 0x1ff);
+        int end = arr.length - 1;
+        int r = 4, fill = end, val = 0x0123;
+        int idxC = Cnk[arr.length][4] - 1 - (idx & 0x1ff);
         int idxP = idx >> 9;
-        for (int i = 11; i >= 0; i--) {
+        for (int i = end; i >= 0; i--) {
             if (idxC >= Cnk[i][r]) {
                 idxC -= Cnk[i][r--];
-                int p = fact[r & 3];
+                int p = fact[r];
                 int v = idxP / p << 2;
                 idxP %= p;
                 arr[i] = (byte) ((val >> v) & 3 | mask);
@@ -344,7 +346,7 @@ class Util {
             ckmv2[10][i] = false;
         }
         fact[0] = 1;
-        for (int i = 0; i < 12; i++) {
+        for (int i = 0; i < 13; i++) {
             Cnk[i][0] = Cnk[i][i] = 1;
             fact[i + 1] = fact[i] * (i + 1);
             for (int j = 1; j < i; j++) {
