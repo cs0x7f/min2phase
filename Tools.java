@@ -70,6 +70,7 @@ public class Tools {
         read(CubieCube.TwistS2R, in);
         read(CubieCube.EPermS2R, in);
         read(CubieCube.MtoEPerm, in);
+        in.readFully(CubieCube.Perm2Comb);
         read(CoordCube.TwistMove, in);
         read(CoordCube.FlipMove, in);
         read(CoordCube.UDSliceMove, in);
@@ -78,8 +79,11 @@ public class Tools {
         read(CoordCube.EPermMove, in);
         read(CoordCube.MPermMove, in);
         read(CoordCube.MPermConj, in);
+        read(CoordCube.CCombMove, in);
+        read(CoordCube.CCombConj, in);
         read(CoordCube.MCPermPrun, in);
         read(CoordCube.MEPermPrun, in);
+        read(CoordCube.EPermCCombPrun, in);
         if (Search.USE_FULL_PRUN) {
             read(CubieCube.UDSliceFlipS2R, in);
             read(CubieCube.TwistS2RF, in);
@@ -113,6 +117,7 @@ public class Tools {
         write(CubieCube.TwistS2R, out);                 // +        648
         write(CubieCube.EPermS2R, out);                 // +      5,536
         write(CubieCube.MtoEPerm, out);                 // +     80,640
+        out.write(CubieCube.Perm2Comb);                 // +      2,768
         write(CoordCube.TwistMove, out);                // +     11,664
         write(CoordCube.FlipMove, out);                 // +     12,096
         write(CoordCube.UDSliceMove, out);              // +     17,820
@@ -121,21 +126,24 @@ public class Tools {
         write(CoordCube.EPermMove, out);                // +     55,360
         write(CoordCube.MPermMove, out);                // +        480
         write(CoordCube.MPermConj, out);                // +        768
+        write(CoordCube.CCombMove, out);                // +      1,400
+        write(CoordCube.CCombConj, out);                // +      2,240
         write(CoordCube.MCPermPrun, out);               // +     33,216
         write(CoordCube.MEPermPrun, out);               // +     33,216
+        write(CoordCube.EPermCCombPrun, out);           // +     96,880
         if (Search.USE_FULL_PRUN) {
             write(CubieCube.UDSliceFlipS2R, out);       // +    257,720
             write(CubieCube.TwistS2RF, out);            // +      5,184
             write(CoordCube.TwistConj, out);            // +     69,984
             write(CoordCube.FlipSlice2UDSliceFlip, out);// +    665,280
             write(CoordCube.UDSliceFlipTwistPrun, out); // + 35,227,104
-        } else {                                        // = 36,584,956 Bytes
+        } else {                                        // = 36,688,244 Bytes
             write(CoordCube.UDSliceTwistPrun, out);     // +     80,192
             write(CoordCube.UDSliceFlipPrun, out);      // +     83,160
-            if (Search.USE_TWIST_FLIP_PRUN) {           // =    523,036 Bytes
+            if (Search.USE_TWIST_FLIP_PRUN) {           // =    626,324 Bytes
                 write(CubieCube.FlipS2RF, out);         // +      5,376
                 write(CoordCube.TwistFlipPrun, out);    // +    331,776
-            }                                           // =    860,188 Bytes
+            }                                           // =    963,476 Bytes
         }
     }
 
