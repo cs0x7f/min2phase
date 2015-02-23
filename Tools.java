@@ -88,7 +88,7 @@ public class Tools {
             read(CubieCube.UDSliceFlipS2R, in);
             read(CubieCube.TwistS2RF, in);
             read(CoordCube.TwistConj, in);
-            read(CoordCube.FlipSlice2UDSliceFlip, in);
+            read(CubieCube.FlipSlice2UDSliceFlip, in);
             read(CoordCube.UDSliceFlipTwistPrun, in);
         } else {
             read(CoordCube.UDSliceTwistPrun, in);
@@ -135,7 +135,7 @@ public class Tools {
             write(CubieCube.UDSliceFlipS2R, out);       // +    257,720
             write(CubieCube.TwistS2RF, out);            // +      5,184
             write(CoordCube.TwistConj, out);            // +     69,984
-            write(CoordCube.FlipSlice2UDSliceFlip, out);// +    665,280
+            write(CubieCube.FlipSlice2UDSliceFlip, out);// +    665,280
             write(CoordCube.UDSliceFlipTwistPrun, out); // + 35,227,104
         } else {                                        // = 36,688,244 Bytes
             write(CoordCube.UDSliceTwistPrun, out);     // +     80,192

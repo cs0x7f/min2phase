@@ -250,7 +250,6 @@ public class Search {
 
         if (USE_FULL_PRUN) {
             CubieCube.initUDSliceFlipSym2Raw();
-            CoordCube.initFlipSlice2UDSliceFlip();
             CoordCube.initUDSliceFlipMove();
             CoordCube.initTwistMoveConj();
             CoordCube.initUDSliceFlipTwistPrun();

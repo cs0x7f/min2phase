@@ -33,7 +33,6 @@ class CubieCube {
     static char[] EPermS2R = new char[2768];
     static int[] UDSliceFlipS2R = Search.USE_FULL_PRUN ? new int[64430] : null;
 
-
     /**
      * Notice that Edge Perm Coordnate and Corner Perm Coordnate are the same symmetry structure.
      * So their ClassIndexToRepresentantArray are the same.
@@ -43,6 +42,8 @@ class CubieCube {
     static byte[] e2c = {0, 0, 0, 0, 1, 3, 1, 3, 1, 3, 1, 3, 0, 0, 0, 0};
 
     static char[] MtoEPerm = new char[40320];
+
+    static int[] FlipSlice2UDSliceFlip = Search.USE_FULL_PRUN ? new int[CoordCube.N_FLIP_SYM * CoordCube.N_SLICE] : null;
 
     /**
      * Raw-Coordnate to Sym-Coordnate, only for speeding up initializaion.
@@ -610,6 +611,10 @@ class CubieCube {
                         SymStateUDSliceFlip[count] |= 1 << s;
                     }
                     occ[idx >> 5] |= 1 << (idx & 0x1f);
+                    int fidx = Util.binarySearch(FlipS2R, idx & 0x7ff);
+                    if (fidx != 0xffff) {
+                        FlipSlice2UDSliceFlip[fidx * CoordCube.N_SLICE + (idx >> 11)] = count << 4 | s;
+                    }
                 }
                 UDSliceFlipS2R[count++] = i;
             }
