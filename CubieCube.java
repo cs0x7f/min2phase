@@ -14,6 +14,9 @@ class CubieCube {
      */
     static CubieCube[] moveCube = new CubieCube[18];
 
+    static long[] moveCubeSym = new long[18];
+    static int[] firstMoveSym = new int[48];
+
     static CubieCube[] preList = null;
 
     static int[] SymInv = new int[16];
@@ -91,6 +94,24 @@ class CubieCube {
 
     CubieCube(CubieCube c) {
         copy(c);
+    }
+
+    public boolean equals(Object obj) {
+        if (!(obj instanceof CubieCube)) {
+            return false;
+        }
+        CubieCube c = (CubieCube) obj;
+        for (int i = 0; i < 8; i++) {
+            if (cp[i] != c.cp[i] || co[i] != c.co[i]) {
+                return false;
+            }
+        }
+        for (int i = 0; i < 12; i++) {
+            if (ep[i] != c.ep[i] || eo[i] != c.eo[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     void copy(CubieCube c) {
@@ -381,6 +402,23 @@ class CubieCube {
         return 0;// cube ok
     }
 
+    long selfSymmetry() {
+        CubieCube c = new CubieCube(this);
+        CubieCube d = new CubieCube();
+        long sym = 0L;
+        for (int i = 0; i < 48; i++) {
+            CornConjugate(c, SymInv[i % 16], d);
+            EdgeConjugate(c, SymInv[i % 16], d);
+            if (d.equals(this)) {
+                sym |= 1L << i;
+            }
+            if (i % 16 == 15) {
+                c.URFConjugate();
+            }
+        }
+        return sym;
+    }
+
     void setUDSliceFlip(int idx) {
         setFlip(idx & 0x7ff);
         setUDSlice(idx >> 11);
@@ -501,6 +539,20 @@ class CubieCube {
         for (int j = 0; j < 18; j++) {
             for (int s = 0; s < 8; s++) {
                 Sym8Move[s][j] = SymMove[s << 1][j];
+            }
+        }
+        for (int i = 0; i < 18; i++) {
+            moveCubeSym[i] = moveCube[i].selfSymmetry();
+        }
+        for (int i = 0; i < 18; i++) {
+            int j = i;
+            for (int s = 0; s < 48; s++) {
+                if (SymMove[s % 16][j] < i) {
+                    firstMoveSym[s] |= 1 << i;
+                }
+                if (s % 16 == 15) {
+                    j = urfMove[2][j];
+                }
             }
         }
     }

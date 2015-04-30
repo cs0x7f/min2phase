@@ -51,14 +51,10 @@ class CoordCube {
     static char[][] EPermMove = new char[N_PERM_SYM][N_MOVES2];
     static char[][] MPermMove = new char[N_MPERM][N_MOVES2];
     static char[][] MPermConj = new char[N_MPERM][16];
-    // static char[][] ECombMove = new char[N_COMB][N_MOVES2];
-    // static char[][] ECombConj = new char[N_COMB][16];
-    static char[][] CCombMove = new char[N_COMB][N_MOVES2];
-    static char[][] CCombMoveF = new char[N_COMB][N_MOVES];
+    static char[][] CCombMove = new char[N_COMB][N_MOVES];
     static char[][] CCombConj = new char[N_COMB][16];
     static int[] MCPermPrun = new int[N_MPERM * N_PERM_SYM / 8];
     static int[] MEPermPrun = new int[N_MPERM * N_PERM_SYM / 8];
-    // static int[] CPermECombPrun = new int[N_COMB * N_PERM_SYM / 8];
     static int[] EPermCCombPrun = new int[N_COMB * N_PERM_SYM / 8];
 
     static void setPruning(int[] table, int index, int value) {
@@ -132,7 +128,7 @@ class CoordCube {
                 for (int k = 1; k < 3; k++) {
                     int cx = UDSliceMove[udslice & 0x1ff][j];
                     udslice = Util.permMult[udslice >> 9][cx >> 9] << 9 | cx & 0x1ff;
-                    UDSliceMove[i][j + k] = (char)(udslice);
+                    UDSliceMove[i][j + k] = (char) udslice;
                 }
             }
         }
@@ -205,28 +201,11 @@ class CoordCube {
     static void initCombMoveConj() {
         CubieCube c = new CubieCube();
         CubieCube d = new CubieCube();
-
-        // for (int i = 0; i < N_COMB; i++) {
-        //     Util.setComb(c.ep, 494 - i, 0);
-        //     for (int j = 0; j < N_MOVES2; j++) {
-        //         CubieCube.EdgeMult(c, CubieCube.moveCube[Util.ud2std[j]], d);
-        //         ECombMove[i][j] = (char) (494 - (d.getU4Comb() & 0x1ff));
-        //     }
-        //     for (int j = 0; j < 16; j++) {
-        //         CubieCube.EdgeConjugate(c, CubieCube.SymInv[j], d);
-        //         ECombConj[i][j] = (char) (494 - (d.getU4Comb() & 0x1ff));
-        //     }
-        // }
-
         for (int i = 0; i < N_COMB; i++) {
             Util.setComb(c.cp, 69 - i, 0);
-            for (int j = 0; j < N_MOVES2; j++) {
-                CubieCube.CornMult(c, CubieCube.moveCube[Util.ud2std[j]], d);
-                CCombMove[i][j] = (char) (69 - (Util.getComb(d.cp, 0) & 0x1ff));
-            }
             for (int j = 0; j < N_MOVES; j++) {
                 CubieCube.CornMult(c, CubieCube.moveCube[j], d);
-                CCombMoveF[i][j] = (char) (69 - (Util.getComb(d.cp, 0) & 0x1ff));
+                CCombMove[i][j] = (char) (69 - (Util.getComb(d.cp, 0) & 0x1ff));
             }
             for (int j = 0; j < 16; j++) {
                 CubieCube.CornConjugate(c, CubieCube.SymInv[j], d);
@@ -352,13 +331,18 @@ class CoordCube {
     static void initRawSymPrun(int[] PrunTable, final int INV_DEPTH,
                                final char[][] RawMove, final char[][] RawConj,
                                final char[][] SymMove, final char[] SymState,
-                               final byte[] SymSwitch, final int[] moveMap, final int SYM_SHIFT) {
+                               final int PrunFlag) {
+
+        final int SYM_SHIFT = PrunFlag & 0xf;
+        final boolean SymSwitch = ((PrunFlag >> 4) & 1) == 1;
+        final boolean MoveMapSym = ((PrunFlag >> 5) & 1) == 1;
+        final boolean MoveMapRaw = ((PrunFlag >> 6) & 1) == 1;
 
         final int SYM_MASK = (1 << SYM_SHIFT) - 1;
         final int N_RAW = RawMove.length;
         final int N_SYM = SymMove.length;
         final int N_SIZE = N_RAW * N_SYM;
-        final int N_MOVES = RawMove[0].length;
+        final int N_MOVES = MoveMapRaw ? 10 : RawMove[0].length;
 
         for (int i = 0; i < (N_RAW * N_SYM + 7) / 8; i++) {
             PrunTable[i] = -1;
@@ -388,8 +372,8 @@ class CoordCube {
                 int raw = i % N_RAW;
                 int sym = i / N_RAW;
                 for (int m = 0; m < N_MOVES; m++) {
-                    int symx = SymMove[sym][moveMap == null ? m : moveMap[m]];
-                    int rawx = RawConj[RawMove[raw][m] & 0x1ff][symx & SYM_MASK];
+                    int symx = SymMove[sym][MoveMapSym ? Util.ud2std[m] : m];
+                    int rawx = RawConj[RawMove[raw][MoveMapRaw ? Util.ud2std[m] : m] & 0x1ff][symx & SYM_MASK];
                     symx >>= SYM_SHIFT;
                     int idx = symx * N_RAW + rawx;
                     if (getPruning(PrunTable, idx) != check) {
@@ -405,7 +389,7 @@ class CoordCube {
                         if ((symState & 1) != 1) {
                             continue;
                         }
-                        int idxx = symx * N_RAW + RawConj[rawx][j ^ (SymSwitch == null ? 0 : SymSwitch[j])];
+                        int idxx = symx * N_RAW + RawConj[rawx][j ^ (SymSwitch ? CubieCube.e2c[j] : 0)];
                         if (getPruning(PrunTable, idxx) == 0xf) {
                             setPruning(PrunTable, idxx, depth);
                             done++;
@@ -569,7 +553,7 @@ class CoordCube {
                     int sym = (int) (i / N_RAW);
                     for (int m = 0; m < N_MOVES; m++) {
                         int symx = UDSliceFlipMove[sym][m];
-                        int rawx = TwistConj[TwistMoveF[raw / N_COMB][m]][symx & 0xf] * N_COMB + CCombConj[CCombMoveF[raw % N_COMB][m]][symx & 0xf];
+                        int rawx = TwistConj[TwistMoveF[raw / N_COMB][m]][symx & 0xf] * N_COMB + CCombConj[CCombMove[raw % N_COMB][m]][symx & 0xf];
                         symx >>= 4;
                         long idx = symx * N_RAW + rawx;
                         if (getPruning2(HugePrun, idx) != check) {
@@ -613,8 +597,7 @@ class CoordCube {
         initRawSymPrun(
             UDSliceTwistPrun, 6,
             UDSliceMove, UDSliceConj,
-            TwistMove, CubieCube.SymStateTwist,
-            null, null, 3
+            TwistMove, CubieCube.SymStateTwist, 0x3
         );
     }
 
@@ -622,8 +605,7 @@ class CoordCube {
         initRawSymPrun(
             UDSliceFlipPrun, 6,
             UDSliceMove, UDSliceConj,
-            FlipMove, CubieCube.SymStateFlip,
-            null, null, 3
+            FlipMove, CubieCube.SymStateFlip, 0x3
         );
     }
 
@@ -631,8 +613,7 @@ class CoordCube {
         initRawSymPrun(
             MEPermPrun, 7,
             MPermMove, MPermConj,
-            EPermMove, CubieCube.SymStatePerm,
-            null, null, 4
+            EPermMove, CubieCube.SymStatePerm, 0x4
         );
     }
 
@@ -640,24 +621,15 @@ class CoordCube {
         initRawSymPrun(
             MCPermPrun, 10,
             MPermMove, MPermConj,
-            CPermMove, CubieCube.SymStatePerm,
-            CubieCube.e2c, Util.ud2std, 4
+            CPermMove, CubieCube.SymStatePerm, 0x34
         );
     }
 
     static void initPermCombPrun() {
-        // initRawSymPrun(
-        //     CPermECombPrun, 10,
-        //     ECombMove, ECombConj,
-        //     CPermMove, CubieCube.SymStatePerm,
-        //     CubieCube.e2c, Util.ud2std, 4
-        // );
-
         initRawSymPrun(
             EPermCCombPrun, 7,
             CCombMove, CCombConj,
-            EPermMove, CubieCube.SymStatePerm,
-            null, null, 4
+            EPermMove, CubieCube.SymStatePerm, 0x44
         );
     }
 
@@ -756,7 +728,6 @@ class CoordCube {
      *      2: Try Next Axis
      */
     int doMovePrun(CoordCube cc, int m, int maxl, boolean isPhase1) {
-
         if (Search.USE_FULL_PRUN) {
             twist = TwistMoveF[cc.twist][m];
             flip = UDSliceFlipMove[cc.flip][CubieCube.SymMove[cc.fsym][m]];
@@ -765,7 +736,7 @@ class CoordCube {
 
             int prunm3;
             if (Search.USE_HUGE_PRUN && !isPhase1) {
-                tsym = CCombMoveF[cc.tsym][m];
+                tsym = CCombMove[cc.tsym][m];
                 prunm3 = getPruningP(HugePrunP,
                                      flip * ((long) N_TWIST) * N_COMB + TwistConj[twist][fsym] * N_COMB + CCombConj[tsym][fsym], N_HUGE_5 * 4L);
             } else {
@@ -774,7 +745,6 @@ class CoordCube {
             }
             prun = ((0x24924924 >> cc.prun - prunm3 + 2) & 3) + cc.prun - 1;
         } else {
-
             slice = UDSliceMove[cc.slice & 0x1ff][m] & 0x1ff;
 
             twist = TwistMove[cc.twist][CubieCube.Sym8Move[cc.tsym][m]];

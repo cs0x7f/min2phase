@@ -51,6 +51,7 @@ public class Search {
 
     private byte[] f = new byte[54];
 
+    private long selfSym;
     private int conjMask;
     private int urfIdx;
     private int preIdx;
@@ -185,9 +186,9 @@ public class Search {
     private void initSearch() {
         conjMask = (TRY_INVERSE ? 0 : 0x38) | (TRY_THREE_AXES ? 0 : 0x36);
         CubieCube pc = new CubieCube();
+        selfSym = cc.selfSymmetry();
 
         for (int i = 0; i < 6; i++) {
-
             for (int j = 0; j < PRE_IDX_MAX; j++) {
                 CubieCube.CornMult(CubieCube.preList[j], cc, pc);
                 CubieCube.EdgeMult(CubieCube.preList[j], cc, pc);
@@ -195,7 +196,6 @@ public class Search {
                 corn0[i][j] = pc.getCPermSym();
                 ud8e0[i][j] = pc.getU4Comb() << 16 | pc.getD4Comb();
             }
-
             cc.URFConjugate();
             if (i % 3 == 2) {
                 cc.invCubieCube();
@@ -324,7 +324,7 @@ public class Search {
 
                     depth1 = length1 - (preIdx == 0 ? 0 : 1);
                     if (node0[urfIdx][preIdx].prun <= depth1
-                            && phase1(node0[urfIdx][preIdx], depth1, -1) == 0) {
+                            && phase1(node0[urfIdx][preIdx], preIdx == 0 ? selfSym : 1, depth1, -1) == 0) {
                         return solution == null ? "Error 8" : solution;
                     }
                 }
@@ -339,7 +339,7 @@ public class Search {
      *      1: Try Next Power
      *      2: Try Next Axis
      */
-    private int phase1(CoordCube node, int maxl, int lm) {
+    private int phase1(CoordCube node, long ssym, int maxl, int lm) {
         if (node.prun == 0 && maxl < 5) {
             if (maxl == 0) {
                 int ret = initPhase2();
@@ -355,6 +355,15 @@ public class Search {
             }
         }
 
+        int skipMoves = 0;
+        int i = 1;
+        for (long s = ssym; (s >>= 1) != 0; i++) {
+            if ((s & 1) == 1) {
+                skipMoves |= CubieCube.firstMoveSym[i];
+                continue;
+            }
+        }
+
         for (int axis = 0; axis < 18; axis += 3) {
             if (axis == lm || axis == lm - 9
                     || (isRecovery && axis < move[depth1 - maxl] - 2)) {
@@ -363,7 +372,8 @@ public class Search {
             for (int power = 0; power < 3; power++) {
                 int m = axis + power;
 
-                if (isRecovery && m != move[depth1 - maxl]) {
+                if (isRecovery && m != move[depth1 - maxl]
+                        || ssym != 1 && (skipMoves & (1 << m)) != 0) {
                     continue;
                 }
 
@@ -375,7 +385,7 @@ public class Search {
                 }
 
                 move[depth1 - maxl] = m;
-                int ret = phase1(nodeUD[maxl], maxl - 1, axis);
+                int ret = phase1(nodeUD[maxl], ssym & CubieCube.moveCubeSym[m], maxl - 1, axis);
                 if (ret == 0) {
                     return 0;
                 } else if (ret == 2) {
@@ -404,7 +414,7 @@ public class Search {
             CoordCube fb = node0[2 + urfIdx][0];
 
             if (ud.prun <= length1 && rl.prun <= length1 && fb.prun <= length1
-                    && phase1opt(ud, rl, fb, length1, -1) == 0) {
+                    && phase1opt(ud, rl, fb, selfSym, length1, -1) == 0) {
                 return solution == null ? "Error 8" : solution;
             }
         }
@@ -417,12 +427,21 @@ public class Search {
      *      1: Try Next Power
      *      2: Try Next Axis
      */
-    private int phase1opt(CoordCube ud, CoordCube rl, CoordCube fb, int maxl, int lm) {
+    private int phase1opt(CoordCube ud, CoordCube rl, CoordCube fb, long ssym, int maxl, int lm) {
 
         if (ud.prun == 0 && rl.prun == 0 && fb.prun == 0 && maxl < 5) {
             maxDep2 = maxl + 1;
             depth1 = length1 - maxl;
             return initPhase2() == 0 ? 0 : 1;
+        }
+
+        int skipMoves = 0;
+        int i = 1;
+        for (long s = ssym; (s >>= 1) != 0; i++) {
+            if ((s & 1) == 1) {
+                skipMoves |= CubieCube.firstMoveSym[i];
+                continue;
+            }
         }
 
         for (int axis = 0; axis < 18; axis += 3) {
@@ -432,7 +451,8 @@ public class Search {
             for (int power = 0; power < 3; power++) {
                 int m = axis + power;
 
-                if (isRecovery && m != move[length1 - maxl]) {
+                if (isRecovery && m != move[length1 - maxl]
+                        || ssym != 1 && (skipMoves & (1 << m)) != 0) {
                     continue;
                 }
 
@@ -471,7 +491,7 @@ public class Search {
                 m = CubieCube.urfMove[2][m];
 
                 move[length1 - maxl] = m;
-                int ret = phase1opt(nodeUD[maxl], nodeRL[maxl], nodeFB[maxl], maxl - 1, axis);
+                int ret = phase1opt(nodeUD[maxl], nodeRL[maxl], nodeFB[maxl], ssym & CubieCube.moveCubeSym[m], maxl - 1, axis);
                 if (ret == 0) {
                     return 0;
                 } else if (ret == 2) {
