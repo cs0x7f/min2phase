@@ -52,6 +52,7 @@ public class Search {
     private byte[] f = new byte[54];
 
     private long selfSym;
+    private int preIdxMax;
     private int conjMask;
     private int urfIdx;
     private int preIdx;
@@ -187,33 +188,35 @@ public class Search {
         conjMask = (TRY_INVERSE ? 0 : 0x38) | (TRY_THREE_AXES ? 0 : 0x36);
         CubieCube pc = new CubieCube();
         selfSym = cc.selfSymmetry();
-
+        if (selfSym >> 48 != 0) {
+            conjMask |= 0x38;
+        }
+        if (((selfSym >> 16) & 0xffff) != 0) {
+            conjMask |= 0x12;
+        }
+        if (((selfSym >> 32) & 0xffff) != 0) {
+            conjMask |= 0x24;
+        }
+        preIdxMax = conjMask > 7 ? 1 : PRE_IDX_MAX;
         for (int i = 0; i < 6; i++) {
-            for (int j = 0; j < PRE_IDX_MAX; j++) {
-                CubieCube.CornMult(CubieCube.preList[j], cc, pc);
-                CubieCube.EdgeMult(CubieCube.preList[j], cc, pc);
-                node0[i][j].set(pc);
-                corn0[i][j] = pc.getCPermSym();
-                ud8e0[i][j] = pc.getU4Comb() << 16 | pc.getD4Comb();
+            node0[i][0].set(cc);
+            corn0[i][0] = cc.getCPermSym();
+            ud8e0[i][0] = cc.getU4Comb() << 16 | cc.getD4Comb();
+            if ((conjMask & (1 << i)) == 0) {
+                for (int j = 1; j < preIdxMax; j++) {
+                    CubieCube.CornMult(CubieCube.moveCube[CubieCube.preMove[j]], cc, pc);
+                    CubieCube.EdgeMult(CubieCube.moveCube[CubieCube.preMove[j]], cc, pc);
+                    node0[i][j].set(pc);
+                    corn0[i][j] = pc.getCPermSym();
+                    ud8e0[i][j] = pc.getU4Comb() << 16 | pc.getD4Comb();
+                }
             }
             cc.URFConjugate();
             if (i % 3 == 2) {
                 cc.invCubieCube();
             }
         }
-
-        for (int i = 0; i < 6; i++) {
-            for (int j = 0; j < i; j++) { //If S_i^-1 * C * S_i == C, It's unnecessary to compute it again.
-                if (node0[i][0].twist == node0[j][0].twist
-                        && node0[i][0].flip == node0[j][0].flip
-                        && node0[i][0].slice == node0[j][0].slice
-                        && corn0[i][0] == corn0[j][0]
-                        && ud8e0[i][0] == ud8e0[j][0]) {
-                    conjMask |= 1 << i;
-                    break;
-                }
-            }
-        }
+        selfSym = selfSym & 0xffffffffffffL;
     }
 
     public synchronized String next(long probeMax, long probeMin, int verbose) {
@@ -313,7 +316,7 @@ public class Search {
                 if ((conjMask & (1 << urfIdx)) != 0) {
                     continue;
                 }
-                for (preIdx = isRecovery ? preIdx : 0; preIdx < PRE_IDX_MAX; preIdx++) {
+                for (preIdx = isRecovery ? preIdx : 0; preIdx < preIdxMax; preIdx++) {
                     if (preIdx != 0 && preIdx % 2 == 0) {
                         assert (node0[urfIdx][preIdx].twist == node0[urfIdx][preIdx - 1].twist
                                 && node0[urfIdx][preIdx].flip == node0[urfIdx][preIdx - 1].flip
@@ -321,10 +324,13 @@ public class Search {
                         continue;
                     }
                     node0[urfIdx][preIdx].calcPruning(true);
-
+                    int ssym = (int) (0xffff & selfSym);
+                    if (preIdx != 0) {
+                        ssym &= CubieCube.moveCubeSym[CubieCube.preMove[preIdx]];
+                    }
                     depth1 = length1 - (preIdx == 0 ? 0 : 1);
                     if (node0[urfIdx][preIdx].prun <= depth1
-                            && phase1(node0[urfIdx][preIdx], preIdx == 0 ? selfSym : 1, depth1, -1) == 0) {
+                            && phase1(node0[urfIdx][preIdx], ssym, depth1, -1) == 0) {
                         return solution == null ? "Error 8" : solution;
                     }
                 }

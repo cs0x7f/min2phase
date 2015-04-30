@@ -17,7 +17,7 @@ class CubieCube {
     static long[] moveCubeSym = new long[18];
     static int[] firstMoveSym = new int[48];
 
-    static CubieCube[] preList = null;
+    static int[] preMove = { -1, Util.Rx1, Util.Rx3, Util.Fx1, Util.Fx3, Util.Lx1, Util.Lx3, Util.Bx1, Util.Bx3};
 
     static int[] SymInv = new int[16];
     static int[][] SymMult = new int[16][16];
@@ -96,16 +96,16 @@ class CubieCube {
         copy(c);
     }
 
-    public boolean equals(Object obj) {
-        if (!(obj instanceof CubieCube)) {
-            return false;
-        }
-        CubieCube c = (CubieCube) obj;
+    public boolean equalsCorn(CubieCube c) {
         for (int i = 0; i < 8; i++) {
             if (cp[i] != c.cp[i] || co[i] != c.co[i]) {
                 return false;
             }
         }
+        return true;
+    }
+
+    public boolean equalsEdge(CubieCube c) {
         for (int i = 0; i < 12; i++) {
             if (ep[i] != c.ep[i] || eo[i] != c.eo[i]) {
                 return false;
@@ -126,6 +126,9 @@ class CubieCube {
     }
 
     void invCubieCube() {
+        if (temps == null) {
+            temps = new CubieCube();
+        }
         for (byte edge = 0; edge < 12; edge++)
             temps.ep[ep[edge]] = edge;
         for (byte edge = 0; edge < 12; edge++)
@@ -408,9 +411,25 @@ class CubieCube {
         long sym = 0L;
         for (int i = 0; i < 48; i++) {
             CornConjugate(c, SymInv[i % 16], d);
-            EdgeConjugate(c, SymInv[i % 16], d);
-            if (d.equals(this)) {
-                sym |= 1L << i;
+            if (d.equalsCorn(this)) {
+                EdgeConjugate(c, SymInv[i % 16], d);
+                if (d.equalsEdge(this)) {
+                    sym |= 1L << i;
+                }
+            }
+            if (i % 16 == 15) {
+                c.URFConjugate();
+            }
+        }
+        c.invCubieCube();
+        for (int i = 0; i < 48; i++) {
+            CornConjugate(c, SymInv[i % 16], d);
+            if (d.equalsCorn(this)) {
+                EdgeConjugate(c, SymInv[i % 16], d);
+                if (d.equalsEdge(this)) {
+                    sym |= 1L << 48;
+                    break;
+                }
             }
             if (i % 16 == 15) {
                 c.URFConjugate();
@@ -458,11 +477,6 @@ class CubieCube {
                 CornMult(moveCube[a + p], moveCube[a], moveCube[a + p + 1]);
             }
         }
-        preList = new CubieCube[] {
-            new CubieCube(), CubieCube.moveCube[3], CubieCube.moveCube[5],
-            CubieCube.moveCube[6], CubieCube.moveCube[8], CubieCube.moveCube[12],
-            CubieCube.moveCube[14], CubieCube.moveCube[15], CubieCube.moveCube[17]
-        };
     }
 
     static void initSym() {
@@ -495,7 +509,7 @@ class CubieCube {
             for (int j = 0; j < 16; j++) {
                 CornMult(CubeSym[i], CubeSym[j], c);
                 for (int k = 0; k < 16; k++) {
-                    if (CubeSym[k].cp[0] == c.cp[0] && CubeSym[k].cp[1] == c.cp[1] && CubeSym[k].cp[2] == c.cp[2]) {
+                    if (CubeSym[k].equalsCorn(c)) {
                         SymMult[i][j] = k;
                         if (k == 0) {
                             SymInv[i] = j;
@@ -508,15 +522,11 @@ class CubieCube {
         for (int j = 0; j < 18; j++) {
             for (int s = 0; s < 16; s++) {
                 CornConjugate(moveCube[j], SymInv[s], c);
-                CONTINUE:
                 for (int m = 0; m < 18; m++) {
-                    for (int i = 0; i < 8; i += 2) {
-                        if (c.cp[i] != moveCube[m].cp[i]) {
-                            continue CONTINUE;
-                        }
+                    if (c.equalsCorn(moveCube[m])) {
+                        SymMove[s][j] = m;
+                        break;
                     }
-                    SymMove[s][j] = m;
-                    break;
                 }
             }
         }
