@@ -1,4 +1,7 @@
 package cs.min2phase;
+import java.io.*;
+import java.nio.channels.*;
+import java.nio.*;
 
 class CoordCube {
     static final int N_MOVES = 18;
@@ -16,6 +19,11 @@ class CoordCube {
     static final int N_UDSLICEFLIP_SYM = 64430;
     static final int N_TWIST = 2187;
 
+    static final long N_HUGE = N_UDSLICEFLIP_SYM * N_TWIST * 70L;// 9,863,588,700
+    static final int N_FULL_5 = N_UDSLICEFLIP_SYM * N_TWIST / 5;
+    static final int N_HUGE_16 = (int) ((N_HUGE + 15) / 16);
+    static final int N_HUGE_5 = (int) (N_HUGE / 5);// 1,972,717,740
+
     //XMove = Move Table
     //XPrun = Pruning Table
     //XConj = Conjugate Table
@@ -24,7 +32,10 @@ class CoordCube {
     static int[][] UDSliceFlipMove = Search.USE_FULL_PRUN ? new int[N_UDSLICEFLIP_SYM][N_MOVES] : null;
     static char[][] TwistMoveF = Search.USE_FULL_PRUN ? new char[N_TWIST][N_MOVES] : null;
     static char[][] TwistConj = Search.USE_FULL_PRUN ? new char[N_TWIST][16] : null;
-    static int[] UDSliceFlipTwistPrun = Search.USE_FULL_PRUN ? new int[N_UDSLICEFLIP_SYM * N_TWIST / 16 + 1] : null;
+    static int[] UDSliceFlipTwistPrun = null; //Search.USE_FULL_PRUN ? new int[N_UDSLICEFLIP_SYM * N_TWIST / 16 + 1] : null;
+    static byte[] UDSliceFlipTwistPrunP = null; //Search.USE_FULL_PRUN ? new byte[N_UDSLICEFLIP_SYM * N_TWIST / 5] : null;
+    static int[] HugePrun = null; //Search.USE_HUGE_PRUN ? new int[N_HUGE_16] : null;
+    static byte[] HugePrunP = null; //Search.USE_HUGE_PRUN ? new byte[N_HUGE_5] : null;
 
     //phase1
     static char[][] UDSliceMove = new char[N_SLICE][N_MOVES];
@@ -43,6 +54,7 @@ class CoordCube {
     // static char[][] ECombMove = new char[N_COMB][N_MOVES2];
     // static char[][] ECombConj = new char[N_COMB][16];
     static char[][] CCombMove = new char[N_COMB][N_MOVES2];
+    static char[][] CCombMoveF = new char[N_COMB][N_MOVES];
     static char[][] CCombConj = new char[N_COMB][16];
     static int[] MCPermPrun = new int[N_MPERM * N_PERM_SYM / 8];
     static int[] MEPermPrun = new int[N_MPERM * N_PERM_SYM / 8];
@@ -57,12 +69,47 @@ class CoordCube {
         return (table[index >> 3] >> ((index & 7) << 2)) & 0xf;
     }
 
-    static void setPruning2(int[] table, int index, int value) {
-        table[index >> 4] ^= (0x3 ^ value) << ((index & 0xf) << 1);
+    static void setPruning2(int[] table, long index, int value) {
+        table[(int) (index >> 4)] ^= (0x3 ^ value) << ((index & 0xf) << 1);
     }
 
-    static int getPruning2(int[] table, int index) {
-        return (table[index >> 4] >> ((index & 0xf) << 1)) & 0x3;
+    static int getPruning2(int[] table, long index) {
+        return (table[(int) (index >> 4)] >> ((index & 0xf) << 1)) & 0x3;
+    }
+
+    static char[] tri2bin = new char[243];
+
+    static {
+        for (int i = 0; i < 243; i++) {
+            int val = 0;
+            int l = i;
+            for (int j = 0; j < 5; j++) {
+                val |= (l % 3) << (j << 1);
+                l /= 3;
+            }
+            tri2bin[i] = (char) val;
+        }
+    }
+
+    static int getPruningP(byte[] table, long index, final long THRESHOLD) {
+        if (index < THRESHOLD) {
+            return (tri2bin[table[(int) (index >> 2)] & 0xff] >> ((index & 3) << 1)) & 3;
+        } else {
+            return (tri2bin[table[(int) (index - THRESHOLD)] & 0xff] >> 8) & 3;
+        }
+    }
+
+    static void packPrunTable(int[] PrunTable, ByteBuffer buf, final long PACKED_SIZE) {
+        for (long i = 0; i < PACKED_SIZE; i++) {
+            int n = 1;
+            int value = 0;
+            for (int j = 0; j < 4; j++) {
+                value += n * getPruning2(PrunTable, i << 2 | j);
+                n *= 3;
+            }
+            value += n * getPruning2(PrunTable, (PACKED_SIZE << 2) + i);
+            buf.put((byte) value);
+        }
     }
 
     static void initUDSliceMoveConj() {
@@ -176,6 +223,10 @@ class CoordCube {
             for (int j = 0; j < N_MOVES2; j++) {
                 CubieCube.CornMult(c, CubieCube.moveCube[Util.ud2std[j]], d);
                 CCombMove[i][j] = (char) (69 - (Util.getComb(d.cp, 0) & 0x1ff));
+            }
+            for (int j = 0; j < N_MOVES; j++) {
+                CubieCube.CornMult(c, CubieCube.moveCube[j], d);
+                CCombMoveF[i][j] = (char) (69 - (Util.getComb(d.cp, 0) & 0x1ff));
             }
             for (int j = 0; j < 16; j++) {
                 CubieCube.CornConjugate(c, CubieCube.SymInv[j], d);
@@ -366,56 +417,47 @@ class CoordCube {
         }
     }
 
+    static boolean loadPrunPTable(byte[] table, String fileName) {
+        final int length = table.length;
+        try {
+            RandomAccessFile raf = new RandomAccessFile(fileName, "r");
+            FileChannel channel = raf.getChannel();
+            MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, length);
+            for (int i = 0; i < length; i++) {
+                table[i] = buffer.get();
+            }
+            raf.close();
+            return true;
+        } catch (FileNotFoundException e) {
+            // e.printStackTrace();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
+        return false;
+    }
+
+    static void packAndSavePrunPTable(int[] table, String fileName, int FILE_SIZE) {
+        try {
+            RandomAccessFile raf = new RandomAccessFile(fileName, "rw");
+            raf.setLength(FILE_SIZE);
+            FileChannel channel = raf.getChannel();
+            MappedByteBuffer buffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, FILE_SIZE);
+            packPrunTable(table, buffer, FILE_SIZE);
+            raf.close();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
+    }
+
     private static final int MAXDEPTH = 15;
 
-    static int getUDSliceFlipTwistPrun(int twist, int tsym, int flip, int fsym, int slice) {
-        int nextpm3 = getUDSliceFlipTwistPrunMod3(twist, tsym, flip, fsym, slice);
-        if (nextpm3 == 0x3) {
-            return MAXDEPTH;
-        }
-        int prun = 0;
-        while (twist != 0 || flip != 0 || slice != 0) {
-            ++prun;
-            nextpm3 = (nextpm3 + 2) % 3;
-            for (int m = 0; m < 18; m++) {
-                int slicex = CoordCube.UDSliceMove[slice][m] & 0x1ff;
-
-                int twistx = CoordCube.TwistMove[twist][CubieCube.Sym8Move[tsym][m]];
-                int tsymx = CubieCube.Sym8Mult[twistx & 7][tsym];
-                twistx >>= 3;
-
-                int flipx = CoordCube.FlipMove[flip][CubieCube.Sym8Move[fsym][m]];
-                int fsymx = CubieCube.Sym8Mult[flipx & 7][fsym];
-                flipx >>= 3;
-
-                if (nextpm3 == getUDSliceFlipTwistPrunMod3(twistx, tsymx, flipx, fsymx, slicex)) {
-                    twist = twistx;
-                    tsym = tsymx;
-                    flip = flipx;
-                    fsym = fsymx;
-                    slice = slicex;
-                    break;
-                }
-            }
-        }
-        return prun;
-    }
-
-    static int getUDSliceFlipTwistPrunMod3(int twist, int tsym, int flip, int fsym, int slice) {
-        int udsliceflip = CubieCube.FlipSlice2UDSliceFlip[flip * N_SLICE + UDSliceConj[slice][fsym]];
-        int twistr = CubieCube.TwistS2RF[twist << 3 | CubieCube.Sym8MultInv[fsym][tsym]];
-        int udsfsym = udsliceflip & 0xf;
-        udsliceflip >>= 4;
-        return getPruning2(UDSliceFlipTwistPrun, udsliceflip * N_TWIST + TwistConj[twistr][udsfsym]);
-    }
-
-    static int getUDSliceFlipTwistPrun(int twist, int tsym, int flip, int fsym, int slice, int prun) {
-        int prunm3 = getUDSliceFlipTwistPrunMod3(twist, tsym, flip, fsym, slice);
-        // prun = (prunm3 - prun + 16) % 3 + prun - 1;
-        return prunm3 == 0x3 ? MAXDEPTH : ((0x24924924 >> prun - prunm3 + 2) & 3) + prun - 1;
-    }
-
     static void initUDSliceFlipTwistPrun() {
+        UDSliceFlipTwistPrunP = new byte[N_FULL_5];
+        if (loadPrunPTable(UDSliceFlipTwistPrunP, "FullTable.prunP")) {
+            return;
+        }
+        UDSliceFlipTwistPrunP = null;
+        UDSliceFlipTwistPrun = new int[N_UDSLICEFLIP_SYM * N_TWIST / 16 + 1];
 
         final int N_SIZE = N_TWIST * N_UDSLICEFLIP_SYM;
 
@@ -475,7 +517,95 @@ class CoordCube {
                     }
                 }
             }
-            // System.out.println(String.format("%2d%10d", depth, done));
+            System.out.println(String.format("%2d%10d", depth, done));
+        }
+
+        packAndSavePrunPTable(UDSliceFlipTwistPrun, "FullTable.prunP", N_FULL_5);
+        UDSliceFlipTwistPrun = null;
+        UDSliceFlipTwistPrunP = new byte[N_FULL_5];
+        if (!loadPrunPTable(UDSliceFlipTwistPrunP, "FullTable.prunP")) {
+            System.out.println("Error Loading FullTable.prunP");
+            throw new RuntimeException("Error Loading FullTable.prunP");
+        }
+    }
+
+    static void initHugePrun() {
+        HugePrunP = new byte[N_HUGE_5];
+        if (loadPrunPTable(HugePrunP, "HugeTable.prunP")) {
+            return;
+        }
+        HugePrunP = null;
+
+        final long N_SIZE = N_HUGE;
+        final long N_RAW = N_TWIST * N_COMB;
+
+        HugePrun = new int[N_HUGE_16];
+
+        for (int i = 0; i < N_HUGE_16; i++) {
+            HugePrun[i] = -1;
+        }
+        setPruning2(HugePrun, 0, 0);
+
+        int depth = 0;
+        long done = 1;
+
+        while (done < N_SIZE) {
+            boolean inv = depth > 9;
+            int select = inv ? 0x3 : depth % 3;
+            int check = inv ? depth % 3 : 0x3;
+            depth++;
+            int depm3 = depth % 3;
+            for (long i = 0; i < N_SIZE;) {
+                int val = HugePrun[(int) (i >> 4)];
+                if (!inv && val == -1) {
+                    i += 16;
+                    continue;
+                }
+                for (long end = Math.min(i + 16, N_SIZE); i < end; i++, val >>= 2) {
+                    if ((val & 0x3) != select) {
+                        continue;
+                    }
+                    int raw = (int) (i % N_RAW);
+                    int sym = (int) (i / N_RAW);
+                    for (int m = 0; m < N_MOVES; m++) {
+                        int symx = UDSliceFlipMove[sym][m];
+                        int rawx = TwistConj[TwistMoveF[raw / N_COMB][m]][symx & 0xf] * N_COMB + CCombConj[CCombMoveF[raw % N_COMB][m]][symx & 0xf];
+                        symx >>= 4;
+                        long idx = symx * N_RAW + rawx;
+                        if (getPruning2(HugePrun, idx) != check) {
+                            continue;
+                        }
+                        done++;
+                        if ((done & 0x1fffff) == 0) {
+                            System.out.print(done + "\r");
+                        }
+                        if (inv) {
+                            setPruning2(HugePrun, i, depm3);
+                            break;
+                        }
+                        setPruning2(HugePrun, idx, depm3);
+                        for (int j = 1, symState = CubieCube.SymStateUDSliceFlip[symx]; (symState >>= 1) != 0; j++) {
+                            if ((symState & 1) != 1) {
+                                continue;
+                            }
+                            long idxx = symx * N_RAW + TwistConj[rawx / N_COMB][j] * N_COMB + CCombConj[rawx % N_COMB][j];
+                            if (getPruning2(HugePrun, idxx) == 0x3) {
+                                setPruning2(HugePrun, idxx, depm3);
+                                done++;
+                            }
+                        }
+                    }
+                }
+            }
+            System.out.println(String.format("%2d%12d", depth, done));
+        }
+
+        packAndSavePrunPTable(HugePrun, "HugeTable.prunP", N_HUGE_5);
+        HugePrun = null;
+        HugePrunP = new byte[N_HUGE_5];
+        if (!loadPrunPTable(HugePrunP, "HugeTable.prunP")) {
+            System.out.println("Error Loading HugeTable.prunP");
+            throw new RuntimeException("Error Loading HugeTable.prunP");
         }
     }
 
@@ -529,5 +659,154 @@ class CoordCube {
             EPermMove, CubieCube.SymStatePerm,
             null, null, 4
         );
+    }
+
+
+    int twist;
+    int tsym;
+    int flip;
+    int fsym;
+    int slice;
+    int prun;
+
+    CoordCube() { }
+
+    CoordCube(CoordCube cc) {
+        set(cc);
+    }
+
+    void set(CoordCube node) {
+        this.twist = node.twist;
+        this.tsym = node.tsym;
+        this.flip = node.flip;
+        this.fsym = node.fsym;
+        this.slice = node.slice;
+        this.prun = node.prun;
+    }
+
+    int getPackedPruning(boolean isPhase1) {
+        int prunm3 = 0;
+        if (Search.USE_HUGE_PRUN && !isPhase1) {
+            prunm3 = getPruningP(HugePrunP, flip * ((long) N_TWIST) * N_COMB + TwistConj[twist][fsym] * N_COMB + CCombConj[tsym][fsym], N_HUGE_5 * 4L);
+        } else {
+            prunm3 = getPruningP(UDSliceFlipTwistPrunP, flip * N_TWIST + TwistConj[twist][fsym], N_UDSLICEFLIP_SYM * N_TWIST / 5 * 4);
+        }
+        prun = 0;
+        CoordCube tmp1 = new CoordCube();
+        CoordCube tmp2 = new CoordCube();
+        tmp1.set(this);
+        tmp1.prun = prunm3;
+        while (tmp1.twist != 0 || tmp1.flip != 0 || tmp1.tsym != 0 && !isPhase1) {
+            ++prun;
+            if (tmp1.prun == 0) {
+                tmp1.prun = 3;
+            }
+            for (int m = 0; m < 18; m++) {
+                int gap = tmp2.doMovePrun(tmp1, m, tmp1.prun, isPhase1);
+                if (gap > 0) {
+                    tmp1.set(tmp2);
+                    break;
+                }
+            }
+        }
+        return prun;
+    }
+
+    void calcPruning(boolean isPhase1) {
+        if (Search.USE_FULL_PRUN || Search.USE_HUGE_PRUN) {
+            getPackedPruning(isPhase1);
+        } else {
+            prun = Math.max(
+                       Math.max(
+                           getPruning(UDSliceTwistPrun,
+                                      twist * 495 + UDSliceConj[slice & 0x1ff][tsym]),
+                           getPruning(UDSliceFlipPrun,
+                                      flip * 495 + UDSliceConj[slice & 0x1ff][fsym])),
+                       Search.USE_TWIST_FLIP_PRUN ? getPruning(TwistFlipPrun,
+                               twist << 11 | CubieCube.FlipS2RF[flip << 3 | CubieCube.Sym8MultInv[fsym][tsym]]) : 0);
+        }
+    }
+
+    void set(CubieCube cc) {
+        if (Search.USE_FULL_PRUN || Search.USE_HUGE_PRUN) {
+            twist = cc.getTwist();
+            flip = cc.getUDSliceFlipSym();
+            slice = cc.getUDSlice();
+            fsym = flip & 0xf;
+            flip >>= 4;
+
+            if (Search.USE_HUGE_PRUN) {
+                tsym = (69 - (Util.getComb(cc.cp, 0) & 0x1ff)); //tsym -> CComb
+            }
+        } else {
+            twist = cc.getTwistSym();
+            flip = cc.getFlipSym();
+            slice = cc.getUDSlice();
+            tsym = twist & 7;
+            twist = twist >> 3;
+            fsym = flip & 7;
+            flip = flip >> 3;
+        }
+    }
+
+    /**
+     * @return
+     *      0: Success
+     *      1: Try Next Power
+     *      2: Try Next Axis
+     */
+    int doMovePrun(CoordCube cc, int m, int maxl, boolean isPhase1) {
+
+        if (Search.USE_FULL_PRUN) {
+            twist = TwistMoveF[cc.twist][m];
+            flip = UDSliceFlipMove[cc.flip][CubieCube.SymMove[cc.fsym][m]];
+            fsym = CubieCube.SymMult[flip & 0xf][cc.fsym];
+            flip >>= 4;
+
+            int prunm3;
+            if (Search.USE_HUGE_PRUN && !isPhase1) {
+                tsym = CCombMoveF[cc.tsym][m];
+                prunm3 = getPruningP(HugePrunP,
+                                     flip * ((long) N_TWIST) * N_COMB + TwistConj[twist][fsym] * N_COMB + CCombConj[tsym][fsym], N_HUGE_5 * 4L);
+            } else {
+                prunm3 = getPruningP(UDSliceFlipTwistPrunP,
+                                     flip * N_TWIST + TwistConj[twist][fsym], N_UDSLICEFLIP_SYM * N_TWIST / 5 * 4);
+            }
+            prun = ((0x24924924 >> cc.prun - prunm3 + 2) & 3) + cc.prun - 1;
+        } else {
+
+            slice = UDSliceMove[cc.slice & 0x1ff][m] & 0x1ff;
+
+            twist = TwistMove[cc.twist][CubieCube.Sym8Move[cc.tsym][m]];
+            tsym = CubieCube.Sym8Mult[twist & 7][cc.tsym];
+            twist >>= 3;
+
+            flip = FlipMove[cc.flip][CubieCube.Sym8Move[cc.fsym][m]];
+            fsym = CubieCube.Sym8Mult[flip & 7][cc.fsym];
+            flip >>= 3;
+
+            if (Search.USE_TWIST_FLIP_PRUN) {
+                prun = getPruning(TwistFlipPrun,
+                                  twist << 11 | CubieCube.FlipS2RF[flip << 3 | CubieCube.Sym8MultInv[fsym][tsym]]);
+                if (prun >= maxl) {
+                    return maxl - prun;
+                }
+            } else {
+                prun = 0;
+            }
+
+            prun = Math.max(prun, getPruning(UDSliceTwistPrun,
+                                             twist * 495 + UDSliceConj[slice][tsym]));
+            if (prun >= maxl) {
+                return maxl - prun;
+            }
+
+            prun = Math.max(prun, getPruning(UDSliceFlipPrun,
+                                             flip * 495 + UDSliceConj[slice][fsym]));
+            if (prun >= maxl) {
+                return maxl - prun;
+            }
+        }
+        return maxl - prun;
     }
 }
