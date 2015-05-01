@@ -381,7 +381,7 @@ public class Tools {
     }
 
 
-    protected static String fromScramble(int[] scramble) {
+    public static String fromScramble(int[] scramble) {
         CubieCube c1 = new CubieCube();
         CubieCube c2 = new CubieCube();
         CubieCube tmp;
