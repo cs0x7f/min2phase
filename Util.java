@@ -128,9 +128,7 @@ class Util {
     static int[] preMove = { -1, Rx1, Rx3, Fx1, Fx3, Lx1, Lx3, Bx1, Bx3};
     static int[] ud2std = {Ux1, Ux2, Ux3, Rx2, Fx2, Dx1, Dx2, Dx3, Lx2, Bx2};
     static int[] std2ud = new int[18];
-
     static boolean[][] ckmv2 = new boolean[11][10];
-
 
     static void toCubieCube(byte[] f, CubieCube ccRet) {
         byte ori;
@@ -253,11 +251,11 @@ class Util {
             int v = idx / p;
             idx -= v * p;
             v <<= 2;
-            arr[i] = (byte) ((val >> v) & 07);
+            arr[i] = (byte) (val >> v & 0x7);
             int m = (1 << v) - 1;
-            val = (val & m) + ((val >> 4) & ~m);
+            val = val & m | val >> 4 & ~m;
         }
-        arr[7] = (byte)val;
+        arr[7] = (byte) val;
     }
 
     static int get8Perm(byte[] arr) {
@@ -265,7 +263,7 @@ class Util {
         int val = 0x76543210;
         for (int i = 0; i < 7; i++) {
             int v = arr[i] << 2;
-            idx = (8 - i) * idx + ((val >> v) & 07);
+            idx = (8 - i) * idx + (val >> v & 0x7);
             val -= 0x11111110 << v;
         }
         return idx;
@@ -302,12 +300,12 @@ class Util {
         for (int i = end; i >= 0; i--) {
             if ((arr[i] & 0xc) == mask) {
                 int v = (arr[i] & 3) << 2;
-                idxP = r * idxP + ((val >> v) & 0xf);
+                idxP = r * idxP + (val >> v & 0xf);
                 val -= 0x0111 >> (12 - v);
                 idxC += Cnk[i][r--];
             }
         }
-        return idxP << 9 | (Cnk[arr.length][4] - 1 - idxC);
+        return idxP << 9 | Cnk[arr.length][4] - 1 - idxC;
     }
 
     static void setComb(byte[] arr, int idx, int mask) {
@@ -321,9 +319,9 @@ class Util {
                 int p = fact[r];
                 int v = idxP / p << 2;
                 idxP %= p;
-                arr[i] = (byte) ((val >> v) & 3 | mask);
+                arr[i] = (byte) (val >> v & 3 | mask);
                 int m = (1 << v) - 1;
-                val = (val & m) + ((val >> 4) & ~m);
+                val = val & m | val >> 4 & ~m;
             } else {
                 if ((fill & 0xc) == mask) {
                     fill -= 4;
@@ -338,8 +336,8 @@ class Util {
             std2ud[ud2std[i]] = i;
         }
         for (int i = 0; i < 10; i++) {
+            int ix = ud2std[i];
             for (int j = 0; j < 10; j++) {
-                int ix = ud2std[i];
                 int jx = ud2std[j];
                 ckmv2[i][j] = (ix / 3 == jx / 3) || ((ix / 3 % 3 == jx / 3 % 3) && (ix >= jx));
             }
@@ -357,8 +355,8 @@ class Util {
         byte[] arr2 = new byte[4];
         byte[] arr3 = new byte[4];
         for (int i = 0; i < 24; i++) {
+            setNPerm(arr1, i, 4);
             for (int j = 0; j < 24; j++) {
-                setNPerm(arr1, i, 4);
                 setNPerm(arr2, j, 4);
                 for (int k = 0; k < 4; k++) {
                     arr3[k] = arr1[arr2[k]];

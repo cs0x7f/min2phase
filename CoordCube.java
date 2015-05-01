@@ -671,7 +671,7 @@ class CoordCube {
                 tmp1.prun = 3;
             }
             for (int m = 0; m < 18; m++) {
-                int gap = tmp2.doMovePrun(tmp1, m, tmp1.prun, isPhase1);
+                int gap = tmp2.doMovePrun(tmp1, m, isPhase1);
                 if (gap < tmp1.prun) {
                     tmp1.set(tmp2);
                     break;
@@ -703,7 +703,6 @@ class CoordCube {
             slice = cc.getUDSlice();
             fsym = flip & 0xf;
             flip >>= 4;
-
             if (Search.USE_HUGE_PRUN) {
                 tsym = (69 - (Util.getComb(cc.cp, 0) & 0x1ff)); //tsym -> CComb
             }
@@ -724,7 +723,7 @@ class CoordCube {
      *      1: Try Next Power
      *      2: Try Next Axis
      */
-    int doMovePrun(CoordCube cc, int m, int maxl, boolean isPhase1) {
+    int doMovePrun(CoordCube cc, int m, boolean isPhase1) {
         if (Search.USE_FULL_PRUN) {
             twist = TwistMoveF[cc.twist][m];
             flip = UDSliceFlipMove[cc.flip][CubieCube.SymMove[cc.fsym][m]];

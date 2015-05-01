@@ -1,5 +1,5 @@
 /**
-    Copyright (C) 2012  Shuang Chen
+    Copyright (C) 2015  Shuang Chen
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -379,7 +379,7 @@ public class Search {
                     continue;
                 }
 
-                int prun = nodeUD[maxl].doMovePrun(node, m, maxl, true);
+                int prun = nodeUD[maxl].doMovePrun(node, m, true);
                 if (prun > maxl) {
                     break;
                 } else if (prun == maxl) {
@@ -458,7 +458,7 @@ public class Search {
                 }
 
                 // UD Axis
-                int prun_ud = nodeUD[maxl].doMovePrun(ud, m, maxl, false);
+                int prun_ud = nodeUD[maxl].doMovePrun(ud, m, false);
                 if (prun_ud > maxl) {
                     break;
                 } else if (prun_ud == maxl) {
@@ -468,7 +468,7 @@ public class Search {
                 // RL Axis
                 m = CubieCube.urfMove[2][m];
 
-                int prun_rl = nodeRL[maxl].doMovePrun(rl, m, maxl, false);
+                int prun_rl = nodeRL[maxl].doMovePrun(rl, m, false);
                 if (prun_rl > maxl) {
                     break;
                 } else if (prun_rl == maxl) {
@@ -478,7 +478,7 @@ public class Search {
                 // FB Axis
                 m = CubieCube.urfMove[2][m];
 
-                int prun_fb = nodeFB[maxl].doMovePrun(fb, m, maxl, false);
+                int prun_fb = nodeFB[maxl].doMovePrun(fb, m, false);
                 if (prun_ud == prun_rl && prun_rl == prun_fb && prun_fb != 0) {
                     prun_fb++;
                 }
@@ -584,9 +584,9 @@ public class Search {
                 if (axisPre == axisLast) {
                     int pow = (Util.preMove[preIdx] % 3 + move[sol - 1] % 3 + 1) % 4;
                     move[sol - 1] = axisPre * 3 + pow;
-                } else if (depth2 > 1 &&
-                           axisPre % 3 == axisLast % 3 &&
-                           move[sol - 2] / 3 == axisPre) {
+                } else if (depth2 > 1
+                           && axisPre % 3 == axisLast % 3
+                           && move[sol - 2] / 3 == axisPre) {
                     int pow = (Util.preMove[preIdx] % 3 + move[sol - 2] % 3 + 1) % 4;
                     move[sol - 2] = axisPre * 3 + pow;
                 } else {

@@ -321,8 +321,7 @@ class CubieCube {
     int getCPermSym() {
         if (EPermR2S != null) {
             int idx = EPermR2S[getCPerm()];
-            idx ^= e2c[idx & 0x0f];
-            return idx;
+            return idx ^ e2c[idx & 0xf];
         }
         if (temps == null) {
             temps = new CubieCube();
@@ -382,26 +381,31 @@ class CubieCube {
     int verify() {
         int sum = 0;
         int edgeMask = 0;
-        for (int e = 0; e < 12; e++)
-            edgeMask |= (1 << ep[e]);
-        if (edgeMask != 0x0fff)
+        for (int e = 0; e < 12; e++) {
+            edgeMask |= 1 << ep[e];
+            sum ^= eo[e];
+        }
+        if (edgeMask != 0xfff) {
             return -2;// missing edges
-        for (int i = 0; i < 12; i++)
-            sum ^= eo[i];
-        if (sum % 2 != 0)
+        }
+        if (sum != 0) {
             return -3;
+        }
         int cornMask = 0;
-        for (int c = 0; c < 8; c++)
-            cornMask |= (1 << cp[c]);
-        if (cornMask != 0x00ff)
-            return -4;// missing corners
         sum = 0;
-        for (int i = 0; i < 8; i++)
-            sum += co[i];
-        if (sum % 3 != 0)
+        for (int c = 0; c < 8; c++) {
+            cornMask |= 1 << cp[c];
+            sum += co[c];
+        }
+        if (cornMask != 0xff) {
+            return -4;// missing corners
+        }
+        if (sum % 3 != 0) {
             return -5;// twisted corner
-        if ((Util.getNParity(Util.getNPerm(ep, 12), 12) ^ Util.getNParity(getCPerm(), 8)) != 0)
+        }
+        if ((Util.getNParity(Util.getNPerm(ep, 12), 12) ^ Util.getNParity(getCPerm(), 8)) != 0) {
             return -6;// parity error
+        }
         return 0;// cube ok
     }
 
@@ -530,24 +534,20 @@ class CubieCube {
                 }
             }
         }
-        for (int j = 0; j < 10; j++) {
-            for (int s = 0; s < 16; s++) {
+        for (int s = 0; s < 16; s++) {
+            for (int j = 0; j < 10; j++) {
                 SymMoveUD[s][j] = Util.std2ud[SymMove[s][Util.ud2std[j]]];
             }
-        }
-        for (int j = 0; j < 16; j++) {
-            for (int s = 0; s < 16; s++) {
+            for (int j = 0; j < 16; j++) {
                 SymMultInv[j][s] = SymMult[j][SymInv[s]];
             }
         }
-        for (int j = 0; j < 8; j++) {
-            for (int s = 0; s < 8; s++) {
-                Sym8Mult[j][s] = SymMult[j << 1][s << 1]>>1;
+        for (int s = 0; s < 8; s++) {
+            for (int j = 0; j < 8; j++) {
+                Sym8Mult[j][s] = SymMult[j << 1][s << 1] >> 1;
                 Sym8MultInv[j][s] = SymMult[j << 1][SymInv[s << 1]]>>1;
             }
-        }
-        for (int j = 0; j < 18; j++) {
-            for (int s = 0; s < 8; s++) {
+            for (int j = 0; j < 18; j++) {
                 Sym8Move[s][j] = SymMove[s << 1][j];
             }
         }
@@ -570,27 +570,25 @@ class CubieCube {
     static void initFlipSym2Raw() {
         CubieCube c = new CubieCube();
         CubieCube d = new CubieCube();
-        int[] occ = new int[2048 >> 5];
         int count = 0;
-        for (int i = 0; i<2048 >> 5; occ[i++] = 0);
         FlipR2S = new char[2048];
         for (int i = 0; i < 2048; i++) {
-            if ((occ[i >> 5] & (1 << (i & 0x1f))) == 0) {
-                c.setFlip(i);
-                for (int s = 0; s < 16; s += 2) {
-                    EdgeConjugate(c, s, d);
-                    int idx = d.getFlip();
-                    if (idx == i) {
-                        SymStateFlip[count] |= 1 << (s >> 1);
-                    }
-                    occ[idx >> 5] |= 1 << (idx & 0x1f);
-                    FlipR2S[idx] = (char) ((count << 3) | (s >> 1));
-                    if (Search.USE_TWIST_FLIP_PRUN) {
-                        FlipS2RF[(count << 3) | (s >> 1)] = (char) idx;
-                    }
-                }
-                FlipS2R[count++] = (char) i;
+            if (FlipR2S[i] != 0) {
+                continue;
             }
+            c.setFlip(i);
+            for (int s = 0; s < 16; s += 2) {
+                EdgeConjugate(c, s, d);
+                int idx = d.getFlip();
+                if (idx == i) {
+                    SymStateFlip[count] |= 1 << (s >> 1);
+                }
+                FlipR2S[idx] = (char) (count << 3 | s >> 1);
+                if (Search.USE_TWIST_FLIP_PRUN) {
+                    FlipS2RF[count << 3 | s >> 1] = (char) idx;
+                }
+            }
+            FlipS2R[count++] = (char) i;
         }
         assert count == 336;
     }
@@ -598,27 +596,25 @@ class CubieCube {
     static void initTwistSym2Raw() {
         CubieCube c = new CubieCube();
         CubieCube d = new CubieCube();
-        int[] occ = new int[2187 / 32 + 1];
         int count = 0;
-        for (int i = 0; i < 2187 / 32 + 1; occ[i++] = 0);
         TwistR2S = new char[2187];
         for (int i = 0; i < 2187; i++) {
-            if ((occ[i >> 5] & (1 << (i & 0x1f))) == 0) {
-                c.setTwist(i);
-                for (int s = 0; s < 16; s += 2) {
-                    CornConjugate(c, s, d);
-                    int idx = d.getTwist();
-                    if (idx == i) {
-                        SymStateTwist[count] |= 1 << (s >> 1);
-                    }
-                    occ[idx >> 5] |= 1 << (idx & 0x1f);
-                    TwistR2S[idx] = (char) ((count << 3) | (s >> 1));
-                    if (Search.USE_FULL_PRUN) {
-                        TwistS2RF[(count << 3) | (s >> 1)] = (char) idx;
-                    }
-                }
-                TwistS2R[count++] = (char) i;
+            if (TwistR2S[i] != 0) {
+                continue;
             }
+            c.setTwist(i);
+            for (int s = 0; s < 16; s += 2) {
+                CornConjugate(c, s, d);
+                int idx = d.getTwist();
+                if (idx == i) {
+                    SymStateTwist[count] |= 1 << (s >> 1);
+                }
+                TwistR2S[idx] = (char) (count << 3 | s >> 1);
+                if (Search.USE_FULL_PRUN) {
+                    TwistS2RF[count << 3 | s >> 1] = (char) idx;
+                }
+            }
+            TwistS2R[count++] = (char) i;
         }
         assert count == 324;
     }
@@ -628,31 +624,29 @@ class CubieCube {
     static void initPermSym2Raw() {
         CubieCube c = new CubieCube();
         CubieCube d = new CubieCube();
-        int[] occ = new int[40320 / 32];
         int count = 0;
-        for (int i = 0; i < 40320 / 32; occ[i++] = 0);
         EPermR2S = new char[40320];
 
         for (int i = 0; i < 40320; i++) {
-            if ((occ[i >> 5] & (1 << (i & 0x1f))) == 0) {
-                c.setEPerm(i);
-                for (int s = 0; s < 16; s++) {
-                    EdgeConjugate(c, s, d);
-                    int idx = d.getEPerm();
-                    if (idx == i) {
-                        SymStatePerm[count] |= 1 << s;
-                    }
-                    occ[idx >> 5] |= 1 << (idx & 0x1f);
-                    int a = d.getU4Comb();
-                    int b = d.getD4Comb() >> 9;
-                    int m = 494 - (a & 0x1ff) + (a >> 9) * 70 + b * 1680;
-                    MtoEPerm[m] = EPermR2S[idx] = (char) (count << 4 | s);
-                    if (s == 0) {
-                        Perm2Comb[count] = (byte) (494 - (a & 0x1ff));
-                    }
-                }
-                EPermS2R[count++] = (char) i;
+            if (EPermR2S[i] != 0) {
+                continue;
             }
+            c.setEPerm(i);
+            for (int s = 0; s < 16; s++) {
+                EdgeConjugate(c, s, d);
+                int idx = d.getEPerm();
+                if (idx == i) {
+                    SymStatePerm[count] |= 1 << s;
+                }
+                int a = d.getU4Comb();
+                int b = d.getD4Comb() >> 9;
+                int m = 494 - (a & 0x1ff) + (a >> 9) * 70 + b * 1680;
+                MtoEPerm[m] = EPermR2S[idx] = (char) (count << 4 | s);
+                if (s == 0) {
+                    Perm2Comb[count] = (byte) (494 - (a & 0x1ff));
+                }
+            }
+            EPermS2R[count++] = (char) i;
         }
         assert count == 2768;
     }
@@ -662,24 +656,24 @@ class CubieCube {
         CubieCube d = new CubieCube();
         int[] occ = new int[2048 * 495 >> 5];
         int count = 0;
-        for (int i = 0; i<2048 * 495 >> 5; occ[i++] = 0);
         for (int i = 0; i < 2048 * 495; i++) {
-            if ((occ[i >> 5] & (1 << (i & 0x1f))) == 0) {
-                c.setUDSliceFlip(i);
-                for (int s = 0; s < 16; s++) {
-                    EdgeConjugate(c, s, d);
-                    int idx = d.getUDSliceFlip();
-                    if (idx == i) {
-                        SymStateUDSliceFlip[count] |= 1 << s;
-                    }
-                    occ[idx >> 5] |= 1 << (idx & 0x1f);
-                    int fidx = Util.binarySearch(FlipS2R, idx & 0x7ff);
-                    if (fidx != 0xffff) {
-                        FlipSlice2UDSliceFlip[fidx * CoordCube.N_SLICE + (idx >> 11)] = count << 4 | s;
-                    }
-                }
-                UDSliceFlipS2R[count++] = i;
+            if ((occ[i >> 5] & 1 << (i & 0x1f)) != 0) {
+                continue;
             }
+            c.setUDSliceFlip(i);
+            for (int s = 0; s < 16; s++) {
+                EdgeConjugate(c, s, d);
+                int idx = d.getUDSliceFlip();
+                if (idx == i) {
+                    SymStateUDSliceFlip[count] |= 1 << s;
+                }
+                occ[idx >> 5] |= 1 << (idx & 0x1f);
+                int fidx = Util.binarySearch(FlipS2R, idx & 0x7ff);
+                if (fidx != 0xffff) {
+                    FlipSlice2UDSliceFlip[fidx * CoordCube.N_SLICE + (idx >> 11)] = count << 4 | s;
+                }
+            }
+            UDSliceFlipS2R[count++] = i;
         }
         assert count == 64430;
     }
