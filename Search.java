@@ -34,7 +34,9 @@ public class Search {
     static final boolean TRY_INVERSE = true;
     static final boolean TRY_THREE_AXES = true;
 
-    private static final int PRE_IDX_MAX = TRY_PRE_MOVE ? 9 : 1;
+    static final int MAX_DEPTH2 = USE_FULL_PRUN ? 12 : 13;
+
+    static final int PRE_IDX_MAX = TRY_PRE_MOVE ? 9 : 1;
 
     static boolean inited = false;
 
@@ -314,7 +316,7 @@ public class Search {
 
     private String search() {
         for (length1 = isRecovery ? length1 : 0; length1 < sol; length1++) {
-            maxDep2 = Math.min(12, sol - length1);
+            maxDep2 = Math.min(MAX_DEPTH2, sol - length1);
             for (urfIdx = isRecovery ? urfIdx : 0; urfIdx < 6; urfIdx++) {
                 if ((conjMask & 1 << urfIdx) != 0) {
                     continue;
@@ -600,7 +602,7 @@ public class Search {
         }
 
         if (depth2 != maxDep2 - 1) { //At least one solution has been found.
-            maxDep2 = Math.min(12, sol - length1);
+            maxDep2 = Math.min(MAX_DEPTH2, sol - length1);
             return probe >= probeMin ? 0 : 1;
         } else {
             return 1;
