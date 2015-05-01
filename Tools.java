@@ -32,6 +32,14 @@ public class Tools {
         }
     }
 
+    private static void read(int[][] arr, DataInput in) throws IOException {
+        for (int i = 0, leng = arr.length; i < leng; i++) {
+            for (int j = 0, len = arr[i].length; j < len; j++) {
+                arr[i][j] = in.readInt();
+            }
+        }
+    }
+
     private static void write(char[] arr, DataOutput out) throws IOException {
         for (int i = 0, len = arr.length; i < len; i++) {
             out.writeChar(arr[i]);
@@ -52,6 +60,14 @@ public class Tools {
         }
     }
 
+    private static void write(int[][] arr, DataOutput out) throws IOException {
+        for (int i = 0, leng = arr.length; i < leng; i++) {
+            for (int j = 0, len = arr[i].length; j < len; j++) {
+                out.writeInt(arr[i][j]);
+            }
+        }
+    }
+
     protected Tools() {}
 
     /**
@@ -66,6 +82,8 @@ public class Tools {
         if (Search.inited) {
             return;
         }
+        CubieCube.initMove();
+        CubieCube.initSym();
         read(CubieCube.FlipS2R, in);
         read(CubieCube.TwistS2R, in);
         read(CubieCube.EPermS2R, in);
@@ -87,9 +105,11 @@ public class Tools {
         if (Search.USE_FULL_PRUN) {
             read(CubieCube.UDSliceFlipS2R, in);
             read(CubieCube.TwistS2RF, in);
+            read(CoordCube.TwistMoveF, in);
             read(CoordCube.TwistConj, in);
+            read(CoordCube.UDSliceFlipMove, in);
             read(CubieCube.FlipSlice2UDSliceFlip, in);
-            read(CoordCube.UDSliceFlipTwistPrun, in);
+            CoordCube.initUDSliceFlipTwistPrun();
         } else {
             read(CoordCube.UDSliceTwistPrun, in);
             read(CoordCube.UDSliceFlipPrun, in);
@@ -98,8 +118,6 @@ public class Tools {
                 read(CoordCube.TwistFlipPrun, in);
             }
         }
-        CubieCube.initMove();
-        CubieCube.initSym();
         Search.inited = true;
     }
 
@@ -134,10 +152,11 @@ public class Tools {
         if (Search.USE_FULL_PRUN) {
             write(CubieCube.UDSliceFlipS2R, out);       // +    257,720
             write(CubieCube.TwistS2RF, out);            // +      5,184
+            write(CoordCube.TwistMoveF, out);
             write(CoordCube.TwistConj, out);            // +     69,984
+            write(CoordCube.UDSliceFlipMove, out);
             write(CubieCube.FlipSlice2UDSliceFlip, out);// +    665,280
-            write(CoordCube.UDSliceFlipTwistPrun, out); // + 35,227,104
-        } else {                                        // = 36,688,244 Bytes
+        } else {                                        //
             write(CoordCube.UDSliceTwistPrun, out);     // +     80,192
             write(CoordCube.UDSliceFlipPrun, out);      // +     83,160
             if (Search.USE_TWIST_FLIP_PRUN) {           // =    626,324 Bytes

@@ -191,10 +191,10 @@ public class Search {
         if (selfSym >> 48 != 0) {
             conjMask |= 0x38;
         }
-        if (((selfSym >> 16) & 0xffff) != 0) {
+        if ((selfSym >> 16 & 0xffff) != 0) {
             conjMask |= 0x12;
         }
-        if (((selfSym >> 32) & 0xffff) != 0) {
+        if ((selfSym >> 32 & 0xffff) != 0) {
             conjMask |= 0x24;
         }
         preIdxMax = conjMask > 7 ? 1 : PRE_IDX_MAX;
@@ -202,7 +202,7 @@ public class Search {
             node0[i][0].set(cc);
             corn0[i][0] = cc.getCPermSym();
             ud8e0[i][0] = cc.getU4Comb() << 16 | cc.getD4Comb();
-            if ((conjMask & (1 << i)) == 0) {
+            if ((conjMask & 1 << i) == 0) {
                 for (int j = 1; j < preIdxMax; j++) {
                     CubieCube.CornMult(CubieCube.moveCube[CubieCube.preMove[j]], cc, pc);
                     CubieCube.EdgeMult(CubieCube.moveCube[CubieCube.preMove[j]], cc, pc);
@@ -313,14 +313,11 @@ public class Search {
         for (length1 = isRecovery ? length1 : 0; length1 < sol; length1++) {
             maxDep2 = Math.min(12, sol - length1);
             for (urfIdx = isRecovery ? urfIdx : 0; urfIdx < 6; urfIdx++) {
-                if ((conjMask & (1 << urfIdx)) != 0) {
+                if ((conjMask & 1 << urfIdx) != 0) {
                     continue;
                 }
                 for (preIdx = isRecovery ? preIdx : 0; preIdx < preIdxMax; preIdx++) {
                     if (preIdx != 0 && preIdx % 2 == 0) {
-                        assert (node0[urfIdx][preIdx].twist == node0[urfIdx][preIdx - 1].twist
-                                && node0[urfIdx][preIdx].flip == node0[urfIdx][preIdx - 1].flip
-                                && (node0[urfIdx][preIdx].slice & 0x1ff) == (node0[urfIdx][preIdx - 1].slice & 0x1ff));
                         continue;
                     }
                     node0[urfIdx][preIdx].calcPruning(true);
@@ -366,7 +363,6 @@ public class Search {
         for (long s = ssym; (s >>= 1) != 0; i++) {
             if ((s & 1) == 1) {
                 skipMoves |= CubieCube.firstMoveSym[i];
-                continue;
             }
         }
 
@@ -379,14 +375,14 @@ public class Search {
                 int m = axis + power;
 
                 if (isRecovery && m != move[depth1 - maxl]
-                        || ssym != 1 && (skipMoves & (1 << m)) != 0) {
+                        || ssym != 1 && (skipMoves & 1 << m) != 0) {
                     continue;
                 }
 
-                int gap = nodeUD[maxl].doMovePrun(node, m, maxl, true);
-                if (gap < 0) {
+                int prun = nodeUD[maxl].doMovePrun(node, m, maxl, true);
+                if (prun > maxl) {
                     break;
-                } else if (gap == 0) {
+                } else if (prun == maxl) {
                     continue;
                 }
 
@@ -401,6 +397,7 @@ public class Search {
         }
         return 1;
     }
+
     private String searchopt() {
         int maxprun1 = 0;
         int maxprun2 = 0;
@@ -434,7 +431,6 @@ public class Search {
      *      2: Try Next Axis
      */
     private int phase1opt(CoordCube ud, CoordCube rl, CoordCube fb, long ssym, int maxl, int lm) {
-
         if (ud.prun == 0 && rl.prun == 0 && fb.prun == 0 && maxl < 5) {
             maxDep2 = maxl + 1;
             depth1 = length1 - maxl;
@@ -446,7 +442,6 @@ public class Search {
         for (long s = ssym; (s >>= 1) != 0; i++) {
             if ((s & 1) == 1) {
                 skipMoves |= CubieCube.firstMoveSym[i];
-                continue;
             }
         }
 
@@ -458,39 +453,39 @@ public class Search {
                 int m = axis + power;
 
                 if (isRecovery && m != move[length1 - maxl]
-                        || ssym != 1 && (skipMoves & (1 << m)) != 0) {
+                        || ssym != 1 && (skipMoves & 1 << m) != 0) {
                     continue;
                 }
 
                 // UD Axis
-                int gap_ud = nodeUD[maxl].doMovePrun(ud, m, maxl, false);
-                if (gap_ud < 0) {
+                int prun_ud = nodeUD[maxl].doMovePrun(ud, m, maxl, false);
+                if (prun_ud > maxl) {
                     break;
-                } else if (gap_ud == 0) {
+                } else if (prun_ud == maxl) {
                     continue;
                 }
 
                 // RL Axis
                 m = CubieCube.urfMove[2][m];
 
-                int gap_rl = nodeRL[maxl].doMovePrun(rl, m, maxl, false);
-                if (gap_rl < 0) {
+                int prun_rl = nodeRL[maxl].doMovePrun(rl, m, maxl, false);
+                if (prun_rl > maxl) {
                     break;
-                } else if (gap_rl == 0) {
+                } else if (prun_rl == maxl) {
                     continue;
                 }
 
                 // FB Axis
                 m = CubieCube.urfMove[2][m];
 
-                int gap_fb = nodeFB[maxl].doMovePrun(fb, m, maxl, false);
-                if (gap_ud == gap_rl && gap_rl == gap_fb && nodeFB[maxl].prun != 0) {
-                    gap_fb--;
+                int prun_fb = nodeFB[maxl].doMovePrun(fb, m, maxl, false);
+                if (prun_ud == prun_rl && prun_rl == prun_fb && prun_fb != 0) {
+                    prun_fb++;
                 }
 
-                if (gap_fb < 0) {
+                if (prun_fb > maxl) {
                     break;
-                } else if (gap_fb == 0) {
+                } else if (prun_fb == maxl) {
                     continue;
                 }
 
@@ -554,7 +549,12 @@ public class Search {
         int esym = edge & 0xf;
         edge >>= 4;
 
-        prun = Math.max(CoordCube.getPruning(CoordCube.MEPermPrun, edge * 24 + CoordCube.MPermConj[mid][esym]), prun);
+        prun = Math.max(prun, Math.max(
+                            CoordCube.getPruning(CoordCube.MEPermPrun,
+                                    edge * 24 + CoordCube.MPermConj[mid][esym]),
+                            CoordCube.getPruning(CoordCube.EPermCCombPrun,
+                                    edge * 70 + CoordCube.CCombConj[CubieCube.Perm2Comb[cidx]][CubieCube.SymMultInv[esym][csym]])));
+
         if (prun >= maxDep2) {
             return prun > maxDep2 ? 2 : 1;
         }
@@ -625,11 +625,6 @@ public class Search {
             int eidxx = CoordCube.EPermMove[eidx][CubieCube.SymMoveUD[esym][m]];
             int esymx = CubieCube.SymMult[eidxx & 0xf][esym];
             eidxx >>= 4;
-
-            // if (CoordCube.getPruning(CoordCube.CPermECombPrun,
-            //                          cidxx * 70 + CoordCube.ECombConj[CubieCube.Perm2Comb[eidxx]][CubieCube.SymMultInv[csymx][esymx]]) >= maxl) {
-            //     continue;
-            // }
             if (CoordCube.getPruning(CoordCube.EPermCCombPrun,
                                      eidxx * 70 + CoordCube.CCombConj[CubieCube.Perm2Comb[cidxx]][CubieCube.SymMultInv[esymx][csymx]]) >= maxl) {
                 continue;
