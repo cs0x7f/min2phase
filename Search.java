@@ -69,7 +69,7 @@ public class Search {
     private int verbose;
     private CubieCube cc = new CubieCube();
 
-    private boolean isRecovery = false;
+    private boolean isRec = false;
 
     /**
      *     Verbose_Mask determines if a " . " separates the phase1 and phase2 parts of the solver string like in F' R B R L2 F .
@@ -180,7 +180,7 @@ public class Search {
         this.probeMin = Math.min(probeMin, probeMax);
         this.verbose = verbose;
         this.solution = null;
-        this.isRecovery = false;
+        this.isRec = false;
 
         init();
 
@@ -229,7 +229,7 @@ public class Search {
         this.probeMax = probeMax;
         this.probeMin = Math.min(probeMin, probeMax);
         this.solution = null;
-        this.isRecovery = (this.verbose & OPTIMAL_SOLUTION) == (verbose & OPTIMAL_SOLUTION);
+        this.isRec = (this.verbose & OPTIMAL_SOLUTION) == (verbose & OPTIMAL_SOLUTION);
         this.verbose = verbose;
         return (verbose & OPTIMAL_SOLUTION) == 0 ? search() : searchopt();
     }
@@ -315,13 +315,13 @@ public class Search {
     }
 
     private String search() {
-        for (length1 = isRecovery ? length1 : 0; length1 < sol; length1++) {
+        for (length1 = isRec ? length1 : 0; length1 < sol; length1++) {
             maxDep2 = Math.min(MAX_DEPTH2, sol - length1);
-            for (urfIdx = isRecovery ? urfIdx : 0; urfIdx < 6; urfIdx++) {
+            for (urfIdx = isRec ? urfIdx : 0; urfIdx < 6; urfIdx++) {
                 if ((conjMask & 1 << urfIdx) != 0) {
                     continue;
                 }
-                for (preIdx = isRecovery ? preIdx : 0; preIdx < preIdxMax; preIdx++) {
+                for (preIdx = isRec ? preIdx : 0; preIdx < preIdxMax; preIdx++) {
                     if (preIdx != 0 && preIdx % 2 == 0) {
                         continue;
                     }
@@ -373,13 +373,13 @@ public class Search {
 
         for (int axis = 0; axis < 18; axis += 3) {
             if (axis == lm || axis == lm - 9
-                    || (isRecovery && axis < move[depth1 - maxl] - 2)) {
+                    || (isRec && axis < move[depth1 - maxl] - 2)) {
                 continue;
             }
             for (int power = 0; power < 3; power++) {
                 int m = axis + power;
 
-                if (isRecovery && m != move[depth1 - maxl]
+                if (isRec && m != move[depth1 - maxl]
                         || ssym != 1 && (skipMoves & 1 << m) != 0) {
                     continue;
                 }
@@ -416,7 +416,7 @@ public class Search {
         }
         urfIdx = maxprun2 > maxprun1 ? 3 : 0;
         preIdx = 0;
-        for (length1 = isRecovery ? length1 : 0; length1 < sol; length1++) {
+        for (length1 = isRec ? length1 : 0; length1 < sol; length1++) {
             CoordCube ud = node0[0 + urfIdx][0];
             CoordCube rl = node0[1 + urfIdx][0];
             CoordCube fb = node0[2 + urfIdx][0];
@@ -451,13 +451,13 @@ public class Search {
         }
 
         for (int axis = 0; axis < 18; axis += 3) {
-            if (axis == lm || axis == lm - 9 || (isRecovery && axis < move[length1 - maxl] - 2)) {
+            if (axis == lm || axis == lm - 9 || (isRec && axis < move[length1 - maxl] - 2)) {
                 continue;
             }
             for (int power = 0; power < 3; power++) {
                 int m = axis + power;
 
-                if (isRecovery && m != move[length1 - maxl]
+                if (isRec && m != move[length1 - maxl]
                         || ssym != 1 && (skipMoves & 1 << m) != 0) {
                     continue;
                 }
@@ -515,7 +515,7 @@ public class Search {
      *      2: Try Next Axis
      */
     private int initPhase2() {
-        isRecovery = false;
+        isRec = false;
         if (probe >= (solution == null ? probeMax : probeMin)) {
             return 0;
         }

@@ -86,9 +86,9 @@ class CoordCube {
 
     static int getPruningP(byte[] table, long index, final long THRESHOLD) {
         if (index < THRESHOLD) {
-            return (tri2bin[table[(int) (index >> 2)] & 0xff] >> ((index & 3) << 1)) & 3;
+            return tri2bin[table[(int) (index >> 2)] & 0xff] >> ((index & 3) << 1) & 3;
         } else {
-            return (tri2bin[table[(int) (index - THRESHOLD)] & 0xff] >> 8) & 3;
+            return tri2bin[table[(int) (index - THRESHOLD)] & 0xff] >> 8 & 3;
         }
     }
 
