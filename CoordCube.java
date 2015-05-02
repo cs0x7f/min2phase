@@ -624,7 +624,7 @@ class CoordCube {
 
     static void initPermCombPrun() {
         initRawSymPrun(
-            EPermCCombPrun, 7,
+            EPermCCombPrun, 8,
             CCombMove, CCombConj,
             EPermMove, CubieCube.SymStatePerm, 0x44
         );
