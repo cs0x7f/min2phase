@@ -739,7 +739,7 @@ class CoordCube {
                 prunm3 = getPruningP(UDSliceFlipTwistPrunP,
                                      flip * N_TWIST + TwistConj[twist][fsym], N_UDSLICEFLIP_SYM * N_TWIST / 5 * 4);
             }
-            prun = ((0x24924924 >> cc.prun - prunm3 + 2) & 3) + cc.prun - 1;
+            prun = ((0x49249249 << prunm3 >> cc.prun) & 3) + cc.prun - 1;
         } else {
             slice = UDSliceMove[cc.slice & 0x1ff][m] & 0x1ff;
 
