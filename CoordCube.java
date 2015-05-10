@@ -292,8 +292,8 @@ class CoordCube {
                     int twistx = TwistMove[twist][m];
                     int tsymx = twistx & 7;
                     twistx >>= 3;
-                    int flipx = FlipMove[flip][CubieCube.Sym8Move[fsym][m]];
-                    int fsymx = CubieCube.Sym8MultInv[CubieCube.Sym8Mult[flipx & 7][fsym]][tsymx];
+                    int flipx = FlipMove[flip][CubieCube.Sym8Move[m << 3 | fsym]];
+                    int fsymx = CubieCube.Sym8MultInv[CubieCube.Sym8Mult[flipx & 7 | fsym << 3] << 3 | tsymx];
                     flipx >>= 3;
                     int idx = twistx << 11 | CubieCube.FlipS2RF[flipx << 3 | fsymx];
                     if (getPruning(TwistFlipPrun, idx) != check) {
@@ -313,7 +313,7 @@ class CoordCube {
                         if ((sym & 1 << k) == 0) {
                             continue;
                         }
-                        int idxx = twistx << 11 | CubieCube.FlipS2RF[flipx << 3 | CubieCube.Sym8MultInv[fsymx][k]];
+                        int idxx = twistx << 11 | CubieCube.FlipS2RF[flipx << 3 | CubieCube.Sym8MultInv[fsymx << 3 | k]];
                         if (getPruning(TwistFlipPrun, idxx) == 0xf) {
                             setPruning(TwistFlipPrun, idxx, depth);
                             done++;
@@ -688,11 +688,11 @@ class CoordCube {
             prun = Math.max(
                        Math.max(
                            getPruning(UDSliceTwistPrun,
-                                      twist * 495 + UDSliceConj[slice & 0x1ff][tsym]),
+                                      twist * N_SLICE + UDSliceConj[slice & 0x1ff][tsym]),
                            getPruning(UDSliceFlipPrun,
-                                      flip * 495 + UDSliceConj[slice & 0x1ff][fsym])),
+                                      flip * N_SLICE + UDSliceConj[slice & 0x1ff][fsym])),
                        Search.USE_TWIST_FLIP_PRUN ? getPruning(TwistFlipPrun,
-                               twist << 11 | CubieCube.FlipS2RF[flip << 3 | CubieCube.Sym8MultInv[fsym][tsym]]) : 0);
+                               twist << 11 | CubieCube.FlipS2RF[flip << 3 | CubieCube.Sym8MultInv[fsym << 3 | tsym]]) : 0);
         }
     }
 
@@ -737,30 +737,28 @@ class CoordCube {
                                      flip * ((long) N_TWIST) * N_COMB + TwistConj[twist][fsym] * N_COMB + CCombConj[tsym][fsym], N_HUGE_5 * 4L);
             } else {
                 prunm3 = getPruningP(UDSliceFlipTwistPrunP,
-                                     flip * N_TWIST + TwistConj[twist][fsym], N_UDSLICEFLIP_SYM * N_TWIST / 5 * 4);
+                                     flip * N_TWIST + TwistConj[twist][fsym], N_FULL_5 * 4);
             }
             prun = ((0x49249249 << prunm3 >> cc.prun) & 3) + cc.prun - 1;
         } else {
             slice = UDSliceMove[cc.slice & 0x1ff][m] & 0x1ff;
 
-            twist = TwistMove[cc.twist][CubieCube.Sym8Move[cc.tsym][m]];
-            tsym = CubieCube.Sym8Mult[twist & 7][cc.tsym];
-            twist >>= 3;
-
-            flip = FlipMove[cc.flip][CubieCube.Sym8Move[cc.fsym][m]];
-            fsym = CubieCube.Sym8Mult[flip & 7][cc.fsym];
+            flip = FlipMove[cc.flip][CubieCube.Sym8Move[m << 3 | cc.fsym]];
+            fsym = CubieCube.Sym8Mult[flip & 7 | cc.fsym << 3];
             flip >>= 3;
 
-            if (Search.USE_TWIST_FLIP_PRUN) {
-                prun = getPruning(TwistFlipPrun,
-                                  twist << 11 | CubieCube.FlipS2RF[flip << 3 | CubieCube.Sym8MultInv[fsym][tsym]]);
-            } else {
-                prun = 0;
-            }
-            prun = Math.max(prun, getPruning(UDSliceTwistPrun,
-                                             twist * N_SLICE + UDSliceConj[slice][tsym]));
-            prun = Math.max(prun, getPruning(UDSliceFlipPrun,
-                                             flip * N_SLICE + UDSliceConj[slice][fsym]));
+            twist = TwistMove[cc.twist][CubieCube.Sym8Move[m << 3 | cc.tsym]];
+            tsym = CubieCube.Sym8Mult[twist & 7 | cc.tsym << 3];
+            twist >>= 3;
+
+            prun = Math.max(
+                       Math.max(
+                           getPruning(UDSliceTwistPrun,
+                                      twist * N_SLICE + UDSliceConj[slice][tsym]),
+                           getPruning(UDSliceFlipPrun,
+                                      flip * N_SLICE + UDSliceConj[slice][fsym])),
+                       Search.USE_TWIST_FLIP_PRUN ? getPruning(TwistFlipPrun,
+                               twist << 11 | CubieCube.FlipS2RF[flip << 3 | CubieCube.Sym8MultInv[fsym << 3 | tsym]]) : 0);
         }
         return prun;
     }

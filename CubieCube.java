@@ -23,9 +23,9 @@ class CubieCube {
     static int[][] SymMult = new int[16][16];
     static int[][] SymMove = new int[16][18];
     static int[][] SymMultInv = new int[16][16];
-    static int[][] Sym8Mult = new int[8][8];
-    static int[][] Sym8Move = new int[8][18];
-    static int[][] Sym8MultInv = new int[8][8];
+    static int[] Sym8Mult = new int[8 * 8];
+    static int[] Sym8Move = new int[8 * 18];
+    static int[] Sym8MultInv = new int[8 * 8];
     static int[][] SymMoveUD = new int[16][10];
 
     /**
@@ -544,11 +544,11 @@ class CubieCube {
         }
         for (int s = 0; s < 8; s++) {
             for (int j = 0; j < 8; j++) {
-                Sym8Mult[j][s] = SymMult[j << 1][s << 1] >> 1;
-                Sym8MultInv[j][s] = SymMult[j << 1][SymInv[s << 1]]>>1;
+                Sym8Mult[s << 3 | j] = SymMult[j << 1][s << 1] >> 1;
+                Sym8MultInv[j << 3 | s] = SymMult[j << 1][SymInv[s << 1]]>>1;
             }
             for (int j = 0; j < 18; j++) {
-                Sym8Move[s][j] = SymMove[s << 1][j];
+                Sym8Move[j << 3 | s] = SymMove[s << 1][j];
             }
         }
         for (int i = 0; i < 18; i++) {
