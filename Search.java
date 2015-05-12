@@ -25,9 +25,9 @@ package cs.min2phase;
  */
 public class Search {
 
-    static final boolean USE_TWIST_FLIP_PRUN = true;
-    static final boolean USE_FULL_PRUN = false;
-    static final boolean USE_HUGE_PRUN = false;
+    public static final boolean USE_TWIST_FLIP_PRUN = true;
+    public static final boolean USE_FULL_PRUN = false;
+    public static final boolean USE_HUGE_PRUN = false;
 
     //Options for research purpose.
     static final boolean TRY_PRE_MOVE = true;
