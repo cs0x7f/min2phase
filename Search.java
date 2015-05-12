@@ -293,12 +293,12 @@ public class Search {
         try {
             String center = new String(
                 new char[] {
-                    facelets.charAt(4),
-                    facelets.charAt(13),
-                    facelets.charAt(22),
-                    facelets.charAt(31),
-                    facelets.charAt(40),
-                    facelets.charAt(49)
+                    facelets.charAt(Util.U5),
+                    facelets.charAt(Util.R5),
+                    facelets.charAt(Util.F5),
+                    facelets.charAt(Util.D5),
+                    facelets.charAt(Util.L5),
+                    facelets.charAt(Util.B5)
                 }
             );
             for (int i = 0; i < 54; i++) {
