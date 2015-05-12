@@ -199,14 +199,14 @@ class CoordCube {
         CubieCube c = new CubieCube();
         CubieCube d = new CubieCube();
         for (int i = 0; i < N_COMB; i++) {
-            Util.setComb(c.cp, 69 - i, 0);
+            c.setCComb(i);
             for (int j = 0; j < N_MOVES; j++) {
                 CubieCube.CornMult(c, CubieCube.moveCube[j], d);
-                CCombMove[i][j] = (char) (69 - (Util.getComb(d.cp, 0) & 0x1ff));
+                CCombMove[i][j] = (char) d.getCComb();
             }
             for (int j = 0; j < 16; j++) {
                 CubieCube.CornConjugate(c, CubieCube.SymInv[j], d);
-                CCombConj[i][j] = (char) (69 - (Util.getComb(d.cp, 0) & 0x1ff));
+                CCombConj[i][j] = (char) d.getCComb();
             }
         }
     }
@@ -704,7 +704,7 @@ class CoordCube {
             fsym = flip & 0xf;
             flip >>= 4;
             if (Search.USE_HUGE_PRUN) {
-                tsym = (69 - (Util.getComb(cc.cp, 0) & 0x1ff)); //tsym -> CComb
+                tsym = cc.getCComb(); //tsym -> CComb
             }
         } else {
             twist = cc.getTwistSym();

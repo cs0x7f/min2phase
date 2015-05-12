@@ -222,8 +222,7 @@ class CubieCube {
     int getFlip() {
         int idx = 0;
         for (int i = 0; i < 11; i++) {
-            idx <<= 1;
-            idx |= eo[i];
+            idx = idx << 1 | eo[i];
         }
         return idx;
     }
@@ -248,7 +247,7 @@ class CubieCube {
             EdgeConjugate(this, SymInv[k], temps);
             int idx = Util.binarySearch(FlipS2R, temps.getFlip());
             if (idx != 0xffff) {
-                return (idx << 3) | (k >> 1);
+                return idx << 3 | k >> 1;
             }
         }
         return 0;
@@ -257,8 +256,7 @@ class CubieCube {
     int getTwist() {
         int idx = 0;
         for (int i = 0; i < 7; i++) {
-            idx *= 3;
-            idx += co[i];
+            idx += (idx << 1) + co[i];
         }
         return idx;
     }
@@ -283,7 +281,7 @@ class CubieCube {
             CornConjugate(this, SymInv[k], temps);
             int idx = Util.binarySearch(TwistS2R, temps.getTwist());
             if (idx != 0xffff) {
-                return (idx << 3) | (k >> 1);
+                return idx << 3 | k >> 1;
             }
         }
         return 0;
@@ -330,7 +328,7 @@ class CubieCube {
             CornConjugate(this, SymInv[k], temps);
             int idx = Util.binarySearch(EPermS2R, temps.getCPerm());
             if (idx != 0xffff) {
-                return (idx << 4) | k;
+                return idx << 4 | k;
             }
         }
         return 0;
@@ -355,7 +353,7 @@ class CubieCube {
             EdgeConjugate(this, SymInv[k], temps);
             int idx = Util.binarySearch(EPermS2R, temps.getEPerm());
             if (idx != 0xffff) {
-                return (idx << 4) | k;
+                return idx << 4 | k;
             }
         }
         return 0;
@@ -367,6 +365,14 @@ class CubieCube {
 
     void setMPerm(int idx) {
         Util.setComb(ep, idx << 9, 8);
+    }
+
+    int getCComb() {
+        return 69 - (Util.getComb(cp, 0) & 0x1ff);
+    }
+
+    void setCComb(int idx) {
+        Util.setComb(cp, 69 - idx, 0);
     }
 
     /**
@@ -452,17 +458,12 @@ class CubieCube {
     }
 
     int getUDSliceFlipSym() {
-        if (temps == null) {
-            temps = new CubieCube();
-        }
-        for (int k = 0; k < 16; k++) {
-            EdgeConjugate(this, SymInv[k], temps);
-            int idx = Util.binarySearch(UDSliceFlipS2R, temps.getUDSliceFlip());
-            if (idx != 0xffff) {
-                return (idx << 4) | k;
-            }
-        }
-        return 0;
+        int flip = getFlipSym();
+        int fsym = flip & 0x7;
+        flip >>= 3;
+        int udslice = getUDSlice() & 0x1ff;
+        int udsliceflip = FlipSlice2UDSliceFlip[flip * 495 + CoordCube.UDSliceConj[udslice][fsym]];
+        return udsliceflip & 0xfffffff0 | SymMult[udsliceflip & 0xf][fsym << 1];
     }
 
     // ********************************************* Initialization functions *********************************************
