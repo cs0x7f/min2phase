@@ -195,46 +195,6 @@ class Util {
         return new String(f);
     }
 
-    static int binarySearch(char[] arr, int key) {
-        int length = arr.length;
-        if (key <= arr[length - 1]) {
-            int l = 0;
-            int r = length - 1;
-            while (l <= r) {
-                int mid = (l + r) >> 1;
-                char val = arr[mid];
-                if (key > val) {
-                    l = mid + 1;
-                } else if (key < val) {
-                    r = mid - 1;
-                } else {
-                    return mid;
-                }
-            }
-        }
-        return 0xffff;
-    }
-
-    static int binarySearch(int[] arr, int key) {
-        int length = arr.length;
-        if (key <= arr[length - 1]) {
-            int l = 0;
-            int r = length - 1;
-            while (l <= r) {
-                int mid = (l + r) >> 1;
-                int val = arr[mid];
-                if (key > val) {
-                    l = mid + 1;
-                } else if (key < val) {
-                    r = mid - 1;
-                } else {
-                    return mid;
-                }
-            }
-        }
-        return 0xffff;
-    }
-
     static int getNParity(int idx, int n) {
         int p = 0;
         for (int i = n - 2; i >= 0; i--) {

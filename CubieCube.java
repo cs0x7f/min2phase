@@ -1,6 +1,6 @@
 package cs.min2phase;
 
-import java.util.Random;
+import java.util.Arrays;
 
 class CubieCube {
 
@@ -245,11 +245,12 @@ class CubieCube {
         }
         for (int k = 0; k < 16; k += 2) {
             EdgeConjugate(this, SymInv[k], temps);
-            int idx = Util.binarySearch(FlipS2R, temps.getFlip());
-            if (idx != 0xffff) {
+            int idx = Arrays.binarySearch(FlipS2R, (char) temps.getFlip());
+            if (idx >= 0) {
                 return idx << 3 | k >> 1;
             }
         }
+        assert false;
         return 0;
     }
 
@@ -279,11 +280,12 @@ class CubieCube {
         }
         for (int k = 0; k < 16; k += 2) {
             CornConjugate(this, SymInv[k], temps);
-            int idx = Util.binarySearch(TwistS2R, temps.getTwist());
-            if (idx != 0xffff) {
+            int idx = Arrays.binarySearch(TwistS2R, (char) temps.getTwist());
+            if (idx >= 0) {
                 return idx << 3 | k >> 1;
             }
         }
+        assert false;
         return 0;
     }
 
@@ -326,11 +328,12 @@ class CubieCube {
         }
         for (int k = 0; k < 16; k++) {
             CornConjugate(this, SymInv[k], temps);
-            int idx = Util.binarySearch(EPermS2R, temps.getCPerm());
-            if (idx != 0xffff) {
+            int idx = Arrays.binarySearch(EPermS2R, (char) temps.getCPerm());
+            if (idx >= 0) {
                 return idx << 4 | k;
             }
         }
+        assert false;
         return 0;
     }
 
@@ -351,8 +354,8 @@ class CubieCube {
         }
         for (int k = 0; k < 16; k++) {
             EdgeConjugate(this, SymInv[k], temps);
-            int idx = Util.binarySearch(EPermS2R, temps.getEPerm());
-            if (idx != 0xffff) {
+            int idx = Arrays.binarySearch(EPermS2R, (char) temps.getEPerm());
+            if (idx >= 0) {
                 return idx << 4 | k;
             }
         }
@@ -669,8 +672,8 @@ class CubieCube {
                     SymStateUDSliceFlip[count] |= 1 << s;
                 }
                 occ[idx >> 5] |= 1 << (idx & 0x1f);
-                int fidx = Util.binarySearch(FlipS2R, idx & 0x7ff);
-                if (fidx != 0xffff) {
+                int fidx = Arrays.binarySearch(FlipS2R, (char) (idx & 0x7ff));
+                if (fidx >= 0) {
                     FlipSlice2UDSliceFlip[fidx * CoordCube.N_SLICE + (idx >> 11)] = count << 4 | s;
                 }
             }
