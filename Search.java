@@ -242,6 +242,10 @@ public class Search {
         return probe;
     }
 
+    public int length() {
+        return sol;
+    }
+
     public synchronized static void init() {
         if (inited) {
             return;
