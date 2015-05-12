@@ -31,6 +31,7 @@ public class MainProgram extends javax.swing.JFrame {
     private final int[] XOFF = { 3, 6, 3, 3, 0, 9 };// Offsets for facelet display
     private final int[] YOFF = { 0, 3, 3, 6, 3, 3 };
     private final Color[] COLORS = { Color.white, Color.red, Color.green, Color.yellow, Color.orange, Color.blue };
+    private JTextPane jTextPane1;
     private JCheckBox checkBoxShowStr;
     private JButton buttonRandom;
     private JCheckBox checkBoxUseSep;
@@ -94,6 +95,7 @@ public class MainProgram extends javax.swing.JFrame {
         getContentPane().setLayout(null);
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         this.setTitle("Two-Phase Package GUI-Example");
+        this.setPreferredSize(new java.awt.Dimension(546, 521));
 
         // ++++++++++++++++++++++++++++++++++ Set up Solve Cube Button ++++++++++++++++++++++++++++++++++++++++++++++++++++
         Solve = new JButton("Solve Cube");
@@ -194,8 +196,9 @@ public class MainProgram extends javax.swing.JFrame {
                 public void actionPerformed(ActionEvent evt) {
                     // +++++++++++++++++++++++++++++ Call Random function from package org.kociemba.twophase ++++++++++++++++++++
                     String r = Tools.randomCube();
+                    jTextPane1.setText(r);
                     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                    for (int i = 0; i < 6; i++)
+                    for (int i = 0; i < 6; i++) {
                         for (int j = 0; j < 9; j++) {
                             switch (r.charAt(9 * i + j)) {
                             case 'U':
@@ -218,8 +221,16 @@ public class MainProgram extends javax.swing.JFrame {
                                 break;
                             }
                         }
+                    }
+                    spinnerMaxMoves.setValue(21);
                 }
             });
+        }
+        {
+            jTextPane1 = new JTextPane();
+            getContentPane().add(jTextPane1);
+            jTextPane1.setText("jTextPane1");
+            jTextPane1.setBounds(12, 417, 520, 63);
         }
 
         // ++++++++++++++++++++++++++++++++++ Set up editable facelets ++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -256,7 +267,7 @@ public class MainProgram extends javax.swing.JFrame {
 
         }
         pack();
-        this.setSize(556, 441);
+        this.setSize(546, 521);
     }
 
     // ++++++++++++++++++++++++++++++++++++ End initGUI +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -331,8 +342,14 @@ public class MainProgram extends javax.swing.JFrame {
                 result = "Timeout, no solution found within given maximum time!";
                 break;
             }
+            JOptionPane.showMessageDialog(null, result, Double.toString((t / 1000) / 1000.0) + " ms | " + n_probe + " probes", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            int solLen = (result.length() - (useSeparator ? 3 : 0) - (showLength ? 4 : 0)) / 3;
+            spinnerMaxMoves.setValue(solLen - 1);
+            jTextPane1.setText(String.format("%s\n" /*, %s ms, %d probes\n*/, result/*, Double.toString((t / 1000) / 1000.0), n_probe*/) + jTextPane1.getText());
+            jTextPane1.requestFocusInWindow();
+            jTextPane1.select(0, result.length());
         }
-        JOptionPane.showMessageDialog(null, result, Double.toString((t / 1000) / 1000.0) + " ms | " + n_probe + " probes", JOptionPane.INFORMATION_MESSAGE);
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     }
 }
