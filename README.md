@@ -13,16 +13,16 @@ Conventional two-phase algorithm only find (sub-)optimal solutions to &lt;U,R2,F
 - Try pre-scramble: We can also use pre-scramble technique (which is widely used in fewest-move challenge) to find more phase1 solutions.
 
 # Benchmark
-- Memory: ~1M with twist-flip-pruning (TFP) table, ~0.7M without TFP table, ~37M with Full table. See [Search.java line 28](https://github.com/cs0x7f/min2phase/blob/master/Search.java#L28).
+- Memory: ~1M with twist-flip-pruning (TFP) table, ~0.7M without TFP table, ~40M with Full table. See [Search.java line 28](https://github.com/cs0x7f/min2phase/blob/master/Search.java#L28).
 - Average solving time (CPU: Intel Core i7-2670QM. Flag: F=Full P1 table, T=TFP table, A=three axes, I=inverse, P=pre-scramble. Kociemba: Kociemba's [twophase.jar](http://kociemba.org/twophase.jar)): 
 
     |   Flag   | Unlimited | 21 moves | 20 moves |
     |:--------:|:---------:|:--------:|:--------:|
     | Kociemba |    45 ms  |   70 ms  | >1000 ms |
-    |   TAIP   |   3.0 ms  |  3.2 ms  |   18 ms  |
-    |   FAIP   |   1.5 ms  |  1.5 ms  |  2.4 ms  |
+    |   TAIP   |   2.2 ms  |  2.6 ms  |   16 ms  |
+    |   FAIP   |   1.8 ms  |  1.8 ms  |  2.5 ms  |
 
-- Initialization Time: 170 ms without TFP table, 240 ms with TFP table, 1200 ms with Full table.
+- Initialization Time: 150 ms without TFP table, 220 ms with TFP table, 12 s with Full table.
 
 # File Description
 - Tools.java Many useful functions, can be excluded.

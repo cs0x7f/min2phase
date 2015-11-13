@@ -6,14 +6,16 @@ Search.java \
 Util.java \
 Tools.java
 
-nprobe = 0
-ifdef probe
-	nprobe = $(probe)
+ifndef probe
+	probe = 0
 endif
 
-nmaxl = 30
-ifdef maxl
-	nmaxl = $(maxl)
+ifndef maxl
+	maxl = 30
+endif
+
+ifndef ntest
+	ntest = 1000
 endif
 
 DIST = twophase.jar
@@ -31,7 +33,7 @@ run: build
 	@java -jar twophase.jar
 
 testRnd: test.class
-	@java -ea -cp .:twophase.jar test 40 1000 $(nmaxl) 10000000 $(nprobe) 0
+	@java -ea -cp .:twophase.jar test 40 $(ntest) $(maxl) 10000000 $(probe) 0
 
 testSel: test.class
 	@java -ea -cp .:twophase.jar test 24
