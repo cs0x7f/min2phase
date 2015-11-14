@@ -133,9 +133,9 @@ class Util {
     static void toCubieCube(byte[] f, CubieCube ccRet) {
         byte ori;
         for (int i = 0; i < 8; i++)
-            ccRet.cp[i] = 0;// invalidate corners
+            ccRet.ca[i] = 0;// invalidate corners
         for (int i = 0; i < 12; i++)
-            ccRet.ep[i] = 0;// and edges
+            ccRet.ea[i] = 0;// and edges
         byte col1, col2;
         for (byte i = 0; i < 8; i++) {
             // get the colors of the cubie at corner i, starting with U/D
@@ -148,8 +148,7 @@ class Util {
             for (byte j = 0; j < 8; j++) {
                 if (col1 == cornerFacelet[j][1] / 9 && col2 == cornerFacelet[j][2] / 9) {
                     // in cornerposition i we have cornercubie j
-                    ccRet.cp[i] = j;
-                    ccRet.co[i] = (byte) (ori % 3);
+                    ccRet.ca[i] = (byte) (ori % 3 << 3 | j);
                     break;
                 }
             }
@@ -158,14 +157,12 @@ class Util {
             for (byte j = 0; j < 12; j++) {
                 if (f[edgeFacelet[i][0]] == edgeFacelet[j][0] / 9
                         && f[edgeFacelet[i][1]] == edgeFacelet[j][1] / 9) {
-                    ccRet.ep[i] = j;
-                    ccRet.eo[i] = 0;
+                    ccRet.ea[i] = (byte) (j << 1);
                     break;
                 }
                 if (f[edgeFacelet[i][0]] == edgeFacelet[j][1] / 9
                         && f[edgeFacelet[i][1]] == edgeFacelet[j][0] / 9) {
-                    ccRet.ep[i] = j;
-                    ccRet.eo[i] = 1;
+                    ccRet.ea[i] = (byte) (j << 1 | 1);
                     break;
                 }
             }
@@ -179,16 +176,16 @@ class Util {
             f[i] = ts[i / 9];
         }
         for (byte c = 0; c < 8; c++) {
-            byte j = cc.cp[c];// cornercubie with index j is at
+            int j = cc.ca[c] & 0x7;// cornercubie with index j is at
             // cornerposition with index c
-            byte ori = cc.co[c];// Orientation of this cubie
+            int ori = cc.ca[c] >> 3;// Orientation of this cubie
             for (byte n = 0; n < 3; n++)
                 f[cornerFacelet[c][(n + ori) % 3]] = ts[cornerFacelet[j][n] / 9];
         }
         for (byte e = 0; e < 12; e++) {
-            byte j = cc.ep[e];// edgecubie with index j is at edgeposition
+            int j = cc.ea[e] >> 1;// edgecubie with index j is at edgeposition
             // with index e
-            byte ori = cc.eo[e];// Orientation of this cubie
+            int ori = cc.ea[e] & 1;// Orientation of this cubie
             for (byte n = 0; n < 2; n++)
                 f[edgeFacelet[e][(n + ori) % 2]] = ts[edgeFacelet[j][n] / 9];
         }
@@ -204,49 +201,62 @@ class Util {
         return p & 1;
     }
 
-    static void set8Perm(byte[] arr, int idx) {
+    static byte setVal(int val0, int val, boolean isEdge) {
+        return (byte) (isEdge ? (val << 1 | val0 & 1) : (val | val0 & 0xf8));
+    }
+
+    static int getVal(int val0, boolean isEdge) {
+        return isEdge ? val0 >> 1 : val0 & 7;
+    }
+
+    static void set8Perm(byte[] arr, int idx, boolean isEdge) {
         int val = 0x76543210;
         for (int i = 0; i < 7; i++) {
             int p = fact[7 - i];
             int v = idx / p;
             idx -= v * p;
             v <<= 2;
-            arr[i] = (byte) (val >> v & 0x7);
+            arr[i] = setVal(arr[i], (val >> v & 0x7), isEdge);
             int m = (1 << v) - 1;
             val = val & m | val >> 4 & ~m;
         }
-        arr[7] = (byte) val;
+        arr[7] = setVal(arr[7], val, isEdge);
     }
 
-    static int get8Perm(byte[] arr) {
+    static int get8Perm(byte[] arr, boolean isEdge) {
         int idx = 0;
         int val = 0x76543210;
         for (int i = 0; i < 7; i++) {
-            int v = arr[i] << 2;
+            int v = getVal(arr[i], isEdge) << 2;
             idx = (8 - i) * idx + (val >> v & 0x7);
             val -= 0x11111110 << v;
         }
         return idx;
     }
 
-    static void setNPerm(byte[] arr, int idx, int n) {
-        arr[n - 1] = 0;
+    static void setNPerm(byte[] arr, int idx, int n, boolean isEdge) {
+        arr[n - 1] = setVal(arr[n - 1], 0, isEdge);
         for (int i = n - 2; i >= 0; i--) {
-            arr[i] = (byte) (idx % (n - i));
+            int arri = idx % (n - i);
+            arr[i] = setVal(arr[i], arri, isEdge);
             idx /= (n - i);
             for (int j = i + 1; j < n; j++) {
-                if (arr[j] >= arr[i])
-                    arr[j]++;
+                int arrj = getVal(arr[j], isEdge);
+                if (arrj >= arri) {
+                    arr[j] = setVal(arr[j], ++arrj, isEdge);
+                }
             }
         }
     }
 
-    static int getNPerm(byte[] arr, int n) {
+    static int getNPerm(byte[] arr, int n, boolean isEdge) {
         int idx = 0;
         for (int i = 0; i < n; i++) {
             idx *= (n - i);
+            int arri = getVal(arr[i], isEdge);
             for (int j = i + 1; j < n; j++) {
-                if (arr[j] < arr[i]) {
+                int arrj = getVal(arr[j], isEdge);
+                if (arrj < arri) {
                     idx++;
                 }
             }
@@ -254,12 +264,13 @@ class Util {
         return idx;
     }
 
-    static int getComb(byte[] arr, int mask) {
+    static int getComb(byte[] arr, int mask, boolean isEdge) {
         int end = arr.length - 1;
         int idxC = 0, idxP = 0, r = 4, val = 0x0123;
         for (int i = end; i >= 0; i--) {
-            if ((arr[i] & 0xc) == mask) {
-                int v = (arr[i] & 3) << 2;
+            int perm = getVal(arr[i], isEdge);
+            if ((perm & 0xc) == mask) {
+                int v = (perm & 3) << 2;
                 idxP = r * idxP + (val >> v & 0xf);
                 val -= 0x0111 >> (12 - v);
                 idxC += Cnk[i][r--];
@@ -268,7 +279,7 @@ class Util {
         return idxP << 9 | Cnk[arr.length][4] - 1 - idxC;
     }
 
-    static void setComb(byte[] arr, int idx, int mask) {
+    static void setComb(byte[] arr, int idx, int mask, boolean isEdge) {
         int end = arr.length - 1;
         int r = 4, fill = end, val = 0x0123;
         int idxC = Cnk[arr.length][4] - 1 - (idx & 0x1ff);
@@ -279,14 +290,14 @@ class Util {
                 int p = fact[r];
                 int v = idxP / p << 2;
                 idxP %= p;
-                arr[i] = (byte) (val >> v & 3 | mask);
+                arr[i] = setVal(arr[i], val >> v & 3 | mask, isEdge);
                 int m = (1 << v) - 1;
                 val = val & m | val >> 4 & ~m;
             } else {
                 if ((fill & 0xc) == mask) {
                     fill -= 4;
                 }
-                arr[i] = (byte) (fill--);
+                arr[i] = setVal(arr[i], fill--, isEdge);
             }
         }
     }
@@ -315,13 +326,13 @@ class Util {
         byte[] arr2 = new byte[4];
         byte[] arr3 = new byte[4];
         for (int i = 0; i < 24; i++) {
-            setNPerm(arr1, i, 4);
+            setNPerm(arr1, i, 4, false);
             for (int j = 0; j < 24; j++) {
-                setNPerm(arr2, j, 4);
+                setNPerm(arr2, j, 4, false);
                 for (int k = 0; k < 4; k++) {
                     arr3[k] = arr1[arr2[k]];
                 }
-                permMult[i][j] = getNPerm(arr3, 4);
+                permMult[i][j] = getNPerm(arr3, 4, false);
             }
         }
     }

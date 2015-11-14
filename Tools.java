@@ -250,13 +250,26 @@ public class Tools {
                 arr[idx] = val[--cntU];
             }
         }
-        int p = Util.getNParity(Util.getNPerm(arr, arr.length), arr.length);
+        int p = Util.getNParity(getNPerm(arr, arr.length), arr.length);
         if (p == 1 - parity && last != -1) {
             byte temp = arr[idx - 1];
             arr[idx - 1] = arr[last];
             arr[last] = temp;
         }
         return p;
+    }
+
+    static int getNPerm(byte[] arr, int n) {
+        int idx = 0;
+        for (int i = 0; i < n; i++) {
+            idx *= (n - i);
+            for (int j = i + 1; j < n; j++) {
+                if (arr[j] < arr[i]) {
+                    idx++;
+                }
+            }
+        }
+        return idx;
     }
 
     protected static final byte[] STATE_RANDOM = null;
@@ -272,7 +285,7 @@ public class Tools {
                 epVal = parity = 0;
             } else {
                 parity = resolvePerm(ep, cntUE, -1);
-                epVal = Util.getNPerm(ep, 12);
+                epVal = getNPerm(ep, 12);
             }
             if (cp == STATE_SOLVED) {
                 cpVal = 0;
@@ -282,7 +295,7 @@ public class Tools {
                 } while (Util.getNParity(cpVal, 8) != parity);
             } else {
                 resolvePerm(cp, cntUC, parity);
-                cpVal = Util.getNPerm(cp, 8);
+                cpVal = getNPerm(cp, 8);
             }
         } else {    //ep != STATE_SOLVED
             if (cp == STATE_SOLVED) {
@@ -292,7 +305,7 @@ public class Tools {
                 parity = Util.getNParity(cpVal, 8);
             } else {
                 parity = resolvePerm(cp, cntUC, -1);
-                cpVal = Util.getNPerm(cp, 8);
+                cpVal = getNPerm(cp, 8);
             }
             if (ep == STATE_RANDOM) {
                 do {
@@ -300,7 +313,7 @@ public class Tools {
                 } while (Util.getNParity(epVal, 12) != parity);
             } else {
                 resolvePerm(ep, cntUE, parity);
-                epVal = Util.getNPerm(ep, 12);
+                epVal = getNPerm(ep, 12);
             }
         }
         return Util.toFaceCube(

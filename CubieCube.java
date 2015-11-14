@@ -76,10 +76,8 @@ class CubieCube {
         {5, 4, 3, 8, 7, 6, 2, 1, 0, 14, 13, 12, 17, 16, 15, 11, 10, 9}
     };
 
-    byte[] cp = {0, 1, 2, 3, 4, 5, 6, 7};
-    byte[] co = {0, 0, 0, 0, 0, 0, 0, 0};
-    byte[] ep = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
-    byte[] eo = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    byte[] ca = {0, 1, 2, 3, 4, 5, 6, 7};
+    byte[] ea = {0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22};
     CubieCube temps = null;
 
     CubieCube() {
@@ -88,7 +86,7 @@ class CubieCube {
     CubieCube(int cperm, int twist, int eperm, int flip) {
         this.setCPerm(cperm);
         this.setTwist(twist);
-        Util.setNPerm(ep, eperm, 12);
+        Util.setNPerm(ea, eperm, 12, true);
         this.setFlip(flip);
     }
 
@@ -98,7 +96,7 @@ class CubieCube {
 
     public boolean equalsCorn(CubieCube c) {
         for (int i = 0; i < 8; i++) {
-            if (cp[i] != c.cp[i] || co[i] != c.co[i]) {
+            if (ca[i] != c.ca[i]) {
                 return false;
             }
         }
@@ -107,7 +105,7 @@ class CubieCube {
 
     public boolean equalsEdge(CubieCube c) {
         for (int i = 0; i < 12; i++) {
-            if (ep[i] != c.ep[i] || eo[i] != c.eo[i]) {
+            if (ea[i] != c.ea[i]) {
                 return false;
             }
         }
@@ -116,12 +114,10 @@ class CubieCube {
 
     void copy(CubieCube c) {
         for (int i = 0; i < 8; i++) {
-            this.cp[i] = c.cp[i];
-            this.co[i] = c.co[i];
+            this.ca[i] = c.ca[i];
         }
         for (int i = 0; i < 12; i++) {
-            this.ep[i] = c.ep[i];
-            this.eo[i] = c.eo[i];
+            this.ea[i] = c.ea[i];
         }
     }
 
@@ -129,17 +125,13 @@ class CubieCube {
         if (temps == null) {
             temps = new CubieCube();
         }
-        for (byte edge = 0; edge < 12; edge++)
-            temps.ep[ep[edge]] = edge;
-        for (byte edge = 0; edge < 12; edge++)
-            temps.eo[edge] = eo[temps.ep[edge]];
-        for (byte corn = 0; corn < 8; corn++)
-            temps.cp[cp[corn]] = corn;
+        for (byte edge = 0; edge < 12; edge++) {
+            temps.ea[ea[edge] >> 1] = (byte) (edge << 1 | ea[edge] & 1);
+        }
         for (byte corn = 0; corn < 8; corn++) {
-            byte ori = co[temps.cp[corn]];
-            temps.co[corn] = (byte) - ori;
-            if (temps.co[corn] < 0)
-                temps.co[corn] += 3;
+            int ori = ca[corn] >> 3;
+            ori = 4 >> ori & 3; //0->0, 1->2, 2->1
+            temps.ca[ca[corn] & 0x7] = (byte) (corn | ori << 3);
         }
         copy(temps);
     }
@@ -149,16 +141,15 @@ class CubieCube {
      */
     static void CornMult(CubieCube a, CubieCube b, CubieCube prod) {
         for (int corn = 0; corn < 8; corn++) {
-            prod.cp[corn] = a.cp[b.cp[corn]];
-            byte oriA = a.co[b.cp[corn]];
-            byte oriB = b.co[corn];
-            byte ori = oriA;
+            int oriA = a.ca[b.ca[corn] & 7] >> 3;
+            int oriB = b.ca[corn] >> 3;
+            int ori = oriA;
             ori += (oriA < 3) ? oriB : 6 - oriB;
             ori %= 3;
             if ((oriA >= 3) ^ (oriB >= 3)) {
                 ori += 3;
             }
-            prod.co[corn] = ori;
+            prod.ca[corn] = (byte) (a.ca[b.ca[corn] & 7] & 7 | ori << 3);
         }
     }
 
@@ -167,8 +158,7 @@ class CubieCube {
      */
     static void EdgeMult(CubieCube a, CubieCube b, CubieCube prod) {
         for (int ed = 0; ed < 12; ed++) {
-            prod.ep[ed] = a.ep[b.ep[ed]];
-            prod.eo[ed] = (byte) (b.eo[ed] ^ a.eo[b.ep[ed]]);
+            prod.ea[ed] = (byte) (a.ea[b.ea[ed] >> 1] ^ (b.ea[ed] & 1));
         }
     }
 
@@ -179,10 +169,10 @@ class CubieCube {
         CubieCube sinv = CubeSym[SymInv[idx]];
         CubieCube s = CubeSym[idx];
         for (int corn = 0; corn < 8; corn++) {
-            b.cp[corn] = sinv.cp[a.cp[s.cp[corn]]];
-            byte oriA = sinv.co[a.cp[s.cp[corn]]];
-            byte oriB = a.co[s.cp[corn]];
-            b.co[corn] = (byte) ((oriA < 3) ? oriB : (3 - oriB) % 3);
+            int oriA = sinv.ca[a.ca[s.ca[corn] & 7] & 7] >> 3;
+            int oriB = a.ca[s.ca[corn] & 7] >> 3;
+            int ori = (oriA < 3) ? oriB : (3 - oriB) % 3;
+            b.ca[corn] = (byte) (sinv.ca[a.ca[s.ca[corn] & 7] & 7] & 7 | ori << 3);
         }
     }
 
@@ -193,8 +183,7 @@ class CubieCube {
         CubieCube sinv = CubeSym[SymInv[idx]];
         CubieCube s = CubeSym[idx];
         for (int ed = 0; ed < 12; ed++) {
-            b.ep[ed] = sinv.ep[a.ep[s.ep[ed]]];
-            b.eo[ed] = (byte) (s.eo[ed] ^ a.eo[s.ep[ed]] ^ sinv.eo[a.ep[s.ep[ed]]]);
+            b.ea[ed] = (byte) (sinv.ea[a.ea[s.ea[ed] >> 1] >> 1] ^ (a.ea[s.ea[ed] >> 1] & 1) ^ (s.ea[ed] & 1));
         }
     }
 
@@ -222,7 +211,7 @@ class CubieCube {
     int getFlip() {
         int idx = 0;
         for (int i = 0; i < 11; i++) {
-            idx = idx << 1 | eo[i];
+            idx = idx << 1 | ea[i] & 1;
         }
         return idx;
     }
@@ -230,10 +219,12 @@ class CubieCube {
     void setFlip(int idx) {
         int parity = 0;
         for (int i = 10; i >= 0; i--) {
-            parity ^= eo[i] = (byte) (idx & 1);
+            int val = idx & 1;
+            ea[i] = (byte) (ea[i] & 0xfe | val);
+            parity ^= val;
             idx >>= 1;
         }
-        eo[11] = (byte)parity;
+        ea[11] = (byte) (ea[11] & 0xfe | parity);
     }
 
     int getFlipSym() {
@@ -257,7 +248,7 @@ class CubieCube {
     int getTwist() {
         int idx = 0;
         for (int i = 0; i < 7; i++) {
-            idx += (idx << 1) + co[i];
+            idx += (idx << 1) + (ca[i] >> 3);
         }
         return idx;
     }
@@ -265,10 +256,12 @@ class CubieCube {
     void setTwist(int idx) {
         int twst = 0;
         for (int i = 6; i >= 0; i--) {
-            twst += co[i] = (byte) (idx % 3);
+            int val = idx % 3;
+            ca[i] = (byte) (ca[i] & 0x7 | val << 3);
+            twst += val;
             idx /= 3;
         }
-        co[7] = (byte) ((15 - twst) % 3);
+        ca[7] = (byte) (ca[7] & 0x7 | ((15 - twst) % 3) << 3);
     }
 
     int getTwistSym() {
@@ -290,19 +283,19 @@ class CubieCube {
     }
 
     int getUDSlice() {
-        return Util.getComb(ep, 8);
+        return Util.getComb(ea, 8, true);
     }
 
     void setUDSlice(int idx) {
-        Util.setComb(ep, idx, 8);
+        Util.setComb(ea, idx, 8, true);
     }
 
     int getU4Comb() {
-        return Util.getComb(ep, 0);
+        return Util.getComb(ea, 0, true);
     }
 
     int getD4Comb() {
-        return Util.getComb(ep, 4);
+        return Util.getComb(ea, 4, true);
     }
 
     // ++++++++++++++++++++ Phase 2 Coordnates ++++++++++++++++++++
@@ -311,11 +304,11 @@ class CubieCube {
     // MPerm : Permutations of 4 UDSlice Edges. [0, 24)
 
     int getCPerm() {
-        return Util.get8Perm(cp);
+        return Util.get8Perm(ca, false);
     }
 
     void setCPerm(int idx) {
-        Util.set8Perm(cp, idx);
+        Util.set8Perm(ca, idx, false);
     }
 
     int getCPermSym() {
@@ -338,11 +331,11 @@ class CubieCube {
     }
 
     int getEPerm() {
-        return Util.get8Perm(ep);
+        return Util.get8Perm(ea, true);
     }
 
     void setEPerm(int idx) {
-        Util.set8Perm(ep, idx);
+        Util.set8Perm(ea, idx, true);
     }
 
     int getEPermSym() {
@@ -363,19 +356,19 @@ class CubieCube {
     }
 
     int getMPerm() {
-        return Util.getComb(ep, 8) >> 9;
+        return Util.getComb(ea, 8, true) >> 9;
     }
 
     void setMPerm(int idx) {
-        Util.setComb(ep, idx << 9, 8);
+        Util.setComb(ea, idx << 9, 8, true);
     }
 
     int getCComb() {
-        return 69 - (Util.getComb(cp, 0) & 0x1ff);
+        return 69 - (Util.getComb(ca, 0, false) & 0x1ff);
     }
 
     void setCComb(int idx) {
-        Util.setComb(cp, 69 - idx, 0);
+        Util.setComb(ca, 69 - idx, 0, false);
     }
 
     /**
@@ -391,8 +384,8 @@ class CubieCube {
         int sum = 0;
         int edgeMask = 0;
         for (int e = 0; e < 12; e++) {
-            edgeMask |= 1 << ep[e];
-            sum ^= eo[e];
+            edgeMask |= 1 << (ea[e] >> 1);
+            sum ^= ea[e] & 1;
         }
         if (edgeMask != 0xfff) {
             return -2;// missing edges
@@ -403,8 +396,8 @@ class CubieCube {
         int cornMask = 0;
         sum = 0;
         for (int c = 0; c < 8; c++) {
-            cornMask |= 1 << cp[c];
-            sum += co[c];
+            cornMask |= 1 << (ca[c] & 7);
+            sum += ca[c] >> 3;
         }
         if (cornMask != 0xff) {
             return -4;// missing corners
@@ -412,7 +405,7 @@ class CubieCube {
         if (sum % 3 != 0) {
             return -5;// twisted corner
         }
-        if ((Util.getNParity(Util.getNPerm(ep, 12), 12) ^ Util.getNParity(getCPerm(), 8)) != 0) {
+        if ((Util.getNParity(Util.getNPerm(ea, 12, true), 12) ^ Util.getNParity(getCPerm(), 8)) != 0) {
             return -6;// parity error
         }
         return 0;// cube ok
@@ -487,6 +480,18 @@ class CubieCube {
         }
     }
 
+    public String toString() {
+        StringBuffer sb = new StringBuffer();
+        for (int i = 0; i < 8; i++) {
+            sb.append("|" + (ca[i] & 7) + " " + (ca[i] >> 3));
+        }
+        sb.append("\n");
+        for (int i = 0; i < 12; i++) {
+            sb.append("|" + (ea[i] >> 1) + " " + (ea[i] & 1));
+        }
+        return sb.toString();
+    }
+
     static void initSym() {
         CubieCube c = new CubieCube();
         CubieCube d = new CubieCube();
@@ -495,7 +500,9 @@ class CubieCube {
         CubieCube f2 = new CubieCube(28783, 0, 259268407, 0);
         CubieCube u4 = new CubieCube(15138, 0, 119765538, 7);
         CubieCube lr2 = new CubieCube(5167, 0, 83473207, 0);
-        lr2.co = new byte[] { 3, 3, 3, 3, 3, 3, 3, 3 };
+        for (int i = 0; i < 8; i++) {
+            lr2.ca[i] |= 3 << 3;
+        }
 
         for (int i = 0; i < 16; i++) {
             CubeSym[i] = new CubieCube(c);
