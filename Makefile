@@ -1,5 +1,6 @@
 SRC = \
 CoordCube.java \
+CoordCubeHuge.java \
 CubieCube.java \
 MainProgram.java \
 Search.java \
@@ -25,7 +26,7 @@ DIST = twophase.jar
 build: $(DIST)
 
 $(DIST): $(SRC)
-	@javac -d . $(SRC)
+	@javac -d . $(SRC) -Xlint:all
 	@cp -f $(SRC) cs/min2phase/
 	@jar cfe twophase.jar ui.MainProgram ui/*.class cs/min2phase/*.class cs/min2phase/*.java
 

@@ -34,7 +34,7 @@ class CubieCube {
     static char[] FlipS2R = new char[336];
     static char[] TwistS2R = new char[324];
     static char[] EPermS2R = new char[2768];
-    static int[] UDSliceFlipS2R = Search.USE_FULL_PRUN ? new int[64430] : null;
+    static int[] UDSliceFlipS2R = Search.EXTRA_PRUN_LEVEL > 0 ? new int[64430] : null;
 
     /**
      * Notice that Edge Perm Coordnate and Corner Perm Coordnate are the same symmetry structure.
@@ -46,7 +46,7 @@ class CubieCube {
 
     static char[] MtoEPerm = new char[40320];
 
-    static int[] FlipSlice2UDSliceFlip = Search.USE_FULL_PRUN ? new int[CoordCube.N_FLIP_SYM * CoordCube.N_SLICE] : null;
+    static int[] FlipSlice2UDSliceFlip = Search.EXTRA_PRUN_LEVEL > 0 ? new int[CoordCube.N_FLIP_SYM * CoordCube.N_SLICE] : null;
 
     /**
      * Raw-Coordnate to Sym-Coordnate, only for speeding up initializaion.
@@ -55,7 +55,7 @@ class CubieCube {
     static char[] TwistR2S;// = new char[2187];
     static char[] EPermR2S;// = new char[40320];
     static char[] FlipS2RF = Search.USE_TWIST_FLIP_PRUN ? new char[336 * 8] : null;
-    static char[] TwistS2RF = Search.USE_FULL_PRUN ? new char[324 * 8] : null;
+    static char[] TwistS2RF = Search.EXTRA_PRUN_LEVEL > 0 ? new char[324 * 8] : null;
 
     /**
      *
@@ -63,7 +63,7 @@ class CubieCube {
     static char[] SymStateTwist = new char[324];
     static char[] SymStateFlip = new char[336];
     static char[] SymStatePerm = new char[2768];
-    static char[] SymStateUDSliceFlip = Search.USE_FULL_PRUN ? new char[64430] : null;
+    static char[] SymStateUDSliceFlip = Search.EXTRA_PRUN_LEVEL > 0 ? new char[64430] : null;
 
     static CubieCube urf1 = new CubieCube(2531, 1373, 67026819, 1367);
     static CubieCube urf2 = new CubieCube(2089, 1906, 322752913, 2040);
@@ -621,7 +621,7 @@ class CubieCube {
                     SymStateTwist[count] |= 1 << (s >> 1);
                 }
                 TwistR2S[idx] = (char) (count << 3 | s >> 1);
-                if (Search.USE_FULL_PRUN) {
+                if (Search.EXTRA_PRUN_LEVEL > 0) {
                     TwistS2RF[count << 3 | s >> 1] = (char) idx;
                 }
             }

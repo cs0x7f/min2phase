@@ -26,15 +26,23 @@ package cs.min2phase;
 public class Search {
 
     public static final boolean USE_TWIST_FLIP_PRUN = true;
-    public static final boolean USE_FULL_PRUN = false;
-    public static final boolean USE_HUGE_PRUN = false;
+
+    /**
+     * 0: without extra pruning table
+     * 1: full phase 1 pruning table (28M, for two-phase solver and optimal solver)
+     * 2: full phase 1 pruning table (28M, for two-phase solver) + huge pruning table (2.0G, for optimal solver)
+     */
+    public static final int EXTRA_PRUN_LEVEL = 0;
+
+    public static final boolean USF_FULL_PRUN = EXTRA_PRUN_LEVEL > 0;
+    public static final boolean USF_HUGE_PRUN = EXTRA_PRUN_LEVEL > 1;
 
     //Options for research purpose.
     static final boolean TRY_PRE_MOVE = true;
     static final boolean TRY_INVERSE = true;
     static final boolean TRY_THREE_AXES = true;
 
-    static final int MAX_DEPTH2 = USE_FULL_PRUN ? 12 : 13;
+    static final int MAX_DEPTH2 = EXTRA_PRUN_LEVEL > 0 ? 12 : 13;
 
     static final int PRE_IDX_MAX = TRY_PRE_MOVE ? 9 : 1;
 
@@ -95,13 +103,13 @@ public class Search {
 
     public Search() {
         for (int i = 0; i < 21; i++) {
-            nodeUD[i] = new CoordCube();
-            nodeRL[i] = new CoordCube();
-            nodeFB[i] = new CoordCube();
+            nodeUD[i] = EXTRA_PRUN_LEVEL > 0 ? new CoordCubeHuge() : new CoordCube();
+            nodeRL[i] = EXTRA_PRUN_LEVEL > 0 ? new CoordCubeHuge() : new CoordCube();
+            nodeFB[i] = EXTRA_PRUN_LEVEL > 0 ? new CoordCubeHuge() : new CoordCube();
         }
         for (int i = 0; i < 6; i++) {
             for (int j = 0; j < PRE_IDX_MAX; j++) {
-                node0[i][j] = new CoordCube();
+                node0[i][j] = EXTRA_PRUN_LEVEL > 0 ? new CoordCubeHuge() : new CoordCube();
             }
         }
     }
@@ -252,37 +260,11 @@ public class Search {
         }
         CubieCube.initMove();
         CubieCube.initSym();
-        CubieCube.initFlipSym2Raw();
-        CubieCube.initTwistSym2Raw();
-        CubieCube.initPermSym2Raw();
 
-        CoordCube.initFlipMove();
-        CoordCube.initTwistMove();
-        CoordCube.initUDSliceMoveConj();
-
-        CoordCube.initCPermMove();
-        CoordCube.initEPermMove();
-        CoordCube.initMPermMoveConj();
-        CoordCube.initCombMoveConj();
-
-        CoordCube.initMEPermPrun();
-        CoordCube.initMCPermPrun();
-        CoordCube.initPermCombPrun();
-
-        if (USE_FULL_PRUN || USE_HUGE_PRUN) {
-            CubieCube.initUDSliceFlipSym2Raw();
-            CoordCube.initUDSliceFlipMove();
-            CoordCube.initTwistMoveConj();
-            CoordCube.initUDSliceFlipTwistPrun();
-            if (USE_HUGE_PRUN) {
-                CoordCube.initHugePrun();
-            }
+        if (EXTRA_PRUN_LEVEL > 0) {
+            CoordCubeHuge.init();
         } else {
-            if (USE_TWIST_FLIP_PRUN) {
-                CoordCube.initTwistFlipPrun();
-            }
-            CoordCube.initSliceTwistPrun();
-            CoordCube.initSliceFlipPrun();
+            CoordCube.init();
         }
 
         inited = true;
