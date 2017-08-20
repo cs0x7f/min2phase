@@ -23,9 +23,7 @@ class CubieCube {
     static int[][] SymMult = new int[16][16];
     static int[][] SymMove = new int[16][18];
     static int[][] SymMultInv = new int[16][16];
-    static int[] Sym8Mult = new int[8 * 8];
     static int[] Sym8Move = new int[8 * 18];
-    static int[] Sym8MultInv = new int[8 * 8];
     static int[][] SymMoveUD = new int[16][10];
 
     /**
@@ -42,7 +40,8 @@ class CubieCube {
      * And when x is RawEdgePermCoordnate, y*16+k is SymEdgePermCoordnate, y*16+(k^e2c[k]) will
      * be the SymCornerPermCoordnate of the State whose RawCornerPermCoordnate is x.
      */
-    static byte[] e2c = {0, 0, 0, 0, 1, 3, 1, 3, 1, 3, 1, 3, 0, 0, 0, 0};
+    // static byte[] e2c = {0, 0, 0, 0, 1, 3, 1, 3, 1, 3, 1, 3, 0, 0, 0, 0};
+    static final int SYM_E2C_MAGIC = 0x00DDDD00;
 
     static char[] MtoEPerm = new char[40320];
 
@@ -314,7 +313,7 @@ class CubieCube {
     int getCPermSym() {
         if (EPermR2S != null) {
             int idx = EPermR2S[getCPerm()];
-            return idx ^ e2c[idx & 0xf];
+            return idx ^ (SYM_E2C_MAGIC >> ((idx & 0xf) << 1) & 3);
         }
         if (temps == null) {
             temps = new CubieCube();
@@ -554,10 +553,6 @@ class CubieCube {
             }
         }
         for (int s = 0; s < 8; s++) {
-            for (int j = 0; j < 8; j++) {
-                Sym8Mult[s << 3 | j] = SymMult[j << 1][s << 1] >> 1;
-                Sym8MultInv[j << 3 | s] = SymMult[j << 1][SymInv[s << 1]]>>1;
-            }
             for (int j = 0; j < 18; j++) {
                 Sym8Move[j << 3 | s] = SymMove[s << 1][j];
             }

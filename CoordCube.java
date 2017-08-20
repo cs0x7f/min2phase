@@ -177,74 +177,9 @@ class CoordCube {
         }
     }
 
-    static void initTwistFlipPrun() {
-        int depth = 0;
-        int done = 1;
-        boolean inv;
-        int select;
-        int check;
-        final int N_SIZE = N_FLIP * N_TWIST_SYM;
-        for (int i = 0; i < N_SIZE / 8; i++) {
-            TwistFlipPrun[i] = -1;
-        }
-        setPruning(TwistFlipPrun, 0, 0);
-
-        while (done < N_SIZE) {
-            inv = depth > 6;
-            select = inv ? 0xf : depth;
-            check = inv ? depth : 0xf;
-            depth++;
-            int val = 0;
-            for (int i = 0; i < N_SIZE; i++, val >>= 4) {
-                if ((i & 7) == 0) {
-                    val = TwistFlipPrun[i >> 3];
-                    if (!inv && val == -1) {
-                        i += 7;
-                        continue;
-                    }
-                }
-                if ((val & 0xf) != select) {
-                    continue;
-                }
-                int twist = i >> 11;
-                int flip = CubieCube.FlipR2S[i & 0x7ff];
-                int fsym = flip & 7;
-                flip >>= 3;
-                for (int m = 0; m < N_MOVES; m++) {
-                    int twistx = TwistMove[twist][m];
-                    int tsymx = twistx & 7;
-                    twistx >>= 3;
-                    int flipx = FlipMove[flip][CubieCube.Sym8Move[m << 3 | fsym]];
-                    int fsymx = CubieCube.Sym8MultInv[CubieCube.Sym8Mult[flipx & 7 | fsym << 3] << 3 | tsymx];
-                    flipx >>= 3;
-                    int idx = twistx << 11 | CubieCube.FlipS2RF[flipx << 3 | fsymx];
-                    if (getPruning(TwistFlipPrun, idx) != check) {
-                        continue;
-                    }
-                    done++;
-                    if (inv) {
-                        setPruning(TwistFlipPrun, i, depth);
-                        break;
-                    }
-                    setPruning(TwistFlipPrun, idx, depth);
-                    char sym = CubieCube.SymStateTwist[twistx];
-                    if (sym == 1) {
-                        continue;
-                    }
-                    for (int k = 0; k < 8; k++) {
-                        if ((sym & 1 << k) == 0) {
-                            continue;
-                        }
-                        int idxx = twistx << 11 | CubieCube.FlipS2RF[flipx << 3 | CubieCube.Sym8MultInv[fsymx << 3 | k]];
-                        if (getPruning(TwistFlipPrun, idxx) == 0xf) {
-                            setPruning(TwistFlipPrun, idxx, depth);
-                            done++;
-                        }
-                    }
-                }
-            }
-            // System.out.println(String.format("%2d%10d", depth, done));
-        }
+    static boolean isAllFilled(int val) {
+        val &= val >> 1;
+        return (val & val >> 2 & 0x11111111) == 0;
     }
 
     static void initRawSymPrun(int[] PrunTable, final int INV_DEPTH,
@@ -253,15 +188,17 @@ class CoordCube {
                                final int PrunFlag) {
 
         final int SYM_SHIFT = PrunFlag & 0xf;
-        final boolean SymSwitch = ((PrunFlag >> 4) & 1) == 1;
+        final int SYM_E2C_MAGIC = ((PrunFlag >> 4) & 1) == 1 ? CubieCube.SYM_E2C_MAGIC : 0x00000000;
         final boolean MoveMapSym = ((PrunFlag >> 5) & 1) == 1;
         final boolean MoveMapRaw = ((PrunFlag >> 6) & 1) == 1;
 
         final int SYM_MASK = (1 << SYM_SHIFT) - 1;
-        final int N_RAW = RawMove.length;
+        final boolean ISTFP = RawMove == null;
+        final int N_RAW = ISTFP ? N_FLIP : RawMove.length;
         final int N_SYM = SymMove.length;
         final int N_SIZE = N_RAW * N_SYM;
-        final int N_MOVES = MoveMapRaw ? 10 : RawMove[0].length;
+        final int N_MOVES = MoveMapRaw ? 10 : ISTFP ? 18 : RawMove[0].length;
+        final int NEXT_AXIS_MAGIC = N_MOVES == 10 ? 0x42 : 0x92492;
 
         for (int i = 0; i < (N_RAW * N_SYM + 7) / 8; i++) {
             PrunTable[i] = -1;
@@ -280,7 +217,7 @@ class CoordCube {
             for (int i = 0; i < N_SIZE; i++, val >>= 4) {
                 if ((i & 7) == 0) {
                     val = PrunTable[i >> 3];
-                    if (!inv && val == -1) {
+                    if (inv ? isAllFilled(val) : val == -1) {
                         i += 7;
                         continue;
                     }
@@ -290,12 +227,31 @@ class CoordCube {
                 }
                 int raw = i % N_RAW;
                 int sym = i / N_RAW;
+                int flip = 0, fsym = 0;
+                if (ISTFP) {
+                    flip = CubieCube.FlipR2S[raw];
+                    fsym = flip & 7;
+                    flip >>= 3;
+                }
+
                 for (int m = 0; m < N_MOVES; m++) {
                     int symx = SymMove[sym][MoveMapSym ? Util.ud2std[m] : m];
-                    int rawx = RawConj[RawMove[raw][MoveMapRaw ? Util.ud2std[m] : m] & 0x1ff][symx & SYM_MASK];
+                    int rawx;
+                    if (ISTFP) {
+                        rawx = CubieCube.FlipS2RF[
+                                   FlipMove[flip][CubieCube.Sym8Move[m << 3 | fsym]] ^
+                                   fsym ^ (symx & SYM_MASK)];
+                    } else {
+                        rawx = RawConj[RawMove[raw][MoveMapRaw ? Util.ud2std[m] : m] & 0x1ff][symx & SYM_MASK];
+
+                    }
                     symx >>= SYM_SHIFT;
                     int idx = symx * N_RAW + rawx;
-                    if (getPruning(PrunTable, idx) != check) {
+                    int prun = getPruning(PrunTable, idx);
+                    if (prun != check) {
+                        if (prun < depth - 1) {
+                            m += NEXT_AXIS_MAGIC >> m & 3;
+                        }
                         continue;
                     }
                     done++;
@@ -308,7 +264,12 @@ class CoordCube {
                         if ((symState & 1) != 1) {
                             continue;
                         }
-                        int idxx = symx * N_RAW + RawConj[rawx][j ^ (SymSwitch ? CubieCube.e2c[j] : 0)];
+                        int idxx = symx * N_RAW;
+                        if (ISTFP) {
+                            idxx += CubieCube.FlipS2RF[CubieCube.FlipR2S[rawx] ^ j];
+                        } else {
+                            idxx += RawConj[rawx][j ^ (SYM_E2C_MAGIC >> (j << 1) & 3)];
+                        }
                         if (getPruning(PrunTable, idxx) == 0xf) {
                             setPruning(PrunTable, idxx, depth);
                             done++;
@@ -318,6 +279,14 @@ class CoordCube {
             }
             // System.out.println(String.format("%2d%10d", depth, done));
         }
+    }
+
+    static void initTwistFlipPrun() {
+        initRawSymPrun(
+            TwistFlipPrun, 6,
+            null, null,
+            TwistMove, CubieCube.SymStateTwist, 0x3
+        );
     }
 
     static void initSliceTwistPrun() {
@@ -387,7 +356,7 @@ class CoordCube {
                        getPruning(UDSliceFlipPrun,
                                   flip * N_SLICE + UDSliceConj[slice & 0x1ff][fsym])),
                    Search.USE_TWIST_FLIP_PRUN ? getPruning(TwistFlipPrun,
-                           twist << 11 | CubieCube.FlipS2RF[flip << 3 | CubieCube.Sym8MultInv[fsym << 3 | tsym]]) : 0);
+                           twist << 11 | CubieCube.FlipS2RF[flip << 3 | (fsym ^ tsym)]) : 0);
     }
 
     void set(CubieCube cc) {
@@ -410,11 +379,11 @@ class CoordCube {
         slice = UDSliceMove[cc.slice & 0x1ff][m] & 0x1ff;
 
         flip = FlipMove[cc.flip][CubieCube.Sym8Move[m << 3 | cc.fsym]];
-        fsym = CubieCube.Sym8Mult[flip & 7 | cc.fsym << 3];
+        fsym = (flip & 7) ^ cc.fsym;
         flip >>= 3;
 
         twist = TwistMove[cc.twist][CubieCube.Sym8Move[m << 3 | cc.tsym]];
-        tsym = CubieCube.Sym8Mult[twist & 7 | cc.tsym << 3];
+        tsym = (twist & 7) ^ cc.tsym;
         twist >>= 3;
 
         prun = Math.max(
@@ -424,7 +393,7 @@ class CoordCube {
                        getPruning(UDSliceFlipPrun,
                                   flip * N_SLICE + UDSliceConj[slice][fsym])),
                    Search.USE_TWIST_FLIP_PRUN ? getPruning(TwistFlipPrun,
-                           twist << 11 | CubieCube.FlipS2RF[flip << 3 | CubieCube.Sym8MultInv[fsym << 3 | tsym]]) : 0);
+                           twist << 11 | CubieCube.FlipS2RF[flip << 3 | (fsym ^ tsym)]) : 0);
         return prun;
     }
 }
