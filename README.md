@@ -14,13 +14,23 @@ Conventional two-phase algorithm only find (sub-)optimal solutions to &lt;U,R2,F
 
 # Benchmark
 - Memory: ~1M with twist-flip-pruning (TFP) table, ~0.7M without TFP table, ~40M with Full table. See [Search.java line 28](https://github.com/cs0x7f/min2phase/blob/master/Search.java#L28).
-- Average solving time (CPU: Intel Core i7-2670QM. Flag: F=Full P1 table, T=TFP table, A=three axes, I=inverse, P=pre-scramble. Kociemba: Kociemba's [twophase.jar](http://kociemba.org/twophase.jar)): 
+- Average solving time (CPU: Intel Core i7-6700HQ. Flag: F=Full P1 table, T=TFP table, A=three axes, I=inverse, P=pre-scramble. Kociemba: Kociemba's [twophase.jar](http://kociemba.org/downloads/twophase.jar)): 
 
     |   Flag   | Unlimited | 21 moves | 20 moves |
     |:--------:|:---------:|:--------:|:--------:|
-    | Kociemba |    45 ms  |   70 ms  | >1000 ms |
-    |   TAIP   |   2.2 ms  |  2.6 ms  |   16 ms  |
-    |   FAIP   |   1.8 ms  |  1.8 ms  |  2.5 ms  |
+    | Kociemba |  28.5 ms  | 53.5 ms  |    ? ms  |
+    |   ----   |  1.92 ms  | 16.1 ms  |    ? ms  |
+    |   -A--   |  1.80 ms  | 4.96 ms  | 137. ms  |
+    |   -AI-   |  1.83 ms  | 3.09 ms  | 50.6 ms  |
+    |   -AIP   |  1.92 ms  | 2.42 ms  | 20.7 ms  |
+    |   T---   |  1.55 ms  | 9.19 ms  | 337. ms  |
+    |   TA--   |  1.44 ms  | 2.95 ms  | 70.0 ms  |
+    |   TAI-   |  1.47 ms  | 2.16 ms  | 26.2 ms  |
+    |   TAIP   |  1.50 ms  | 1.78 ms  | 10.8 ms  |
+    |   F---   |  .859 ms  | 1.28 ms  | 23.7 ms  |
+    |   FA--   |  .932 ms  | 1.01 ms  | 5.53 ms  |
+    |   FAI-   |  1.00 ms  | 0.99 ms  | 2.62 ms  |
+    |   FAIP   |  1.38 ms  | 1.40 ms  | 1.98 ms  |
 
 - Initialization Time: 150 ms without TFP table, 220 ms with TFP table, 12 s with Full table.
 
@@ -35,7 +45,7 @@ Conventional two-phase algorithm only find (sub-)optimal solutions to &lt;U,R2,F
 
 # License GPLv3
 
-    Copyright (C) 2015  Shuang Chen
+    Copyright (C) 2017  Shuang Chen
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
