@@ -603,25 +603,36 @@ public class Search {
         }
         for (int m = 0; m < 10; m++) {
             if (lm < 0 ? (m == -lm) : Util.ckmv2[lm][m]) {
+                m += 0x42 >> m & 3;
                 continue;
             }
+            int prun;
             int midx = CoordCube.MPermMove[mid][m];
             int cidxx = CoordCube.CPermMove[cidx][CubieCube.SymMove[csym][Util.ud2std[m]]];
             int csymx = CubieCube.SymMult[cidxx & 0xf][csym];
             cidxx >>= 4;
-            if (CoordCube.getPruning(CoordCube.MCPermPrun,
-                                     cidxx * 24 + CoordCube.MPermConj[midx][csymx]) >= maxl) {
+            if ((prun = CoordCube.getPruning(CoordCube.MCPermPrun,
+                                     cidxx * 24 + CoordCube.MPermConj[midx][csymx])) >= maxl) {
+                if (prun > maxl) {
+                    m += 0x42 >> m & 3;
+                }
                 continue;
             }
             int eidxx = CoordCube.EPermMove[eidx][CubieCube.SymMoveUD[esym][m]];
             int esymx = CubieCube.SymMult[eidxx & 0xf][esym];
             eidxx >>= 4;
-            if (CoordCube.getPruning(CoordCube.EPermCCombPrun,
-                                     eidxx * 70 + CoordCube.CCombConj[CubieCube.Perm2Comb[cidxx]][CubieCube.SymMultInv[esymx][csymx]]) >= maxl) {
+            if ((prun = CoordCube.getPruning(CoordCube.EPermCCombPrun,
+                                     eidxx * 70 + CoordCube.CCombConj[CubieCube.Perm2Comb[cidxx]][CubieCube.SymMultInv[esymx][csymx]])) >= maxl) {
+                if (prun > maxl) {
+                    m += 0x42 >> m & 3;
+                }
                 continue;
             }
-            if (CoordCube.getPruning(CoordCube.MEPermPrun,
-                                     eidxx * 24 + CoordCube.MPermConj[midx][esymx]) >= maxl) {
+            if ((prun = CoordCube.getPruning(CoordCube.MEPermPrun,
+                                     eidxx * 24 + CoordCube.MPermConj[midx][esymx])) >= maxl) {
+                if (prun > maxl) {
+                    m += 0x42 >> m & 3;
+                }
                 continue;
             }
             int ret = phase2(eidxx, esymx, cidxx, csymx, midx, maxl - 1, depth + 1, (lm < 0 && m + lm == -5) ? -lm : m);
