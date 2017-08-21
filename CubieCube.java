@@ -33,6 +33,7 @@ class CubieCube {
     static char[] TwistS2R = new char[324];
     static char[] EPermS2R = new char[2768];
     static int[] UDSliceFlipS2R = Search.EXTRA_PRUN_LEVEL > 0 ? new int[64430] : null;
+    static byte[] Perm2Comb = new byte[2768];
 
     /**
      * Notice that Edge Perm Coordnate and Corner Perm Coordnate are the same symmetry structure.
@@ -91,24 +92,6 @@ class CubieCube {
 
     CubieCube(CubieCube c) {
         copy(c);
-    }
-
-    public boolean equalsCorn(CubieCube c) {
-        for (int i = 0; i < 8; i++) {
-            if (ca[i] != c.ca[i]) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public boolean equalsEdge(CubieCube c) {
-        for (int i = 0; i < 12; i++) {
-            if (ea[i] != c.ea[i]) {
-                return false;
-            }
-        }
-        return true;
     }
 
     void copy(CubieCube c) {
@@ -216,12 +199,10 @@ class CubieCube {
     }
 
     void setFlip(int idx) {
-        int parity = 0;
-        for (int i = 10; i >= 0; i--) {
-            int val = idx & 1;
+        int parity = 0, val;
+        for (int i = 10; i >= 0; i--, idx >>= 1) {
+            parity ^= (val = idx & 1);
             ea[i] = (byte) (ea[i] & 0xfe | val);
-            parity ^= val;
-            idx >>= 1;
         }
         ea[11] = (byte) (ea[11] & 0xfe | parity);
     }
@@ -253,14 +234,12 @@ class CubieCube {
     }
 
     void setTwist(int idx) {
-        int twst = 0;
-        for (int i = 6; i >= 0; i--) {
-            int val = idx % 3;
+        int twst = 15, val;
+        for (int i = 6; i >= 0; i--, idx /= 3) {
+            twst -= (val = idx % 3);
             ca[i] = (byte) (ca[i] & 0x7 | val << 3);
-            twst += val;
-            idx /= 3;
         }
-        ca[7] = (byte) (ca[7] & 0x7 | ((15 - twst) % 3) << 3);
+        ca[7] = (byte) (ca[7] & 0x7 | (twst % 3) << 3);
     }
 
     int getTwistSym() {
@@ -414,30 +393,19 @@ class CubieCube {
         CubieCube c = new CubieCube(this);
         CubieCube d = new CubieCube();
         long sym = 0L;
-        for (int i = 0; i < 48; i++) {
+        for (int i = 0; i < 96; i++) {
             CornConjugate(c, SymInv[i % 16], d);
-            if (d.equalsCorn(this)) {
+            if (Arrays.equals(d.ca, ca)) {
                 EdgeConjugate(c, SymInv[i % 16], d);
-                if (d.equalsEdge(this)) {
-                    sym |= 1L << i;
+                if (Arrays.equals(d.ea, ea)) {
+                    sym |= 1L << Math.min(i, 48);
                 }
             }
             if (i % 16 == 15) {
                 c.URFConjugate();
             }
-        }
-        c.invCubieCube();
-        for (int i = 0; i < 48; i++) {
-            CornConjugate(c, SymInv[i % 16], d);
-            if (d.equalsCorn(this)) {
-                EdgeConjugate(c, SymInv[i % 16], d);
-                if (d.equalsEdge(this)) {
-                    sym |= 1L << 48;
-                    break;
-                }
-            }
-            if (i % 16 == 15) {
-                c.URFConjugate();
+            if (i % 48 == 47) {
+                c.invCubieCube();
             }
         }
         return sym;
@@ -523,7 +491,7 @@ class CubieCube {
             for (int j = 0; j < 16; j++) {
                 CornMult(CubeSym[i], CubeSym[j], c);
                 for (int k = 0; k < 16; k++) {
-                    if (CubeSym[k].equalsCorn(c)) {
+                    if (Arrays.equals(CubeSym[k].ca, c.ca)) {
                         SymMult[i][j] = k;
                         if (k == 0) {
                             SymInv[i] = j;
@@ -537,7 +505,7 @@ class CubieCube {
             for (int s = 0; s < 16; s++) {
                 CornConjugate(moveCube[j], SymInv[s], c);
                 for (int m = 0; m < 18; m++) {
-                    if (c.equalsCorn(moveCube[m])) {
+                    if (Arrays.equals(moveCube[m].ca, c.ca)) {
                         SymMove[s][j] = m;
                         break;
                     }
@@ -559,8 +527,6 @@ class CubieCube {
         }
         for (int i = 0; i < 18; i++) {
             moveCubeSym[i] = moveCube[i].selfSymmetry();
-        }
-        for (int i = 0; i < 18; i++) {
             int j = i;
             for (int s = 0; s < 48; s++) {
                 if (SymMove[s % 16][j] < i) {
@@ -573,88 +539,68 @@ class CubieCube {
         }
     }
 
-    static void initFlipSym2Raw() {
+    static int initSym2Raw(final int N_RAW, char[] Sym2Raw, char[] Raw2Sym, char[] SymState, int coord) {
         CubieCube c = new CubieCube();
         CubieCube d = new CubieCube();
-        int count = 0;
-        FlipR2S = new char[2048];
-        for (int i = 0; i < 2048; i++) {
-            if (FlipR2S[i] != 0) {
+        int count = 0, idx = 0;
+        int sym_inc = coord >= 2 ? 1 : 2;
+        boolean isEdge = coord != 1;
+
+        for (int i = 0; i < N_RAW; i++) {
+            if (Raw2Sym[i] != 0) {
                 continue;
             }
-            c.setFlip(i);
-            for (int s = 0; s < 16; s += 2) {
-                EdgeConjugate(c, s, d);
-                int idx = d.getFlip();
-                if (idx == i) {
-                    SymStateFlip[count] |= 1 << (s >> 1);
-                }
-                FlipR2S[idx] = (char) (count << 3 | s >> 1);
-                if (Search.USE_TWIST_FLIP_PRUN) {
-                    FlipS2RF[count << 3 | s >> 1] = (char) idx;
-                }
+            switch (coord) {
+            case 0: c.setFlip(i); break;
+            case 1: c.setTwist(i); break;
+            case 2: c.setEPerm(i); break;
             }
-            FlipS2R[count++] = (char) i;
+            for (int s = 0; s < 16; s += sym_inc) {
+                if (isEdge) {
+                    EdgeConjugate(c, s, d);
+                } else {
+                    CornConjugate(c, s, d);
+                }
+                switch (coord) {
+                case 0: idx = d.getFlip();
+                    if (Search.USE_TWIST_FLIP_PRUN) {
+                        FlipS2RF[count << 3 | s >> 1] = (char) idx;
+                    }
+                    break;
+                case 1: idx = d.getTwist();
+                    if (Search.EXTRA_PRUN_LEVEL > 0) {
+                        TwistS2RF[count << 3 | s >> 1] = (char) idx;
+                    }
+                    break;
+                case 2: idx = d.getEPerm();
+                    int a = d.getU4Comb();
+                    int m = 494 - (a & 0x1ff) + (a >> 9) * 70 + (d.getD4Comb() >> 9) * 1680;
+                    MtoEPerm[m] = (char) (count << 4 | s);
+                    if (s == 0) {
+                        Perm2Comb[count] = (byte) (494 - (a & 0x1ff));
+                    }
+                    break;
+                }
+                if (idx == i) {
+                    SymState[count] |= 1 << (s / sym_inc);
+                }
+                Raw2Sym[idx] = (char) ((count << 4 | s) / sym_inc);
+            }
+            Sym2Raw[count++] = (char) i;
         }
-        assert count == 336;
+        return count;
+    }
+
+    static void initFlipSym2Raw() {
+        initSym2Raw(2048, FlipS2R, FlipR2S = new char[2048], SymStateFlip, 0);
     }
 
     static void initTwistSym2Raw() {
-        CubieCube c = new CubieCube();
-        CubieCube d = new CubieCube();
-        int count = 0;
-        TwistR2S = new char[2187];
-        for (int i = 0; i < 2187; i++) {
-            if (TwistR2S[i] != 0) {
-                continue;
-            }
-            c.setTwist(i);
-            for (int s = 0; s < 16; s += 2) {
-                CornConjugate(c, s, d);
-                int idx = d.getTwist();
-                if (idx == i) {
-                    SymStateTwist[count] |= 1 << (s >> 1);
-                }
-                TwistR2S[idx] = (char) (count << 3 | s >> 1);
-                if (Search.EXTRA_PRUN_LEVEL > 0) {
-                    TwistS2RF[count << 3 | s >> 1] = (char) idx;
-                }
-            }
-            TwistS2R[count++] = (char) i;
-        }
-        assert count == 324;
+        initSym2Raw(2187, TwistS2R, TwistR2S = new char[2187], SymStateTwist, 1);
     }
 
-    static byte[] Perm2Comb = new byte[2768];
-
     static void initPermSym2Raw() {
-        CubieCube c = new CubieCube();
-        CubieCube d = new CubieCube();
-        int count = 0;
-        EPermR2S = new char[40320];
-
-        for (int i = 0; i < 40320; i++) {
-            if (EPermR2S[i] != 0) {
-                continue;
-            }
-            c.setEPerm(i);
-            for (int s = 0; s < 16; s++) {
-                EdgeConjugate(c, s, d);
-                int idx = d.getEPerm();
-                if (idx == i) {
-                    SymStatePerm[count] |= 1 << s;
-                }
-                int a = d.getU4Comb();
-                int b = d.getD4Comb() >> 9;
-                int m = 494 - (a & 0x1ff) + (a >> 9) * 70 + b * 1680;
-                MtoEPerm[m] = EPermR2S[idx] = (char) (count << 4 | s);
-                if (s == 0) {
-                    Perm2Comb[count] = (byte) (494 - (a & 0x1ff));
-                }
-            }
-            EPermS2R[count++] = (char) i;
-        }
-        assert count == 2768;
+        initSym2Raw(40320, EPermS2R, EPermR2S = new char[40320], SymStatePerm, 2);
     }
 
     static void initUDSliceFlipSym2Raw() {

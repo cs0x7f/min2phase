@@ -612,7 +612,7 @@ public class Search {
             int csymx = CubieCube.SymMult[cidxx & 0xf][csym];
             cidxx >>= 4;
             if ((prun = CoordCube.getPruning(CoordCube.MCPermPrun,
-                                     cidxx * 24 + CoordCube.MPermConj[midx][csymx])) >= maxl) {
+                                             cidxx * 24 + CoordCube.MPermConj[midx][csymx])) >= maxl) {
                 if (prun > maxl) {
                     m += 0x42 >> m & 3;
                 }
@@ -622,14 +622,14 @@ public class Search {
             int esymx = CubieCube.SymMult[eidxx & 0xf][esym];
             eidxx >>= 4;
             if ((prun = CoordCube.getPruning(CoordCube.EPermCCombPrun,
-                                     eidxx * 70 + CoordCube.CCombConj[CubieCube.Perm2Comb[cidxx]][CubieCube.SymMultInv[esymx][csymx]])) >= maxl) {
+                                             eidxx * 70 + CoordCube.CCombConj[CubieCube.Perm2Comb[cidxx]][CubieCube.SymMultInv[esymx][csymx]])) >= maxl) {
                 if (prun > maxl) {
                     m += 0x42 >> m & 3;
                 }
                 continue;
             }
             if ((prun = CoordCube.getPruning(CoordCube.MEPermPrun,
-                                     eidxx * 24 + CoordCube.MPermConj[midx][esymx])) >= maxl) {
+                                             eidxx * 24 + CoordCube.MPermConj[midx][esymx])) >= maxl) {
                 if (prun > maxl) {
                     m += 0x42 >> m & 3;
                 }

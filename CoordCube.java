@@ -200,7 +200,7 @@ class CoordCube {
         final int N_MOVES = MoveMapRaw ? 10 : ISTFP ? 18 : RawMove[0].length;
         final int NEXT_AXIS_MAGIC = N_MOVES == 10 ? 0x42 : 0x92492;
 
-        for (int i = 0; i < (N_RAW * N_SYM + 7) / 8; i++) {
+        for (int i = 0; i < (N_SIZE + 7) / 8; i++) {
             PrunTable[i] = -1;
         }
         setPruning(PrunTable, 0, 0);
