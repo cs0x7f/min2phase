@@ -128,7 +128,7 @@ class Util {
     static int[] preMove = { -1, Rx1, Rx3, Fx1, Fx3, Lx1, Lx3, Bx1, Bx3};
     static int[] ud2std = {Ux1, Ux2, Ux3, Rx2, Fx2, Dx1, Dx2, Dx3, Lx2, Bx2};
     static int[] std2ud = new int[18];
-    static boolean[][] ckmv2 = new boolean[11][10];
+    static int[] ckmv2bit = new int[11];
 
     static void toCubieCube(byte[] f, CubieCube ccRet) {
         byte ori;
@@ -307,13 +307,14 @@ class Util {
             std2ud[ud2std[i]] = i;
         }
         for (int i = 0; i < 10; i++) {
-            int ix = ud2std[i];
+            int ix = ud2std[i] / 3;
+            ckmv2bit[i] = 0;
             for (int j = 0; j < 10; j++) {
-                int jx = ud2std[j];
-                ckmv2[i][j] = (ix / 3 == jx / 3) || ((ix / 3 % 3 == jx / 3 % 3) && (ix >= jx));
+                int jx = ud2std[j] / 3;
+                ckmv2bit[i] |= ((ix == jx) || ((ix % 3 == jx % 3) && (ix >= jx)) ? 1 : 0) << j;
             }
-            ckmv2[10][i] = false;
         }
+        ckmv2bit[10] = 0;
         fact[0] = 1;
         for (int i = 0; i < 13; i++) {
             Cnk[i][0] = Cnk[i][i] = 1;

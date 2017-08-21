@@ -601,38 +601,29 @@ public class Search {
         if (eidx == 0 && cidx == 0 && mid == 0) {
             return maxl;
         }
+        int moveMask = lm < 0 ? (1 << (-lm)) : Util.ckmv2bit[lm];
         for (int m = 0; m < 10; m++) {
-            if (lm < 0 ? (m == -lm) : Util.ckmv2[lm][m]) {
+            if ((moveMask >> m & 1) != 0) {
                 m += 0x42 >> m & 3;
                 continue;
             }
-            int prun;
             int midx = CoordCube.MPermMove[mid][m];
             int cidxx = CoordCube.CPermMove[cidx][CubieCube.SymMove[csym][Util.ud2std[m]]];
             int csymx = CubieCube.SymMult[cidxx & 0xf][csym];
             cidxx >>= 4;
-            if ((prun = CoordCube.getPruning(CoordCube.MCPermPrun,
-                                             cidxx * 24 + CoordCube.MPermConj[midx][csymx])) >= maxl) {
-                if (prun > maxl) {
-                    m += 0x42 >> m & 3;
-                }
+            if (CoordCube.getPruning(CoordCube.MCPermPrun,
+                                     cidxx * 24 + CoordCube.MPermConj[midx][csymx]) >= maxl) {
                 continue;
             }
             int eidxx = CoordCube.EPermMove[eidx][CubieCube.SymMoveUD[esym][m]];
             int esymx = CubieCube.SymMult[eidxx & 0xf][esym];
             eidxx >>= 4;
-            if ((prun = CoordCube.getPruning(CoordCube.EPermCCombPrun,
-                                             eidxx * 70 + CoordCube.CCombConj[CubieCube.Perm2Comb[cidxx]][CubieCube.SymMultInv[esymx][csymx]])) >= maxl) {
-                if (prun > maxl) {
-                    m += 0x42 >> m & 3;
-                }
+            if (CoordCube.getPruning(CoordCube.EPermCCombPrun,
+                                     eidxx * 70 + CoordCube.CCombConj[CubieCube.Perm2Comb[cidxx]][CubieCube.SymMultInv[esymx][csymx]]) >= maxl) {
                 continue;
             }
-            if ((prun = CoordCube.getPruning(CoordCube.MEPermPrun,
-                                             eidxx * 24 + CoordCube.MPermConj[midx][esymx])) >= maxl) {
-                if (prun > maxl) {
-                    m += 0x42 >> m & 3;
-                }
+            if (CoordCube.getPruning(CoordCube.MEPermPrun,
+                                     eidxx * 24 + CoordCube.MPermConj[midx][esymx]) >= maxl) {
                 continue;
             }
             int ret = phase2(eidxx, esymx, cidxx, csymx, midx, maxl - 1, depth + 1, (lm < 0 && m + lm == -5) ? -lm : m);
