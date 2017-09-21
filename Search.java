@@ -358,15 +358,14 @@ public class Search {
         }
 
         for (int axis = 0; axis < 18; axis += 3) {
-            if (axis == lm || axis == lm - 9
-                    || (isRec && axis < move[depth1 - maxl] - 2)) {
+            if (axis == lm || axis == lm - 9) {
                 continue;
             }
             for (int power = 0; power < 3; power++) {
                 int m = axis + power;
 
                 if (isRec && m != move[depth1 - maxl]
-                        || ssym != 1 && (skipMoves & 1 << m) != 0) {
+                        || skipMoves != 0 && (skipMoves & 1 << m) != 0) {
                     continue;
                 }
 
@@ -437,14 +436,14 @@ public class Search {
         }
 
         for (int axis = 0; axis < 18; axis += 3) {
-            if (axis == lm || axis == lm - 9 || (isRec && axis < move[length1 - maxl] - 2)) {
+            if (axis == lm || axis == lm - 9) {
                 continue;
             }
             for (int power = 0; power < 3; power++) {
                 int m = axis + power;
 
                 if (isRec && m != move[length1 - maxl]
-                        || ssym != 1 && (skipMoves & 1 << m) != 0) {
+                        || skipMoves != 0 && (skipMoves & 1 << m) != 0) {
                     continue;
                 }
 

@@ -177,9 +177,8 @@ class CoordCube {
         }
     }
 
-    static boolean isAllFilled(int val) {
-        val &= val >> 1;
-        return (val & val >> 2 & 0x11111111) == 0;
+    static boolean hasZero(int val) {
+        return ((val - 0x11111111) & ~val & 0x88888888) != 0;
     }
 
     static void initRawSymPrun(int[] PrunTable, final int INV_DEPTH,
@@ -211,13 +210,14 @@ class CoordCube {
         while (done < N_SIZE) {
             boolean inv = depth > INV_DEPTH;
             int select = inv ? 0xf : depth;
+            int selArrMask = select * 0x11111111;
             int check = inv ? depth : 0xf;
             depth++;
             int val = 0;
             for (int i = 0; i < N_SIZE; i++, val >>= 4) {
                 if ((i & 7) == 0) {
                     val = PrunTable[i >> 3];
-                    if (inv ? isAllFilled(val) : val == -1) {
+                    if (!hasZero(val ^ selArrMask)) {
                         i += 7;
                         continue;
                     }
