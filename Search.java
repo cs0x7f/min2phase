@@ -625,23 +625,10 @@ public class Search {
                                      eidxx * 24 + CoordCube.MPermConj[midx][esymx]) >= maxl) {
                 continue;
             }
-
-            int eidxi = CubieCube.PermInvEdgeSym[eidxx];
-            int cidxi = CubieCube.ESym2CSym(CubieCube.PermInvEdgeSym[cidxx]);
-
-            if (CoordCube.getPruning(
-                        CoordCube.EPermCCombPrun,
-                        (eidxi >> 4) * 70 +
-                        CoordCube.CCombConj[
-                            CubieCube.Perm2Comb[cidxi >> 4]
-                        ][
-                            CubieCube.SymMultInv[
-                                CubieCube.SymMult[eidxi & 0xf][esymx]
-                            ][
-                                CubieCube.SymMult[cidxi & 0xf][csymx]
-                            ]
-                        ])
-                    >= maxl) {
+            int eidxi = CubieCube.getPermSymInv(eidxx, esymx, false);
+            int cidxi = CubieCube.getPermSymInv(cidxx, csymx, true);
+            if (CoordCube.getPruning(CoordCube.EPermCCombPrun,
+                                     (eidxi >> 4) * 70 + CoordCube.CCombConj[CubieCube.Perm2Comb[cidxi >> 4]][CubieCube.SymMultInv[eidxi & 0xf][cidxi & 0xf]]) >= maxl) {
                 continue;
             }
 

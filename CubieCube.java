@@ -173,6 +173,14 @@ class CubieCube {
         }
     }
 
+    static int getPermSymInv(int idx, int sym, boolean isCorner) {
+        int idxi = PermInvEdgeSym[idx];
+        if (isCorner) {
+            idxi = ESym2CSym(idxi);
+        }
+        return idxi & 0xfff0 | SymMult[idxi & 0xf][sym];
+    }
+
     /**
      * this = S_urf^-1 * this * S_urf.
      */
