@@ -34,6 +34,7 @@ class CubieCube {
     static char[] EPermS2R = new char[2768];
     static int[] UDSliceFlipS2R = Search.EXTRA_PRUN_LEVEL > 0 ? new int[64430] : null;
     static byte[] Perm2Comb = new byte[2768];
+    static char[] PermInvEdgeSym = new char[2768];
 
     /**
      * Notice that Edge Perm Coordnate and Corner Perm Coordnate are the same symmetry structure.
@@ -43,6 +44,9 @@ class CubieCube {
      */
     // static byte[] e2c = {0, 0, 0, 0, 1, 3, 1, 3, 1, 3, 1, 3, 0, 0, 0, 0};
     static final int SYM_E2C_MAGIC = 0x00DDDD00;
+    static int ESym2CSym(int idx) {
+        return idx ^ (SYM_E2C_MAGIC >> ((idx & 0xf) << 1) & 3);
+    }
 
     static char[] MtoEPerm = new char[40320];
 
@@ -291,8 +295,7 @@ class CubieCube {
 
     int getCPermSym() {
         if (EPermR2S != null) {
-            int idx = EPermR2S[getCPerm()];
-            return idx ^ (SYM_E2C_MAGIC >> ((idx & 0xf) << 1) & 3);
+            return ESym2CSym(EPermR2S[getCPerm()]);
         }
         if (temps == null) {
             temps = new CubieCube();
@@ -493,6 +496,7 @@ class CubieCube {
                 for (int k = 0; k < 16; k++) {
                     if (Arrays.equals(CubeSym[k].ca, c.ca)) {
                         SymMult[i][j] = k;
+                        // System.out.println(i + " " + j + " " + (k ^ i ^ j ^ (0x14ab4 >> j & i << 1 & 2)));
                         if (k == 0) {
                             SymInv[i] = j;
                         }
@@ -601,6 +605,13 @@ class CubieCube {
 
     static void initPermSym2Raw() {
         initSym2Raw(40320, EPermS2R, EPermR2S = new char[40320], SymStatePerm, 2);
+        CubieCube cc = new CubieCube();
+        for (int i = 0; i < 2768; i++) {
+            cc.setEPerm(EPermS2R[i]);
+            cc.invCubieCube();
+            PermInvEdgeSym[i] = (char) cc.getEPermSym();
+        }
+
     }
 
     static void initUDSliceFlipSym2Raw() {

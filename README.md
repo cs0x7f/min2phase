@@ -19,18 +19,18 @@ Conventional two-phase algorithm only find (sub-)optimal solutions to &lt;U,R2,F
     |   Flag   | Unlimited | 21 moves | 20 moves |
     |:--------:|:---------:|:--------:|:--------:|
     | Kociemba |  28.5 ms  | 53.5 ms  |    ? ms  |
-    |   ----   |  1.92 ms  | 16.1 ms  |    ? ms  |
-    |   -A--   |  1.80 ms  | 4.96 ms  | 137. ms  |
-    |   -AI-   |  1.83 ms  | 3.09 ms  | 50.6 ms  |
-    |   -AIP   |  1.92 ms  | 2.42 ms  | 20.7 ms  |
-    |   T---   |  1.55 ms  | 9.19 ms  | 337. ms  |
-    |   TA--   |  1.44 ms  | 2.95 ms  | 70.0 ms  |
-    |   TAI-   |  1.47 ms  | 2.16 ms  | 26.2 ms  |
-    | **TAIP** |**1.50 ms**|**1.78 ms**|**10.8 ms**|
-    |   F---   |  .859 ms  | 1.28 ms  | 23.7 ms  |
-    |   FA--   |  .932 ms  | 1.01 ms  | 5.53 ms  |
-    |   FAI-   |  1.00 ms  | 0.99 ms  | 2.62 ms  |
-    |   FAIP   |  1.38 ms  | 1.40 ms  | 1.98 ms  |
+    |   ----   |  1.41 ms  | 18.0 ms  |    ? ms  |
+    |   -A--   |  1.35 ms  | 4.86 ms  | 137. ms  |
+    |   -AI-   |  1.33 ms  | 2.77 ms  | 50.6 ms  |
+    |   -AIP   |  1.31 ms  | 1.99 ms  | 20.7 ms  |
+    |   T---   |  .973 ms  | 9.26 ms  | 337. ms  |
+    |   TA--   |  .947 ms  | 2.75 ms  | 70.0 ms  |
+    |   TAI-   |  .944 ms  | 1.65 ms  | 26.5 ms  |
+    | **TAIP** |**.952 ms**|**1.27 ms**|**10.5 ms**|
+    |   F---   |  .485 ms  | .973 ms  | 24.4 ms  |
+    |   FA--   |  .509 ms  | .577 ms  | 5.40 ms  |
+    |   FAI-   |  .542 ms  | .556 ms  | 2.35 ms  |
+    |   FAIP   |  .913 ms  | .910 ms  | 1.65 ms  |
 
 - Initialization Time: 150 ms without TFP table, 220 ms with TFP table, 12 s with Full table.
 
