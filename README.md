@@ -23,10 +23,10 @@ Conventional two-phase algorithm only find (sub-)optimal solutions to &lt;U,R2,F
     |   -A--   |  1.35 ms  | 4.86 ms  | 137. ms  |
     |   -AI-   |  1.33 ms  | 2.77 ms  | 50.6 ms  |
     |   -AIP   |  1.31 ms  | 1.99 ms  | 20.7 ms  |
-    |   T---   |  .973 ms  | 9.26 ms  | 337. ms  |
-    |   TA--   |  .947 ms  | 2.75 ms  | 70.0 ms  |
-    |   TAI-   |  .944 ms  | 1.65 ms  | 26.5 ms  |
-    | **TAIP** |**.952 ms**|**1.27 ms**|**10.5 ms**|
+    |   T---   |  .902 ms  | 6.73 ms  | 265. ms  |
+    |   TA--   |  .790 ms  | 2.00 ms  | 54.6 ms  |
+    |   TAI-   |  .849 ms  | 1.33 ms  | 20.6 ms  |
+    | **TAIP** |**.862 ms**|**1.06 ms**|**7.96 ms**|
     |   F---   |  .485 ms  | .973 ms  | 24.4 ms  |
     |   FA--   |  .509 ms  | .577 ms  | 5.40 ms  |
     |   FAI-   |  .542 ms  | .556 ms  | 2.35 ms  |

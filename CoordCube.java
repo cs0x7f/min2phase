@@ -337,6 +337,9 @@ class CoordCube {
     int slice;
     int prun;
 
+    int twistc;
+    int flipc;
+
     CoordCube() { }
 
     void set(CoordCube node) {
@@ -346,6 +349,11 @@ class CoordCube {
         this.fsym = node.fsym;
         this.slice = node.slice;
         this.prun = node.prun;
+
+        if (Search.USE_CONJ_PRUN) {
+            this.twistc = node.twistc;
+            this.flipc = node.flipc;
+        }
     }
 
     void calcPruning(boolean isPhase1) {
@@ -367,6 +375,14 @@ class CoordCube {
         twist = twist >> 3;
         fsym = flip & 7;
         flip = flip >> 3;
+
+        if (Search.USE_CONJ_PRUN) {
+            CubieCube pc = new CubieCube();
+            CubieCube.CornConjugate(cc, 1, pc);
+            CubieCube.EdgeConjugate(cc, 1, pc);
+            twistc = pc.getTwistSym();
+            flipc = pc.getFlipSym();
+        }
     }
 
     /**
@@ -395,5 +411,13 @@ class CoordCube {
                    Search.USE_TWIST_FLIP_PRUN ? getPruning(TwistFlipPrun,
                            twist << 11 | CubieCube.FlipS2RF[flip << 3 | (fsym ^ tsym)]) : 0);
         return prun;
+    }
+
+    int doMovePrunConj(CoordCube cc, int m) {
+        m = CubieCube.SymMove[3][m];
+        flipc = FlipMove[cc.flipc >> 3][CubieCube.Sym8Move[m << 3 | cc.flipc & 7]] ^ (cc.flipc & 7);
+        twistc = TwistMove[cc.twistc >> 3][CubieCube.Sym8Move[m << 3 | cc.twistc & 7]] ^ (cc.twistc & 7);
+        return getPruning(TwistFlipPrun,
+                          (twistc >> 3) << 11 | CubieCube.FlipS2RF[flipc ^ (twistc & 7)]);
     }
 }

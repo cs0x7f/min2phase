@@ -34,8 +34,9 @@ public class Search {
      */
     public static final int EXTRA_PRUN_LEVEL = 0;
 
-    public static final boolean USF_FULL_PRUN = EXTRA_PRUN_LEVEL > 0;
-    public static final boolean USF_HUGE_PRUN = EXTRA_PRUN_LEVEL > 1;
+    static final boolean USE_FULL_PRUN = EXTRA_PRUN_LEVEL > 0;
+    static final boolean USE_HUGE_PRUN = EXTRA_PRUN_LEVEL > 1;
+    static final boolean USE_CONJ_PRUN = USE_TWIST_FLIP_PRUN && EXTRA_PRUN_LEVEL == 0;
 
     //Options for research purpose.
     static final boolean TRY_PRE_MOVE = true;
@@ -374,6 +375,15 @@ public class Search {
                     break;
                 } else if (prun == maxl) {
                     continue;
+                }
+
+                if (USE_CONJ_PRUN) {
+                    prun = nodeUD[maxl].doMovePrunConj(node, m);
+                    if (prun > maxl) {
+                        break;
+                    } else if (prun == maxl) {
+                        continue;
+                    }
                 }
 
                 move[depth1 - maxl] = m;
