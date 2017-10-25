@@ -34,6 +34,13 @@ public class Search {
      */
     public static final int EXTRA_PRUN_LEVEL = 0;
 
+    /**
+     * If this variable is set, only a few entries of the pruning table will be initialized.
+     * Hence, the initialization time will be decreased by about 50%, however, the speed
+     * of the solver is affected.
+     */
+    public static final boolean PARTIAL_INIT_PRUN = false;
+
     static final boolean USE_FULL_PRUN = EXTRA_PRUN_LEVEL > 0;
     static final boolean USE_HUGE_PRUN = EXTRA_PRUN_LEVEL > 1;
     static final boolean USE_CONJ_PRUN = USE_TWIST_FLIP_PRUN && EXTRA_PRUN_LEVEL == 0;

@@ -115,9 +115,7 @@ class CubieCube {
             temps.ea[ea[edge] >> 1] = (byte) (edge << 1 | ea[edge] & 1);
         }
         for (byte corn = 0; corn < 8; corn++) {
-            int ori = ca[corn] >> 3;
-            ori = 4 >> ori & 3; //0->0, 1->2, 2->1
-            temps.ca[ca[corn] & 0x7] = (byte) (corn | ori << 3);
+            temps.ca[ca[corn] & 0x7] = (byte) (corn | 32 >> (ca[corn] >> 3) & 24);
         }
         copy(temps);
     }
@@ -619,7 +617,6 @@ class CubieCube {
             cc.invCubieCube();
             PermInvEdgeSym[i] = (char) cc.getEPermSym();
         }
-
     }
 
     static void initUDSliceFlipSym2Raw() {

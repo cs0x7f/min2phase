@@ -64,7 +64,7 @@ class CoordCube {
     }
 
     static void setPruning(int[] table, int index, int value) {
-        table[index >> 3] ^= (0xf ^ value) << ((index & 7) << 2);
+        table[index >> 3] ^= value << ((index & 7) << 2);
     }
 
     static int getPruning(int[] table, int index) {
@@ -199,20 +199,24 @@ class CoordCube {
         final int N_MOVES = MoveMapRaw ? 10 : ISTFP ? 18 : RawMove[0].length;
         final int NEXT_AXIS_MAGIC = N_MOVES == 10 ? 0x42 : 0x92492;
 
+        final int MAX_PVAL = Search.PARTIAL_INIT_PRUN ? INV_DEPTH + 1 : 0xf;
+        final int MAX_PVAL_FULL = MAX_PVAL * 0x11111111;
+
         for (int i = 0; i < (N_SIZE + 7) / 8; i++) {
-            PrunTable[i] = -1;
+            PrunTable[i] = MAX_PVAL_FULL;
         }
-        setPruning(PrunTable, 0, 0);
+        setPruning(PrunTable, 0, 0 ^ MAX_PVAL);
 
         int depth = 0;
         int done = 1;
 
-        while (done < N_SIZE) {
+        while (done < N_SIZE && depth < MAX_PVAL - 1) {
             boolean inv = depth > INV_DEPTH;
-            int select = inv ? 0xf : depth;
+            int select = inv ? MAX_PVAL : depth;
             int selArrMask = select * 0x11111111;
-            int check = inv ? depth : 0xf;
+            int check = inv ? depth : MAX_PVAL;
             depth++;
+            int xorVal = depth ^ MAX_PVAL;
             int val = 0;
             for (int i = 0; i < N_SIZE; i++, val >>= 4) {
                 if ((i & 7) == 0) {
@@ -256,10 +260,10 @@ class CoordCube {
                     }
                     done++;
                     if (inv) {
-                        setPruning(PrunTable, i, depth);
+                        setPruning(PrunTable, i, xorVal);
                         break;
                     }
-                    setPruning(PrunTable, idx, depth);
+                    setPruning(PrunTable, idx, xorVal);
                     for (int j = 1, symState = SymState[symx]; (symState >>= 1) != 0; j++) {
                         if ((symState & 1) != 1) {
                             continue;
@@ -270,14 +274,13 @@ class CoordCube {
                         } else {
                             idxx += RawConj[rawx][j ^ (SYM_E2C_MAGIC >> (j << 1) & 3)];
                         }
-                        if (getPruning(PrunTable, idxx) == 0xf) {
-                            setPruning(PrunTable, idxx, depth);
+                        if (getPruning(PrunTable, idxx) == MAX_PVAL) {
+                            setPruning(PrunTable, idxx, xorVal);
                             done++;
                         }
                     }
                 }
             }
-            // System.out.println(String.format("%2d%10d", depth, done));
         }
     }
 
