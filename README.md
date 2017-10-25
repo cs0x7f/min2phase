@@ -19,23 +19,25 @@ There are several compilation options that can be modified for different purpose
 
 # Benchmark
 - Memory: ~1M with twist-flip-pruning (TFP) table, ~0.7M without TFP table, ~40M with Full table. See [Search.java line 28](https://github.com/cs0x7f/min2phase/blob/dev/Search.java#L28).
-- Average solving time (CPU: Intel Core i7-6700HQ. Flag: F=Full P1 table, T=TFP table, A=three axes, I=inverse, P=pre-scramble. **Default: TAIP**. Kociemba: Kociemba's [twophase.jar](http://kociemba.org/downloads/twophase.jar)): 
+- Average solving time (CPU: Intel Core i7-6700HQ. Flag: F=Full P1 table, R=Partial_init, T=TFP table, A=three axes, I=inverse, P=pre-scramble. **Default: -TAIP**. Kociemba: Kociemba's [twophase.jar](http://kociemba.org/downloads/twophase.jar)):
 
-    |   Flag   | Unlimited | 21 moves | 20 moves |
-    |:--------:|:---------:|:--------:|:--------:|
-    | Kociemba |  28.5 ms  | 53.5 ms  |    ? ms  |
-    |   ----   |  1.41 ms  | 18.0 ms  |    ? ms  |
-    |   -A--   |  1.35 ms  | 4.86 ms  | 137. ms  |
-    |   -AI-   |  1.33 ms  | 2.77 ms  | 50.6 ms  |
-    |   -AIP   |  1.31 ms  | 1.99 ms  | 20.7 ms  |
-    |   T---   |  .902 ms  | 6.73 ms  | 265. ms  |
-    |   TA--   |  .790 ms  | 2.00 ms  | 54.6 ms  |
-    |   TAI-   |  .849 ms  | 1.33 ms  | 20.6 ms  |
-    | **TAIP** |**.862 ms**|**1.06 ms**|**7.96 ms**|
-    |   F---   |  .485 ms  | .973 ms  | 24.4 ms  |
-    |   FA--   |  .509 ms  | .577 ms  | 5.40 ms  |
-    |   FAI-   |  .542 ms  | .556 ms  | 2.35 ms  |
-    |   FAIP   |  .913 ms  | .910 ms  | 1.65 ms  |
+    |   Flag   | Unlimited |  21 moves |  20 moves | Init Time |
+    |:--------:|:---------:|:---------:|:---------:|:---------:|
+    | Kociemba |  28.5 ms  |  53.5 ms  |     ? ms  |    -  ms  |
+    |  -----   |  1.41 ms  |  18.0 ms  |     ? ms  |    -  ms  |
+    |  --A--   |  1.35 ms  |  4.86 ms  |  137. ms  |    -  ms  |
+    |  --AI-   |  1.33 ms  |  2.77 ms  |  50.6 ms  |    -  ms  |
+    |  --AIP   |  1.31 ms  |  1.99 ms  |  20.7 ms  |  132. ms  |
+    |  R-AIP   |  1.53 ms  |  2.21 ms  |  24.1 ms  |  85.7 ms  |
+    |  -T---   |  .902 ms  |  6.73 ms  |  265. ms  |    -  ms  |
+    |  -TA--   |  .790 ms  |  2.00 ms  |  54.6 ms  |    -  ms  |
+    |  -TAI-   |  .849 ms  |  1.33 ms  |  20.6 ms  |    -  ms  |
+    |**-TAIP** |**.862 ms**|**1.06 ms**|**7.96 ms**|**222. ms**|
+    |  RTAIP   |  1.37 ms  |  1.93 ms  |  18.8 ms  |  108. ms  |
+    |  -F---   |  .485 ms  |  .973 ms  |  24.4 ms  |    -  ms  |
+    |  -FA--   |  .509 ms  |  .577 ms  |  5.40 ms  |    -  ms  |
+    |  -FAI-   |  .542 ms  |  .556 ms  |  2.35 ms  |    -  ms  |
+    |  -FAIP   |  .913 ms  |  .910 ms  |  1.65 ms  |  8.44 s   |
 
 - Initialization Time: 150 ms without TFP table, 220 ms with TFP table, 12 s with Full table.
 
