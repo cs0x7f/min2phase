@@ -39,7 +39,7 @@ public class Search {
      * Hence, the initialization time will be decreased by about 50%, however, the speed
      * of the solver is affected.
      */
-    public static final boolean PARTIAL_INIT_PRUN = false;
+    public static final boolean PARTIAL_INIT_PRUN = true;
 
     static final boolean USE_FULL_PRUN = EXTRA_PRUN_LEVEL > 0;
     static final boolean USE_HUGE_PRUN = EXTRA_PRUN_LEVEL > 1;
@@ -263,11 +263,10 @@ public class Search {
     }
 
     public synchronized static void init() {
-        if (inited) {
-            return;
+        if (!inited) {
+            CubieCube.initMove();
+            CubieCube.initSym();
         }
-        CubieCube.initMove();
-        CubieCube.initSym();
 
         if (EXTRA_PRUN_LEVEL > 0) {
             CoordCubeHuge.init();

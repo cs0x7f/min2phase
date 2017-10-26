@@ -43,6 +43,9 @@ class CoordCubeHuge extends CoordCube {
     }
 
     static void init() {
+        if (initLevel == 2) {
+            return;
+        }
         CubieCube.initPermSym2Raw();
 
         initCPermMove();
@@ -65,6 +68,7 @@ class CoordCubeHuge extends CoordCube {
         if (Search.EXTRA_PRUN_LEVEL > 1) {
             initHugePrun();
         }
+        initLevel = 2;
     }
 
     static int getPruningP(byte[] table, long index, final long THRESHOLD) {
