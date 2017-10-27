@@ -340,7 +340,7 @@ public class Search {
      *      1: Try Next Power
      *      2: Try Next Axis
      */
-    private int phase1(CoordCube node, long ssym, int maxl, int lm) {
+    private int phase1(CoordCube node, int ssym, int maxl, int lm) {
         if (node.prun == 0 && maxl < 5) {
             if (maxl == 0) {
                 int ret = initPhase2();
@@ -358,7 +358,7 @@ public class Search {
 
         int skipMoves = 0;
         int i = 1;
-        for (long s = ssym; (s >>= 1) != 0; i++) {
+        for (int s = ssym; (s >>= 1) != 0; i++) {
             if ((s & 1) == 1) {
                 skipMoves |= CubieCube.firstMoveSym[i];
             }
@@ -393,7 +393,7 @@ public class Search {
                 }
 
                 move[depth1 - maxl] = m;
-                int ret = phase1(nodeUD[maxl], ssym & CubieCube.moveCubeSym[m], maxl - 1, axis);
+                int ret = phase1(nodeUD[maxl], ssym & (int) CubieCube.moveCubeSym[m], maxl - 1, axis);
                 if (ret == 0) {
                     return 0;
                 } else if (ret == 2) {
@@ -526,7 +526,7 @@ public class Search {
         int mid = node0[urfIdx][preIdx].slice;
         for (int i = 0; i < depth1; i++) {
             int m = move[i];
-            cidx = CoordCube.CPermMove[cidx][CubieCube.SymMove[csym][m]];
+            cidx = CoordCube.CPermMove[cidx][Util.std2ud[CubieCube.SymMove[csym][m]]];
             csym = CubieCube.SymMult[cidx & 0xf][csym];
             cidx >>= 4;
 
@@ -623,7 +623,7 @@ public class Search {
                 continue;
             }
             int midx = CoordCube.MPermMove[mid][m];
-            int cidxx = CoordCube.CPermMove[cidx][CubieCube.SymMove[csym][Util.ud2std[m]]];
+            int cidxx = CoordCube.CPermMove[cidx][CubieCube.SymMoveUD[csym][m]];
             int csymx = CubieCube.SymMult[cidxx & 0xf][csym];
             cidxx >>= 4;
             if (CoordCube.getPruning(CoordCube.MCPermPrun,

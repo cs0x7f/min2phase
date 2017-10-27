@@ -126,7 +126,7 @@ class Util {
         "D ", "D2", "D'", "L ", "L2", "L'", "B ", "B2", "B'"
     };
     static int[] preMove = { -1, Rx1, Rx3, Fx1, Fx3, Lx1, Lx3, Bx1, Bx3};
-    static int[] ud2std = {Ux1, Ux2, Ux3, Rx2, Fx2, Dx1, Dx2, Dx3, Lx2, Bx2};
+    static int[] ud2std = {Ux1, Ux2, Ux3, Rx2, Fx2, Dx1, Dx2, Dx3, Lx2, Bx2, Rx1, Rx3, Fx1, Fx3, Lx1, Lx3, Bx1, Bx3};
     static int[] std2ud = new int[18];
     static int[] ckmv2bit = new int[11];
 
@@ -303,7 +303,7 @@ class Util {
     }
 
     static {
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 18; i++) {
             std2ud[ud2std[i]] = i;
         }
         for (int i = 0; i < 10; i++) {

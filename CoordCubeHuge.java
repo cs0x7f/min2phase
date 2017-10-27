@@ -17,6 +17,7 @@ class CoordCubeHuge extends CoordCube {
     static int[][] UDSliceFlipMove = Search.EXTRA_PRUN_LEVEL > 0 ? new int[N_UDSLICEFLIP_SYM][N_MOVES] : null;
     static char[][] TwistMoveF = Search.EXTRA_PRUN_LEVEL > 0 ? new char[N_TWIST][N_MOVES] : null;
     static char[][] TwistConj = Search.EXTRA_PRUN_LEVEL > 0 ? new char[N_TWIST][16] : null;
+    static char[][] CCombMoveF = Search.EXTRA_PRUN_LEVEL > 0 ? new char[N_COMB][N_MOVES] : null;
     static byte[] UDSliceFlipTwistPrunP = null; //Search.EXTRA_PRUN_LEVEL > 0 ? new byte[N_UDSLICEFLIP_SYM * N_TWIST / 5] : null;
     static byte[] HugePrunP = null; //Search.EXTRA_PRUN_LEVEL > 1 ? new byte[N_HUGE_5] : null;
 
@@ -52,6 +53,7 @@ class CoordCubeHuge extends CoordCube {
         initEPermMove();
         initMPermMoveConj();
         initCombMoveConj();
+        initCombMoveF();
 
         initMEPermPrun();
         initMCPermPrun();
@@ -166,6 +168,18 @@ class CoordCubeHuge extends CoordCube {
                     twist = TwistMoveF[twist][j];
                     TwistMoveF[i][j + k] = (char) twist;
                 }
+            }
+        }
+    }
+
+    static void initCombMoveF() {
+        CubieCube c = new CubieCube();
+        CubieCube d = new CubieCube();
+        for (int i = 0; i < N_COMB; i++) {
+            c.setCComb(i);
+            for (int j = 0; j < N_MOVES; j++) {
+                CubieCube.CornMult(c, CubieCube.moveCube[j], d);
+                CCombMoveF[i][j] = (char) d.getCComb();
             }
         }
     }
@@ -288,7 +302,7 @@ class CoordCubeHuge extends CoordCube {
                     int sym = (int) (i / N_RAW);
                     for (int m = 0; m < N_MOVES; m++) {
                         int symx = UDSliceFlipMove[sym][m];
-                        int rawx = TwistConj[TwistMoveF[raw / N_COMB][m]][symx & 0xf] * N_COMB + CCombConj[CCombMove[raw % N_COMB][m]][symx & 0xf];
+                        int rawx = TwistConj[TwistMoveF[raw / N_COMB][m]][symx & 0xf] * N_COMB + CCombConj[CCombMoveF[raw % N_COMB][m]][symx & 0xf];
                         symx >>= 4;
                         long idx = symx * N_RAW + rawx;
                         if (getPruning2(HugePrun, idx) != check) {
@@ -386,7 +400,7 @@ class CoordCubeHuge extends CoordCube {
 
         int prunm3;
         if (Search.EXTRA_PRUN_LEVEL > 1 && !isPhase1) {
-            tsym = CCombMove[cc.tsym][m];
+            tsym = CCombMoveF[cc.tsym][m];
             prunm3 = getPruningP(HugePrunP,
                                  flip * ((long) N_TWIST) * N_COMB + TwistConj[twist][fsym] * N_COMB + CCombConj[tsym][fsym], N_HUGE_5 * 4L);
         } else {

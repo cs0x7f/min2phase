@@ -32,7 +32,7 @@ class CoordCube {
     static char[][] EPermMove = new char[N_PERM_SYM][N_MOVES2];
     static char[][] MPermMove = new char[N_MPERM][N_MOVES2];
     static char[][] MPermConj = new char[N_MPERM][16];
-    static char[][] CCombMove = new char[N_COMB][N_MOVES];
+    static char[][] CCombMove = new char[N_COMB][N_MOVES2];
     static char[][] CCombConj = new char[N_COMB][16];
     static int[] MCPermPrun = new int[N_MPERM * N_PERM_SYM / 8 + 1];
     static int[] MEPermPrun = new int[N_MPERM * N_PERM_SYM / 8 + 1];
@@ -146,7 +146,7 @@ class CoordCube {
         for (int i = 0; i < N_PERM_SYM; i++) {
             c.setCPerm(CubieCube.EPermS2R[i]);
             for (int j = 0; j < N_MOVES; j++) {
-                CubieCube.CornMult(c, CubieCube.moveCube[j], d);
+                CubieCube.CornMult(c, CubieCube.moveCube[Util.ud2std[j]], d);
                 CPermMove[i][j] = (char) d.getCPermSym();
             }
         }
@@ -185,8 +185,8 @@ class CoordCube {
         CubieCube d = new CubieCube();
         for (int i = 0; i < N_COMB; i++) {
             c.setCComb(i);
-            for (int j = 0; j < N_MOVES; j++) {
-                CubieCube.CornMult(c, CubieCube.moveCube[j], d);
+            for (int j = 0; j < N_MOVES2; j++) {
+                CubieCube.CornMult(c, CubieCube.moveCube[Util.ud2std[j]], d);
                 CCombMove[i][j] = (char) d.getCComb();
             }
             for (int j = 0; j < 16; j++) {
@@ -207,8 +207,7 @@ class CoordCube {
 
         final int SYM_SHIFT = PrunFlag & 0xf;
         final int SYM_E2C_MAGIC = ((PrunFlag >> 4) & 1) == 1 ? CubieCube.SYM_E2C_MAGIC : 0x00000000;
-        final boolean MoveMapSym = ((PrunFlag >> 5) & 1) == 1;
-        final boolean MoveMapRaw = ((PrunFlag >> 6) & 1) == 1;
+        final boolean IS_PHASE2 = ((PrunFlag >> 5) & 1) == 1;
         final int INV_DEPTH = PrunFlag >> 8 & 0xf;
         final int MAX_DEPTH = PrunFlag >> 12 & 0xf;
         final int MIN_DEPTH = PrunFlag >> 16 & 0xf;
@@ -217,7 +216,7 @@ class CoordCube {
         final boolean ISTFP = RawMove == null;
         final int N_RAW = ISTFP ? N_FLIP : RawMove.length;
         final int N_SIZE = N_RAW * SymMove.length;
-        final int N_MOVES = MoveMapRaw ? 10 : ISTFP ? 18 : RawMove[0].length;
+        final int N_MOVES = IS_PHASE2 ? 10 : 18;
         final int NEXT_AXIS_MAGIC = N_MOVES == 10 ? 0x42 : 0x92492;
 
         int depth = getPruning(PrunTable, N_SIZE) - 1;
@@ -273,14 +272,14 @@ class CoordCube {
                 }
 
                 for (int m = 0; m < N_MOVES; m++) {
-                    int symx = SymMove[sym][MoveMapSym ? Util.ud2std[m] : m];
+                    int symx = SymMove[sym][m];
                     int rawx;
                     if (ISTFP) {
                         rawx = CubieCube.FlipS2RF[
                                    FlipMove[flip][CubieCube.Sym8Move[m << 3 | fsym]] ^
                                    fsym ^ (symx & SYM_MASK)];
                     } else {
-                        rawx = RawConj[RawMove[raw][MoveMapRaw ? Util.ud2std[m] : m] & 0x1ff][symx & SYM_MASK];
+                        rawx = RawConj[RawMove[raw][m] & 0x1ff][symx & SYM_MASK];
 
                     }
                     symx >>= SYM_SHIFT;
@@ -349,7 +348,7 @@ class CoordCube {
         return initRawSymPrun(
                    MEPermPrun,
                    MPermMove, MPermConj,
-                   EPermMove, CubieCube.SymStatePerm, 0x7c704
+                   EPermMove, CubieCube.SymStatePerm, 0x7c724
                );
     }
 
@@ -365,7 +364,7 @@ class CoordCube {
         return initRawSymPrun(
                    EPermCCombPrun,
                    CCombMove, CCombConj,
-                   EPermMove, CubieCube.SymStatePerm, 0x7c844
+                   EPermMove, CubieCube.SymStatePerm, 0x1c824
                );
     }
 

@@ -24,7 +24,7 @@ class CubieCube {
     static int[][] SymMove = new int[16][18];
     static int[][] SymMultInv = new int[16][16];
     static int[] Sym8Move = new int[8 * 18];
-    static int[][] SymMoveUD = new int[16][10];
+    static int[][] SymMoveUD = new int[16][18];
 
     /**
      * ClassIndexToRepresentantArrays
@@ -523,7 +523,7 @@ class CubieCube {
             }
         }
         for (int s = 0; s < 16; s++) {
-            for (int j = 0; j < 10; j++) {
+            for (int j = 0; j < 18; j++) {
                 SymMoveUD[s][j] = Util.std2ud[SymMove[s][Util.ud2std[j]]];
             }
             for (int j = 0; j < 16; j++) {
