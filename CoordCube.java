@@ -233,8 +233,8 @@ class CoordCube {
             done = 1;
         }
 
-        final int SEARCH_DEPTH = !Search.PARTIAL_INIT_PRUN ? MAX_DEPTH :
-                                 Math.min(Math.max(depth + 1, MIN_DEPTH), MAX_DEPTH);
+        final int SEARCH_DEPTH = Search.PARTIAL_INIT_LEVEL > 0 ?
+                                 Math.min(Math.max(depth + 1, MIN_DEPTH), MAX_DEPTH) : MAX_DEPTH;
 
         while (depth < SEARCH_DEPTH) {
             int mask = (depth + 1) * 0x11111111 ^ 0xffffffff;
@@ -317,14 +317,14 @@ class CoordCube {
             // System.out.println(String.format("%2d%10d%10f", depth, done, (System.nanoTime() - tt) / 1e6d));
         }
 
-        return depth == MAX_DEPTH;
+        return Search.PARTIAL_INIT_LEVEL > 1 || depth == MAX_DEPTH;
     }
 
     static boolean initTwistFlipPrun() {
         return initRawSymPrun(
                    TwistFlipPrun,
                    null, null,
-                   TwistMove, CubieCube.SymStateTwist, 0x19603
+                   TwistMove, CubieCube.SymStateTwist, 0x69603
                );
     }
 
@@ -356,7 +356,7 @@ class CoordCube {
         return initRawSymPrun(
                    MCPermPrun,
                    MPermMove, MPermConj,
-                   CPermMove, CubieCube.SymStatePerm, 0x7ea34
+                   CPermMove, CubieCube.SymStatePerm, 0x8ea34
                );
     }
 
@@ -364,7 +364,7 @@ class CoordCube {
         return initRawSymPrun(
                    EPermCCombPrun,
                    CCombMove, CCombConj,
-                   EPermMove, CubieCube.SymStatePerm, 0x1c824
+                   EPermMove, CubieCube.SymStatePerm, 0x7c824
                );
     }
 

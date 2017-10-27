@@ -38,8 +38,11 @@ public class Search {
      * If this variable is set, only a few entries of the pruning table will be initialized.
      * Hence, the initialization time will be decreased by about 50%, however, the speed
      * of the solver is affected.
+     * 0: without partial initialization
+     * 1: enable partial initialization, and the initialization will continue during solving
+     * 2: enable partial initialization, and the initialization will not continue
      */
-    public static final boolean PARTIAL_INIT_PRUN = true;
+    public static final int PARTIAL_INIT_LEVEL = 0;
 
     static final boolean USE_FULL_PRUN = EXTRA_PRUN_LEVEL > 0;
     static final boolean USE_HUGE_PRUN = EXTRA_PRUN_LEVEL > 1;
