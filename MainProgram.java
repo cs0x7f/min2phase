@@ -53,7 +53,7 @@ public class MainProgram extends javax.swing.JFrame {
 
     // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     public static void main(String[] args) {
-        String fileName = "m2p" + (Search.USE_TWIST_FLIP_PRUN ? "T" : "") + (Search.EXTRA_PRUN_LEVEL > 0 ? "F" : "") + ".data";
+        String fileName = "m2p" + (Search.USE_TWIST_FLIP_PRUN ? "T" : "") + ".data";
         try {
             DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(fileName)));
             Tools.initFrom(dis);

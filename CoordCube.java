@@ -100,7 +100,7 @@ class CoordCube {
                 UDSliceMove[i][j] = (char) d.getUDSlice();
             }
             for (int j = 0; j < 16; j += 2) {
-                CubieCube.EdgeConjugate(c, CubieCube.SymInv[j], d);
+                CubieCube.EdgeConjugate(c, CubieCube.SymMultInv[0][j], d);
                 UDSliceConj[i][j >> 1] = (char) (d.getUDSlice() & 0x1ff);
             }
         }
@@ -174,7 +174,7 @@ class CoordCube {
                 MPermMove[i][j] = (char) d.getMPerm();
             }
             for (int j = 0; j < 16; j++) {
-                CubieCube.EdgeConjugate(c, CubieCube.SymInv[j], d);
+                CubieCube.EdgeConjugate(c, CubieCube.SymMultInv[0][j], d);
                 MPermConj[i][j] = (char) d.getMPerm();
             }
         }
@@ -190,7 +190,7 @@ class CoordCube {
                 CCombMove[i][j] = (char) d.getCComb();
             }
             for (int j = 0; j < 16; j++) {
-                CubieCube.CornConjugate(c, CubieCube.SymInv[j], d);
+                CubieCube.CornConjugate(c, CubieCube.SymMultInv[0][j], d);
                 CCombConj[i][j] = (char) d.getCComb();
             }
         }
@@ -324,7 +324,7 @@ class CoordCube {
         return initRawSymPrun(
                    TwistFlipPrun,
                    null, null,
-                   TwistMove, CubieCube.SymStateTwist, 0x69603
+                   TwistMove, CubieCube.SymStateTwist, 0x19603
                );
     }
 

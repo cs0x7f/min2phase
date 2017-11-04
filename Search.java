@@ -28,13 +28,6 @@ public class Search {
     public static final boolean USE_TWIST_FLIP_PRUN = true;
 
     /**
-     * 0: without extra pruning table
-     * 1: full phase 1 pruning table (28M, for two-phase solver and optimal solver)
-     * 2: full phase 1 pruning table (28M, for two-phase solver) + huge pruning table (2.0G, for optimal solver)
-     */
-    public static final int EXTRA_PRUN_LEVEL = 0;
-
-    /**
      * If this variable is set, only a few entries of the pruning table will be initialized.
      * Hence, the initialization time will be decreased by about 50%, however, the speed
      * of the solver is affected.
@@ -44,16 +37,13 @@ public class Search {
      */
     public static final int PARTIAL_INIT_LEVEL = 0;
 
-    static final boolean USE_FULL_PRUN = EXTRA_PRUN_LEVEL > 0;
-    static final boolean USE_HUGE_PRUN = EXTRA_PRUN_LEVEL > 1;
-    static final boolean USE_CONJ_PRUN = USE_TWIST_FLIP_PRUN && EXTRA_PRUN_LEVEL == 0;
-
     //Options for research purpose.
     static final boolean TRY_PRE_MOVE = true;
     static final boolean TRY_INVERSE = true;
     static final boolean TRY_THREE_AXES = true;
+    static final boolean USE_CONJ_PRUN = USE_TWIST_FLIP_PRUN;
 
-    static final int MAX_DEPTH2 = EXTRA_PRUN_LEVEL > 0 ? 12 : 13;
+    static final int MAX_DEPTH2 = 13;
 
     static final int PRE_IDX_MAX = TRY_PRE_MOVE ? 9 : 1;
 
@@ -114,13 +104,13 @@ public class Search {
 
     public Search() {
         for (int i = 0; i < 21; i++) {
-            nodeUD[i] = EXTRA_PRUN_LEVEL > 0 ? new CoordCubeHuge() : new CoordCube();
-            nodeRL[i] = EXTRA_PRUN_LEVEL > 0 ? new CoordCubeHuge() : new CoordCube();
-            nodeFB[i] = EXTRA_PRUN_LEVEL > 0 ? new CoordCubeHuge() : new CoordCube();
+            nodeUD[i] = new CoordCube();
+            nodeRL[i] = new CoordCube();
+            nodeFB[i] = new CoordCube();
         }
         for (int i = 0; i < 6; i++) {
             for (int j = 0; j < PRE_IDX_MAX; j++) {
-                node0[i][j] = EXTRA_PRUN_LEVEL > 0 ? new CoordCubeHuge() : new CoordCube();
+                node0[i][j] = new CoordCube();
             }
         }
     }
@@ -271,11 +261,7 @@ public class Search {
             CubieCube.initSym();
         }
 
-        if (EXTRA_PRUN_LEVEL > 0) {
-            CoordCubeHuge.init();
-        } else {
-            CoordCube.init();
-        }
+        CoordCube.init();
 
         inited = true;
     }
@@ -504,8 +490,6 @@ public class Search {
                 int ret = phase1opt(nodeUD[maxl], nodeRL[maxl], nodeFB[maxl], ssym & CubieCube.moveCubeSym[m], maxl - 1, axis);
                 if (ret == 0) {
                     return 0;
-                } else if (ret == 2) {
-                    break;
                 }
             }
         }

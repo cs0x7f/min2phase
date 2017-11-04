@@ -1,6 +1,5 @@
 SRC = \
 CoordCube.java \
-CoordCubeHuge.java \
 CubieCube.java \
 MainProgram.java \
 Search.java \
