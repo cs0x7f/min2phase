@@ -109,7 +109,7 @@ class CubieCube {
             temps.ea[ea[edge] >> 1] = (byte) (edge << 1 | ea[edge] & 1);
         }
         for (byte corn = 0; corn < 8; corn++) {
-            temps.ca[ca[corn] & 0x7] = (byte) (corn | 32 >> (ca[corn] >> 3) & 24);
+            temps.ca[ca[corn] & 0x7] = (byte) (corn | 0x20 >> (ca[corn] >> 3) & 0x18);
         }
         copy(temps);
     }
@@ -282,11 +282,11 @@ class CubieCube {
     // MPerm : Permutations of 4 UDSlice Edges. [0, 24)
 
     int getCPerm() {
-        return Util.get8Perm(ca, false);
+        return Util.getNPerm(ca, 8, false);
     }
 
     void setCPerm(int idx) {
-        Util.set8Perm(ca, idx, false);
+        Util.setNPerm(ca, idx, 8, false);
     }
 
     int getCPermSym() {
@@ -308,11 +308,11 @@ class CubieCube {
     }
 
     int getEPerm() {
-        return Util.get8Perm(ea, true);
+        return Util.getNPerm(ea, 8, true);
     }
 
     void setEPerm(int idx) {
-        Util.set8Perm(ea, idx, true);
+        Util.setNPerm(ea, idx, 8, true);
     }
 
     int getEPermSym() {

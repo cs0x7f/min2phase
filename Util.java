@@ -119,7 +119,6 @@ class Util {
     };
 
     static int[][] Cnk = new int[13][13];
-    static int[] fact = new int[14];
     static int[][] permMult = new int[24][24];
     static String[] move2str = {
         "U ", "U2", "U'", "R ", "R2", "R'", "F ", "F2", "F'",
@@ -209,57 +208,30 @@ class Util {
         return isEdge ? val0 >> 1 : val0 & 7;
     }
 
-    static void set8Perm(byte[] arr, int idx, boolean isEdge) {
-        int val = 0x76543210;
-        for (int i = 0; i < 7; i++) {
-            int p = fact[7 - i];
-            int v = idx / p;
-            idx -= v * p;
-            v <<= 2;
-            arr[i] = setVal(arr[i], (val >> v & 0x7), isEdge);
-            int m = (1 << v) - 1;
+    static void setNPerm(byte[] arr, int idx, int n, boolean isEdge) {
+        long val = 0xFEDCBA9876543210L;
+        long extract = 0;
+        for (int p = 2; p <= n; p++) {
+            extract = extract << 4 | idx % p;
+            idx /= p;
+        }
+        for (int i = 0; i < n - 1; i++) {
+            int v = ((int) extract & 0xf) << 2;
+            extract >>= 4;
+            arr[i] = setVal(arr[i], (int) (val >> v & 0xf), isEdge);
+            long m = (1L << v) - 1;
             val = val & m | val >> 4 & ~m;
         }
-        arr[7] = setVal(arr[7], val, isEdge);
-    }
-
-    static int get8Perm(byte[] arr, boolean isEdge) {
-        int idx = 0;
-        int val = 0x76543210;
-        for (int i = 0; i < 7; i++) {
-            int v = getVal(arr[i], isEdge) << 2;
-            idx = (8 - i) * idx + (val >> v & 0x7);
-            val -= 0x11111110 << v;
-        }
-        return idx;
-    }
-
-    static void setNPerm(byte[] arr, int idx, int n, boolean isEdge) {
-        arr[n - 1] = setVal(arr[n - 1], 0, isEdge);
-        for (int i = n - 2; i >= 0; i--) {
-            int arri = idx % (n - i);
-            arr[i] = setVal(arr[i], arri, isEdge);
-            idx /= (n - i);
-            for (int j = i + 1; j < n; j++) {
-                int arrj = getVal(arr[j], isEdge);
-                if (arrj >= arri) {
-                    arr[j] = setVal(arr[j], ++arrj, isEdge);
-                }
-            }
-        }
+        arr[n - 1] = setVal(arr[n - 1], (int) (val & 0xf), isEdge);
     }
 
     static int getNPerm(byte[] arr, int n, boolean isEdge) {
         int idx = 0;
-        for (int i = 0; i < n; i++) {
-            idx *= (n - i);
-            int arri = getVal(arr[i], isEdge);
-            for (int j = i + 1; j < n; j++) {
-                int arrj = getVal(arr[j], isEdge);
-                if (arrj < arri) {
-                    idx++;
-                }
-            }
+        long val = 0xFEDCBA9876543210L;
+        for (int i = 0; i < n - 1; i++) {
+            int v = getVal(arr[i], isEdge) << 2;
+            idx = (n - i) * idx + (int) (val >> v & 0x7);
+            val -= 0x1111111111111110L << v;
         }
         return idx;
     }
@@ -284,12 +256,16 @@ class Util {
         int r = 4, fill = end, val = 0x0123;
         int idxC = Cnk[arr.length][4] - 1 - (idx & 0x1ff);
         int idxP = idx >> 9;
+        int extract = 0;
+        for (int p = 2; p <= 4; p++) {
+            extract = extract << 4 | idxP % p;
+            idxP /= p;
+        }
         for (int i = end; i >= 0; i--) {
             if (idxC >= Cnk[i][r]) {
                 idxC -= Cnk[i][r--];
-                int p = fact[r];
-                int v = idxP / p << 2;
-                idxP %= p;
+                int v = (extract & 0xf) << 2;
+                extract >>= 4;
                 arr[i] = setVal(arr[i], val >> v & 3 | mask, isEdge);
                 int m = (1 << v) - 1;
                 val = val & m | val >> 4 & ~m;
@@ -315,10 +291,8 @@ class Util {
             }
         }
         ckmv2bit[10] = 0;
-        fact[0] = 1;
         for (int i = 0; i < 13; i++) {
             Cnk[i][0] = Cnk[i][i] = 1;
-            fact[i + 1] = fact[i] * (i + 1);
             for (int j = 1; j < i; j++) {
                 Cnk[i][j] = Cnk[i - 1][j - 1] + Cnk[i - 1][j];
             }
