@@ -120,11 +120,11 @@ class Util {
 
     static int[][] Cnk = new int[13][13];
     static int[][] permMult = new int[24][24];
+    static int[] permInv = new int[24];
     static String[] move2str = {
         "U ", "U2", "U'", "R ", "R2", "R'", "F ", "F2", "F'",
         "D ", "D2", "D'", "L ", "L2", "L'", "B ", "B2", "B'"
     };
-    static int[] preMove = { -1, Rx1, Rx3, Fx1, Fx3, Lx1, Lx3, Bx1, Bx3};
     static int[] ud2std = {Ux1, Ux2, Ux3, Rx2, Fx2, Dx1, Dx2, Dx3, Lx2, Bx2, Rx1, Rx3, Fx1, Fx3, Lx1, Lx3, Bx1, Bx3};
     static int[] std2ud = new int[18];
     static int[] ckmv2bit = new int[11];
@@ -308,6 +308,9 @@ class Util {
                     arr3[k] = arr1[arr2[k]];
                 }
                 permMult[i][j] = getNPerm(arr3, 4, false);
+                if (permMult[i][j] == 0) {
+                    permInv[i] = j;
+                }
             }
         }
     }

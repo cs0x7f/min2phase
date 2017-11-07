@@ -214,22 +214,26 @@ public class test {
             Tools.setRandomSource(new Random(42L));
             int totalLength = 0;
             int[] lengthDis = new int[30];
+            long totalProbe2 = 0;
             while (System.nanoTime() - tm < 6000000000000L && x < nSolves) {
                 long curTime = System.nanoTime();
                 String cube = Tools.randomCube();
-                String s = search.solution(cube, maxLength, probeMax, probeMin, verbose);
+                String s = search.solution(cube, maxLength, probeMax, probeMin, verbose | search.INVERSE_SOLUTION);
                 // if (s.length() > 63) {
                 //     s = search.next(probeMax, 0, verbose);
                 // }
                 curTime = System.nanoTime() - curTime;
+                String cube2 = Tools.fromScramble(s);
+                assert(cube.equals(cube2));
                 totalTime += curTime;
+                totalProbe2 += search.numberOfProbes();
                 maxT = Math.max(maxT, curTime);
                 minT = Math.min(minT, curTime);
                 totalLength += search.length();
                 lengthDis[search.length()]++;
                 x++;
-                System.out.print(String.format("%6d AvgT: %6.3f ms, MaxT: %8.3f ms, MinT: %6.3f ms, AvgL: %6.3f\r", x,
-                                               (totalTime / 1000000d) / x, maxT / 1000000d, minT / 1000000d, totalLength / 1.0d / x));
+                System.out.print(String.format("%6d AvgT: %6.3f ms, MaxT: %8.3f ms, MinT: %6.3f ms, AvgL: %6.3f, AvgP: %6.3f\r", x,
+                                               (totalTime / 1000000d) / x, maxT / 1000000d, minT / 1000000d, totalLength / 1.0d / x, totalProbe2 / 1.0d / x));
             }
             System.out.println();
             System.out.println(x + " Random Cube(s) Solved");
