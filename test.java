@@ -215,6 +215,7 @@ public class test {
             int totalLength = 0;
             int[] lengthDis = new int[30];
             long totalProbe2 = 0;
+            long[] timeList = new long[nSolves];
             while (System.nanoTime() - tm < 6000000000000L && x < nSolves) {
                 long curTime = System.nanoTime();
                 String cube = Tools.randomCube();
@@ -231,11 +232,34 @@ public class test {
                 minT = Math.min(minT, curTime);
                 totalLength += search.length();
                 lengthDis[search.length()]++;
-                x++;
+                timeList[x++] = curTime;
                 System.out.print(String.format("%6d AvgT: %6.3f ms, MaxT: %8.3f ms, MinT: %6.3f ms, AvgL: %6.3f, AvgP: %6.3f\r", x,
                                                (totalTime / 1000000d) / x, maxT / 1000000d, minT / 1000000d, totalLength / 1.0d / x, totalProbe2 / 1.0d / x));
             }
-            System.out.println();
+            java.util.Arrays.sort(timeList);
+            System.out.println(
+                String.format(
+                    "\nAvgT: %6.3f ms\n" +
+                    "MaxT: %8.3f ms\n" +
+                    "MinT: %6.3f ms\n" +
+                    "L50T: %6.3f ms\n" +
+                    "L75T: %6.3f ms\n" +
+                    "L90T: %6.3f ms\n" +
+                    "L95T: %6.3f ms\n" +
+                    "L99T: %6.3f ms\n" +
+                    "AvgL: %6.3f\n" +
+                    "AvgP: %6.3f\n",
+                    (totalTime / 1000000d) / x,
+                    maxT / 1000000d,
+                    minT / 1000000d,
+                    timeList[(int) (nSolves * 0.50)] / 1000000d,
+                    timeList[(int) (nSolves * 0.75)] / 1000000d,
+                    timeList[(int) (nSolves * 0.90)] / 1000000d,
+                    timeList[(int) (nSolves * 0.95)] / 1000000d,
+                    timeList[(int) (nSolves * 0.99)] / 1000000d,
+                    totalLength / 1.0d / x,
+                    totalProbe2 / 1.0d / x));
+
             System.out.println(x + " Random Cube(s) Solved");
             System.out.println("Length Distribution: ");
             for (int i = 0; i < 30; i++) {
