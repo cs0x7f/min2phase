@@ -47,8 +47,9 @@ public class Search {
 
     static final int PRE_IDX_MAX = PRE_MOVE_LEVEL == 2 ? 113 :
                                    PRE_MOVE_LEVEL == 1 ? 9 : 1;
-
     static final int PRE_IDX_VALID_MAX = PRE_IDX_MAX / 2 + 1;
+    static final int PRE_IDX_MIN = 9;
+    static final int PRE_IDX_VALID_MIN = PRE_IDX_MIN / 2 + 1;
 
     static boolean inited = false;
 
@@ -71,6 +72,7 @@ public class Search {
 
     private long selfSym;
     private int preIdxMax;
+    private int preIdxMin;
     private int conjMask;
     private int urfIdx;
     private int preIdx;
@@ -84,6 +86,7 @@ public class Search {
     private long probeMin;
     private int verbose;
     private CubieCube cc = new CubieCube();
+    private int urfPreInitStatus = 0x000000;
 
     private boolean isRec = false;
 
@@ -216,10 +219,12 @@ public class Search {
         selfSym &= 0xffffffffffffL;
 
         preIdxMax = conjMask > 7 ? 1 : PRE_IDX_MAX;
+        preIdxMin = Math.min(preIdxMax, PRE_IDX_MIN);
         for (int i = 0; i < 6; i++) {
-            int preIdxValidMaxCur = (conjMask & 1 << i) == 0 ? (preIdxMax + 1) / 2 : 1;
+            int preIdxValidMaxCur = (conjMask & 1 << i) == 0 ? (preIdxMin + 1) / 2 : 1;
             initConjPreIdxRange(i, 0, preIdxValidMaxCur, false);
         }
+        urfPreInitStatus = 0x000000;
     }
 
     public synchronized String next(long probeMax, long probeMin, int verbose) {
@@ -320,7 +325,9 @@ public class Search {
                 if ((conjMask & 1 << urfIdx) != 0) {
                     continue;
                 }
-                for (preIdx = isRec ? preIdx : 0; preIdx < preIdxMax; preIdx += 2) {
+                for (preIdx = isRec ? preIdx : 0;
+                        preIdx < ((urfPreInitStatus >> (urfIdx << 1) & 3) != 3 ? preIdxMin : preIdxMax);
+                        preIdx += 2) {
                     int preIdxValid = (preIdx + 1) >> 1;
                     int ssym = (int) (selfSym & CubieCube.preMoveSym[preIdx]);
                     node0[urfIdx][preIdxValid].calcPruning(true);
@@ -328,6 +335,10 @@ public class Search {
                     if (node0[urfIdx][preIdxValid].prun <= depth1
                             && phase1(node0[urfIdx][preIdxValid], ssym, depth1, -1) == 0) {
                         return solution == null ? "Error 8" : solution;
+                    }
+                    if ((urfPreInitStatus >> (urfIdx << 1) & 3) == 1) {
+                        initConjPreIdxRange(urfIdx, PRE_IDX_VALID_MIN, PRE_IDX_VALID_MAX, false);
+                        urfPreInitStatus |= 2 << (urfIdx << 1);
                     }
                 }
             }
@@ -512,6 +523,7 @@ public class Search {
         int preIdxValid = (preIdx + 1) >> 1;
 
         if (preIdx % 2 == 0) {
+            urfPreInitStatus |= 1 << (urfIdx << 1);
             if (corn0[urfIdx][preIdxValid] == -1) {
                 initConjPreIdxRange(urfIdx, preIdxValid, preIdxValid + 1, true);
             }
@@ -583,7 +595,6 @@ public class Search {
             --probe;
         }
         initPhase2State();
-
         int prun = Math.max(
                        CoordCube.getPruning(CoordCube.EPermCCombPrun,
                                             p2edge * 70 + CoordCube.CCombConj[CubieCube.Perm2Comb[p2corn]][CubieCube.SymMultInv[p2esym][p2csym]]),
