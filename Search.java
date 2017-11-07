@@ -318,6 +318,30 @@ public class Search {
         }
     }
 
+    private boolean updatePreSearch(int preIdxValidMin, int preIdxValidMax) {
+        int preIdx_cp = preIdx;
+        int length1_cp = length1;
+        for (int preIdxValid = preIdxValidMin; preIdxValid < preIdxValidMax; preIdxValid++) {
+            preIdx = preIdxValid * 2;
+            node0[urfIdx][preIdxValid].calcPruning(true);
+            int preLen = CubieCube.preMoveList[preIdx].length;
+            for (length1 = node0[urfIdx][preIdxValid].prun + preLen;
+                    length1 < length1_cp; length1++) {
+                maxDep2 = Math.min(MAX_DEPTH2, sol - length1);
+                depth1 = length1 - preLen;
+                if (phase1(node0[urfIdx][preIdxValid],
+                           (int) selfSym & CubieCube.preMoveSym[preIdx],
+                           depth1, -1) == 0) {
+                    return true;
+                }
+            }
+        }
+        length1 = length1_cp;
+        preIdx = preIdx_cp;
+        maxDep2 = Math.min(MAX_DEPTH2, sol - length1);
+        return false;
+    }
+
     private String search() {
         for (length1 = isRec ? length1 : 0; length1 < sol; length1++) {
             maxDep2 = Math.min(MAX_DEPTH2, sol - length1);
@@ -329,16 +353,20 @@ public class Search {
                         preIdx < ((urfPreInitStatus >> (urfIdx << 1) & 3) != 3 ? preIdxMin : preIdxMax);
                         preIdx += 2) {
                     int preIdxValid = (preIdx + 1) >> 1;
-                    int ssym = (int) (selfSym & CubieCube.preMoveSym[preIdx]);
                     node0[urfIdx][preIdxValid].calcPruning(true);
                     depth1 = length1 - CubieCube.preMoveList[preIdx].length;
                     if (node0[urfIdx][preIdxValid].prun <= depth1
-                            && phase1(node0[urfIdx][preIdxValid], ssym, depth1, -1) == 0) {
+                            && phase1(node0[urfIdx][preIdxValid],
+                                      (int) selfSym & CubieCube.preMoveSym[preIdx],
+                                      depth1, -1) == 0) {
                         return solution == null ? "Error 8" : solution;
                     }
                     if ((urfPreInitStatus >> (urfIdx << 1) & 3) == 1) {
-                        initConjPreIdxRange(urfIdx, PRE_IDX_VALID_MIN, PRE_IDX_VALID_MAX, false);
                         urfPreInitStatus |= 2 << (urfIdx << 1);
+                        initConjPreIdxRange(urfIdx, preIdxMin / 2 + 1, preIdxMax / 2 + 1, false);
+                        if (updatePreSearch(preIdxMin / 2 + 1, preIdxMax / 2 + 1)) {
+                            return solution == null ? "Error 8" : solution;
+                        }
                     }
                 }
             }
