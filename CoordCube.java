@@ -402,8 +402,11 @@ class CoordCube {
                                   twist * N_SLICE + UDSliceConj[slice & 0x1ff][tsym]),
                        getPruning(UDSliceFlipPrun,
                                   flip * N_SLICE + UDSliceConj[slice & 0x1ff][fsym])),
-                   Search.USE_TWIST_FLIP_PRUN ? getPruning(TwistFlipPrun,
-                           twist << 11 | CubieCube.FlipS2RF[flip << 3 | (fsym ^ tsym)]) : 0);
+                   Math.max(
+                       Search.USE_CONJ_PRUN ? getPruning(TwistFlipPrun,
+                               (twistc >> 3) << 11 | CubieCube.FlipS2RF[flipc ^ (twistc & 7)]) : 0,
+                       Search.USE_TWIST_FLIP_PRUN ? getPruning(TwistFlipPrun,
+                               twist << 11 | CubieCube.FlipS2RF[flip << 3 | (fsym ^ tsym)]) : 0));
     }
 
     void set(CubieCube cc) {

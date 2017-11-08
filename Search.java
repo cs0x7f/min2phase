@@ -318,40 +318,30 @@ public class Search {
         }
     }
 
-    private boolean updatePreSearch(int preIdxValidMin, int preIdxValidMax) {
-        int preIdx_cp = preIdx;
-        int length1_cp = length1;
-        for (int preIdxValid = preIdxValidMin; preIdxValid < preIdxValidMax; preIdxValid++) {
-            preIdx = preIdxValid * 2;
-            node0[urfIdx][preIdxValid].calcPruning(true);
-            int preLen = CubieCube.preMoveList[preIdx].length;
-            for (length1 = node0[urfIdx][preIdxValid].prun + preLen;
-                    length1 < length1_cp; length1++) {
-                maxDep2 = Math.min(MAX_DEPTH2, sol - length1);
-                depth1 = length1 - preLen;
-                if (phase1(node0[urfIdx][preIdxValid],
-                           (int) selfSym & CubieCube.preMoveSym[preIdx],
-                           depth1, -1) == 0) {
-                    return true;
-                }
-            }
-        }
-        length1 = length1_cp;
-        preIdx = preIdx_cp;
-        maxDep2 = Math.min(MAX_DEPTH2, sol - length1);
-        return false;
-    }
+    char[] searchTasks = new char[21];
 
     private String search() {
+        if (!isRec) {
+            for (int i = 0; i <= 20; i++) {
+                searchTasks[i] = 0; // all tasks not finished
+            }
+        }
+
         for (length1 = isRec ? length1 : 0; length1 < sol; length1++) {
             maxDep2 = Math.min(MAX_DEPTH2, sol - length1);
             for (urfIdx = isRec ? urfIdx : 0; urfIdx < 6; urfIdx++) {
                 if ((conjMask & 1 << urfIdx) != 0) {
                     continue;
                 }
-                for (preIdx = isRec ? preIdx : 0;
-                        preIdx < ((urfPreInitStatus >> (urfIdx << 1) & 3) != 3 ? preIdxMin : preIdxMax);
-                        preIdx += 2) {
+                int preIdxStart = 0;
+                int status = searchTasks[length1] >> (urfIdx << 1) & 3;
+                if (status == 1) {
+                    preIdxStart = preIdxMin + 1;
+                } else if (status == 3) {
+                    preIdxStart = preIdxMax + 1;
+                }
+                int preIdxEnd = (urfPreInitStatus >> (urfIdx << 1) & 3) != 3 ? preIdxMin : preIdxMax;
+                for (preIdx = isRec ? preIdx : preIdxStart; preIdx < preIdxEnd; preIdx += 2) {
                     int preIdxValid = (preIdx + 1) >> 1;
                     node0[urfIdx][preIdxValid].calcPruning(true);
                     depth1 = length1 - CubieCube.preMoveList[preIdx].length;
@@ -361,15 +351,17 @@ public class Search {
                                       depth1, -1) == 0) {
                         return solution == null ? "Error 8" : solution;
                     }
-                    if ((urfPreInitStatus >> (urfIdx << 1) & 3) == 1) {
-                        urfPreInitStatus |= 2 << (urfIdx << 1);
-                        initConjPreIdxRange(urfIdx, preIdxMin / 2 + 1, preIdxMax / 2 + 1, false);
-                        if (updatePreSearch(preIdxMin / 2 + 1, preIdxMax / 2 + 1)) {
-                            return solution == null ? "Error 8" : solution;
-                        }
-                    }
+                }
+                searchTasks[length1] |= (preIdx >= preIdxMin ? 1 : 0) << (urfIdx << 1);
+                searchTasks[length1] |= (preIdx >= preIdxMax ? 3 : 0) << (urfIdx << 1);
+                if ((urfPreInitStatus >> (urfIdx << 1) & 3) == 1) {
+                    urfPreInitStatus |= 2 << (urfIdx << 1);
+                    initConjPreIdxRange(urfIdx, preIdxMin / 2 + 1, preIdxMax / 2 + 1, false);
+                    length1 = -1;
+                    break;
                 }
             }
+
         }
         return solution == null ? "Error 7" : solution;
     }
@@ -504,7 +496,10 @@ public class Search {
                 }
 
                 // UD Axis
-                int prun_ud = nodeUD[maxl].doMovePrun(ud, m, false);
+                int prun_ud = Math.max(
+                                  nodeUD[maxl].doMovePrun(ud, m, false),
+                                  USE_CONJ_PRUN ? nodeUD[maxl].doMovePrunConj(ud, m) : 0
+                              );
                 if (prun_ud > maxl) {
                     break;
                 } else if (prun_ud == maxl) {
@@ -514,7 +509,10 @@ public class Search {
                 // RL Axis
                 m = CubieCube.urfMove[2][m];
 
-                int prun_rl = nodeRL[maxl].doMovePrun(rl, m, false);
+                int prun_rl = Math.max(
+                                  nodeRL[maxl].doMovePrun(rl, m, false),
+                                  USE_CONJ_PRUN ? nodeRL[maxl].doMovePrunConj(rl, m) : 0
+                              );
                 if (prun_rl > maxl) {
                     break;
                 } else if (prun_rl == maxl) {
@@ -524,7 +522,10 @@ public class Search {
                 // FB Axis
                 m = CubieCube.urfMove[2][m];
 
-                int prun_fb = nodeFB[maxl].doMovePrun(fb, m, false);
+                int prun_fb = Math.max(
+                                  nodeFB[maxl].doMovePrun(fb, m, false),
+                                  USE_CONJ_PRUN ? nodeFB[maxl].doMovePrunConj(fb, m) : 0
+                              );
                 if (prun_ud == prun_rl && prun_rl == prun_fb && prun_fb != 0) {
                     prun_fb++;
                 }
