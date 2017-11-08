@@ -87,6 +87,7 @@ public class Search {
     private int verbose;
     private CubieCube cc = new CubieCube();
     private int urfPreInitStatus = 0x000000;
+    char[] searchTasks = new char[21];
 
     private boolean isRec = false;
 
@@ -292,6 +293,9 @@ public class Search {
     }
 
     void initConjPreIdxRange(int urfIdx, int preIdxAdjStart, int preIdxAdjEnd, boolean initPhase2) {
+        if (preIdxAdjStart >= preIdxAdjEnd) {
+            return;
+        }
         CubieCube pc = new CubieCube();
         CubieCube pc2 = new CubieCube();
         CubieCube ccc = new CubieCube(cc);
@@ -317,8 +321,6 @@ public class Search {
             }
         }
     }
-
-    char[] searchTasks = new char[21];
 
     private String search() {
         if (!isRec) {
