@@ -230,7 +230,7 @@ class Util {
         long val = 0xFEDCBA9876543210L;
         for (int i = 0; i < n - 1; i++) {
             int v = getVal(arr[i], isEdge) << 2;
-            idx = (n - i) * idx + (int) (val >> v & 0x7);
+            idx = (n - i) * idx + (int) (val >> v & 0xf);
             val -= 0x1111111111111110L << v;
         }
         return idx;
