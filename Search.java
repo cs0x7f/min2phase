@@ -137,7 +137,7 @@ public class Search {
      *             |*U7**U8**U9*|
      *             |************|
      * ************|************|************|************|
-     * *L1**L2**L3*|*F1**F2**F3*|*R1**R2**F3*|*B1**B2**B3*|
+     * *L1**L2**L3*|*F1**F2**F3*|*R1**R2**R3*|*B1**B2**B3*|
      * ************|************|************|************|
      * *L4**L5**L6*|*F4**F5**F6*|*R4**R5**R6*|*B4**B5**B6*|
      * ************|************|************|************|
@@ -207,8 +207,6 @@ public class Search {
 
     private void initSearch() {
         conjMask = (TRY_INVERSE ? 0 : 0x38) | (TRY_THREE_AXES ? 0 : 0x36);
-        CubieCube pc = new CubieCube();
-        CubieCube pc2 = new CubieCube();
         selfSym = cc.selfSymmetry();
         conjMask |= (selfSym >> 16 & 0xffff) != 0 ? 0x12 : 0;
         conjMask |= (selfSym >> 32 & 0xffff) != 0 ? 0x24 : 0;
@@ -581,10 +579,8 @@ public class Search {
                 }
 
                 // UD Axis
-                int prun_ud = Math.max(
-                                  nodeUD[maxl].doMovePrun(ud, m, false),
-                                  USE_CONJ_PRUN ? nodeUD[maxl].doMovePrunConj(ud, m) : 0
-                              );
+                int prun_ud = Math.max(nodeUD[maxl].doMovePrun(ud, m, false),
+                                       USE_CONJ_PRUN ? nodeUD[maxl].doMovePrunConj(ud, m) : 0);
                 if (prun_ud > maxl) {
                     break;
                 } else if (prun_ud == maxl) {
@@ -594,10 +590,8 @@ public class Search {
                 // RL Axis
                 m = CubieCube.urfMove[2][m];
 
-                int prun_rl = Math.max(
-                                  nodeRL[maxl].doMovePrun(rl, m, false),
-                                  USE_CONJ_PRUN ? nodeRL[maxl].doMovePrunConj(rl, m) : 0
-                              );
+                int prun_rl = Math.max(nodeRL[maxl].doMovePrun(rl, m, false),
+                                       USE_CONJ_PRUN ? nodeRL[maxl].doMovePrunConj(rl, m) : 0);
                 if (prun_rl > maxl) {
                     break;
                 } else if (prun_rl == maxl) {
@@ -607,10 +601,8 @@ public class Search {
                 // FB Axis
                 m = CubieCube.urfMove[2][m];
 
-                int prun_fb = Math.max(
-                                  nodeFB[maxl].doMovePrun(fb, m, false),
-                                  USE_CONJ_PRUN ? nodeFB[maxl].doMovePrunConj(fb, m) : 0
-                              );
+                int prun_fb = Math.max(nodeFB[maxl].doMovePrun(fb, m, false),
+                                       USE_CONJ_PRUN ? nodeFB[maxl].doMovePrunConj(fb, m) : 0);
                 if (prun_ud == prun_rl && prun_rl == prun_fb && prun_fb != 0) {
                     prun_fb++;
                 }

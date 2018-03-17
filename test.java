@@ -1,5 +1,7 @@
 import java.util.Random;
 import java.io.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 import cs.min2phase.Tools;
 import cs.min2phase.Search;
 
@@ -51,6 +53,118 @@ public class test {
             sol = search.next(100, 0, verbose | Search.INVERSE_SOLUTION);
         }
         assert Tools.fromScramble(sol).equals(Tools.fromScramble(arr));
+    }
+
+    static ArrayBlockingQueue<String> jobQueue;
+
+    static ArrayBlockingQueue<long[]> retQueue;
+
+    static class solvingThread extends Thread {
+        int nSolves;
+        int maxLength;
+        int probeMax;
+        int probeMin;
+        int verbose;
+        Search search = new Search();
+
+        solvingThread(int nSolves, int maxLength, int probeMax, int probeMin, int verbose) {
+            this.nSolves = nSolves;
+            this.maxLength = maxLength;
+            this.probeMax = probeMax;
+            this.probeMin = probeMin;
+            this.verbose = verbose;
+            setDaemon(true);
+        }
+
+        public void run() {
+            try {
+                while (true) {
+                    String cube = jobQueue.take();
+                    long curTime = System.nanoTime();
+                    String s = search.solution(cube, maxLength, probeMax, probeMin, verbose | search.INVERSE_SOLUTION);
+                    curTime = System.nanoTime() - curTime;
+                    String cube2 = Tools.fromScramble(s);
+                    assert(cube.equals(cube2));
+                    retQueue.put(new long[] {search.length(), curTime, search.numberOfProbes()});
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    static void multiThreadRandomSolving(int nThreads, int nSolves, int maxLength, int probeMax, int probeMin, int verbose) {
+        jobQueue = new ArrayBlockingQueue<String>(nSolves);
+        retQueue = new ArrayBlockingQueue<long[]>(nSolves);
+        for (int i = 0; i < nThreads; i++) {
+            new solvingThread(nSolves, maxLength, probeMax, probeMin, verbose).start();
+        }
+
+        try {
+            Tools.setRandomSource(new Random(42L));
+            for (int i = 0; i < nSolves; i++) {
+                String cube = Tools.randomCube();
+                jobQueue.put(cube);
+            }
+            long minT = 1L << 62;
+            long maxT = 0L;
+            long totalTime = 0;
+            int totalLength = 0;
+            int[] lengthDis = new int[30];
+            long totalProbe2 = 0;
+            long[] timeList = new long[nSolves];
+            for (int i = 0; i < nSolves; i++) {
+                long[] ret = retQueue.take();
+                int length = (int) ret[0];
+                long curTime = ret[1];
+                long nprobes = ret[2];
+
+                totalTime += curTime;
+                totalProbe2 += nprobes;
+                maxT = Math.max(maxT, curTime);
+                minT = Math.min(minT, curTime);
+                totalLength += length;
+                lengthDis[length]++;
+                timeList[i] = curTime;
+                int x = i + 1;
+                System.out.print(String.format("%6d AvgT: %6.3f ms, MaxT: %8.3f ms, MinT: %6.3f ms, AvgL: %6.3f, AvgP: %6.3f\r", x,
+                                               (totalTime / 1000000d) / x, maxT / 1000000d, minT / 1000000d, totalLength / 1.0d / x, totalProbe2 / 1.0d / x));
+            }
+
+            java.util.Arrays.sort(timeList);
+            System.out.println(
+                String.format(
+                    "\nAvgT: %6.3f ms\n" +
+                    "MaxT: %8.3f ms\n" +
+                    "MinT: %6.3f ms\n" +
+                    "L50T: %6.3f ms\n" +
+                    "L75T: %6.3f ms\n" +
+                    "L90T: %6.3f ms\n" +
+                    "L95T: %6.3f ms\n" +
+                    "L99T: %6.3f ms\n" +
+                    "AvgL: %6.3f\n" +
+                    "AvgP: %6.3f\n",
+                    (totalTime / 1000000d) / nSolves,
+                    maxT / 1000000d,
+                    minT / 1000000d,
+                    timeList[(int) (nSolves * 0.50)] / 1000000d,
+                    timeList[(int) (nSolves * 0.75)] / 1000000d,
+                    timeList[(int) (nSolves * 0.90)] / 1000000d,
+                    timeList[(int) (nSolves * 0.95)] / 1000000d,
+                    timeList[(int) (nSolves * 0.99)] / 1000000d,
+                    totalLength / 1.0d / nSolves,
+                    totalProbe2 / 1.0d / nSolves));
+
+            System.out.println(nSolves + " Random Cube(s) Solved");
+            System.out.println("Length Distribution: ");
+            for (int i = 0; i < 30; i++) {
+                if (lengthDis[i] != 0) {
+                    System.out.println(String.format("%2d: %d", i, lengthDis[i]));
+                }
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void main(String[] args) {
@@ -268,5 +382,18 @@ public class test {
                 }
             }
         }
+
+        if ((testValue & 0x40) != 0) {
+            System.out.println("========== Multi-thread Random Solving Test (Two-phase Solver) ==========");
+            System.out.println(String.format("Solve Random %d Cubes:", nSolves));
+            System.out.println(
+                "MaxLength: " + maxLength + "\n" +
+                "ProbeMax: " + probeMax + "\n" +
+                "ProbeMin: " + probeMin + "\n" +
+                "verbose: " + verbose + "\n" +
+                "nThreads: " + Runtime.getRuntime().availableProcessors());
+            multiThreadRandomSolving(Runtime.getRuntime().availableProcessors(), nSolves, maxLength, probeMax, probeMin, verbose);
+        }
+
     }
 }
