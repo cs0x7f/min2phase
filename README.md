@@ -14,7 +14,7 @@ Conventional two-phase algorithm only find (sub-)optimal solutions to &lt;U,R2,F
 There are several compilation options that can be modified for different purposes, e.g. faster solving speed, or less resource usage. 
 - USE_TWIST_FLIP_PRUN [Search.java line 28](https://github.com/cs0x7f/min2phase/blob/dev/Search.java#L28): To determine whether twist-flip-pruning table will be generated and used. The size of the table is about 300KB (2,048 * 324 entries / 2 entries per byte = 331,776 bytes).
 - PARTIAL_INIT_PRUN [Search.java line 42](https://github.com/cs0x7f/min2phase/blob/dev/Search.java#L42): For some situations that initialization speed is bottleneck, e.g. initialization cannot be pre-executed before solving, this option can be set to reduce initialization time by about 50%. However, the solving speed is about 2x slower due to ineffective pruning. However, the initialization will continue during the search, in other word, the solving speed will be increased after solving several cubes.
-- TRY_PRE_MOVE, TRY_INVERSE, TRY_THREE_AXES [Search.java line 49](https://github.com/cs0x7f/min2phase/blob/dev/Search.java#L49): Three improvements of min2phase compared with conventional two-phase algorithm. Can be disabled for research purpose. 
+- MAX_PRE_MOVES, TRY_INVERSE, TRY_THREE_AXES [Search.java line 49](https://github.com/cs0x7f/min2phase/blob/dev/Search.java#L49): Three improvements of min2phase compared with conventional two-phase algorithm. Can be disabled for research purpose. 
 
 # Benchmark
 - Memory: ~1M with twist-flip-pruning (TFP) table, ~0.7M without TFP table, ~40M with Full table. See [Search.java line 28](https://github.com/cs0x7f/min2phase/blob/dev/Search.java#L28).
@@ -26,9 +26,9 @@ There are several compilation options that can be modified for different purpose
     |  -T---   |  1.02 ms  |  7.05 ms  |  283. ms  |    -  ms  |
     |  -TA--   |  .905 ms  |  2.29 ms  |  56.9 ms  |    -  ms  |
     |  -TAI-   |  .918 ms  |  1.49 ms  |  21.8 ms  |    -  ms  |
-    |**-TAIP** |**.998 ms**|**1.06 ms**|**5.61 ms**|**184. ms**|
-    |  R-AIP   |  2.89 ms  |  3.12 ms  |  17.7 ms  |  71.1 ms  |
-    |  RTAIP   |  3.07 ms  |  3.63 ms  |  23.3 ms  |  78.2 ms  |
+    |**-TAIP** |**1.05 ms**|**1.13 ms**|**4.64 ms**|**184. ms**|
+    |  R-AIP   |  2.78 ms  |  3.06 ms  |  12.7 ms  |  71.1 ms  |
+    |  RTAIP   |  3.17 ms  |  3.46 ms  |  18.4 ms  |  78.2 ms  |
 
 
 # File description

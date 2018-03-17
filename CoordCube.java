@@ -409,14 +409,30 @@ class CoordCube {
                                twist << 11 | CubieCube.FlipS2RF[flip << 3 | (fsym ^ tsym)]) : 0));
     }
 
-    void set(CubieCube cc) {
+    boolean setWithPrun(CubieCube cc, int depth) {
         twist = cc.getTwistSym();
         flip = cc.getFlipSym();
-        slice = cc.getUDSlice();
         tsym = twist & 7;
         twist = twist >> 3;
+
+        prun = Search.USE_TWIST_FLIP_PRUN ? getPruning(TwistFlipPrun,
+                twist << 11 | CubieCube.FlipS2RF[flip ^ tsym]) : 0;
+        if (prun > depth) {
+            return false;
+        }
+
         fsym = flip & 7;
         flip = flip >> 3;
+
+        slice = cc.getUDSlice();
+        prun = Math.max(prun, Math.max(
+                            getPruning(UDSliceTwistPrun,
+                                       twist * N_SLICE + UDSliceConj[slice & 0x1ff][tsym]),
+                            getPruning(UDSliceFlipPrun,
+                                       flip * N_SLICE + UDSliceConj[slice & 0x1ff][fsym])));
+        if (prun > depth) {
+            return false;
+        }
 
         if (Search.USE_CONJ_PRUN) {
             CubieCube pc = new CubieCube();
@@ -424,14 +440,16 @@ class CoordCube {
             CubieCube.EdgeConjugate(cc, 1, pc);
             twistc = pc.getTwistSym();
             flipc = pc.getFlipSym();
+            prun = Math.max(prun,
+                            getPruning(TwistFlipPrun,
+                                       (twistc >> 3) << 11 | CubieCube.FlipS2RF[flipc ^ (twistc & 7)]));
         }
+
+        return prun <= depth;
     }
 
     /**
-     * @return
-     *      0: Success
-     *      1: Try Next Power
-     *      2: Try Next Axis
+     * @return pruning value
      */
     int doMovePrun(CoordCube cc, int m, boolean isPhase1) {
         slice = UDSliceMove[cc.slice & 0x1ff][m] & 0x1ff;

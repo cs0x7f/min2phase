@@ -71,9 +71,6 @@ class CubieCube {
         {8, 7, 6, 2, 1, 0, 5, 4, 3, 17, 16, 15, 11, 10, 9, 14, 13, 12},
         {5, 4, 3, 8, 7, 6, 2, 1, 0, 14, 13, 12, 17, 16, 15, 11, 10, 9}
     };
-    static byte[] preMove = { -1, Util.Rx1, Util.Rx3, Util.Fx1, Util.Fx3, Util.Lx1, Util.Lx3, Util.Bx1, Util.Bx3};
-    static byte[][] preMoveList;
-    static char[] preMoveSym;
 
     byte[] ca = {0, 1, 2, 3, 4, 5, 6, 7};
     byte[] ea = {0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22};
@@ -168,6 +165,16 @@ class CubieCube {
             idxi = ESym2CSym(idxi);
         }
         return idxi & 0xfff0 | SymMult[idxi & 0xf][sym];
+    }
+
+    static int getSkipMoves(long ssym) {
+        int ret = 0;
+        for (int i = 1; (ssym >>= 1) != 0; i++) {
+            if ((ssym & 1) == 1) {
+                ret |= CubieCube.firstMoveSym[i];
+            }
+        }
+        return ret;
     }
 
     /**
@@ -507,27 +514,6 @@ class CubieCube {
                 if (s % 16 == 15) {
                     j = urfMove[2][j];
                 }
-            }
-        }
-        preMoveList = new byte[113][];
-        preMoveSym = new char[113];
-        preMoveList[0] = new byte[0];
-        preMoveSym[0] = 0xffff;
-        int idx = 9;
-        for (int i = 1; i < 9; i++) {
-            preMoveList[i] = new byte[] {preMove[i]};
-            preMoveSym[i] = (char) CubieCube.moveCubeSym[preMove[i]];
-        }
-        for (byte m = 0; m < 18; m++) {
-            for (int i = 1; i < 9; i++) {
-                byte n = preMove[i];
-                int ma = m / 3;
-                int na = n / 3;
-                if ((ma == na) || ((ma % 3 == na % 3) && (ma >= na || m % 3 == 1))) {
-                    continue;
-                }
-                preMoveSym[idx] = (char) (CubieCube.moveCubeSym[m] & CubieCube.moveCubeSym[n]);
-                preMoveList[idx++] = new byte[] {m, n};
             }
         }
     }
