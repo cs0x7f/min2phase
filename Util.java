@@ -119,8 +119,6 @@ class Util {
     };
 
     static int[][] Cnk = new int[13][13];
-    static int[][] permMult = new int[24][24];
-    static int[] permInv = new int[24];
     static String[] move2str = {
         "U ", "U2", "U'", "R ", "R2", "R'", "F ", "F2", "F'",
         "D ", "D2", "D'", "L ", "L2", "L'", "B ", "B2", "B'"
@@ -295,22 +293,6 @@ class Util {
             Cnk[i][0] = Cnk[i][i] = 1;
             for (int j = 1; j < i; j++) {
                 Cnk[i][j] = Cnk[i - 1][j - 1] + Cnk[i - 1][j];
-            }
-        }
-        byte[] arr1 = new byte[4];
-        byte[] arr2 = new byte[4];
-        byte[] arr3 = new byte[4];
-        for (int i = 0; i < 24; i++) {
-            setNPerm(arr1, i, 4, false);
-            for (int j = 0; j < 24; j++) {
-                setNPerm(arr2, j, 4, false);
-                for (int k = 0; k < 4; k++) {
-                    arr3[k] = arr1[arr2[k]];
-                }
-                permMult[i][j] = getNPerm(arr3, 4, false);
-                if (permMult[i][j] == 0) {
-                    permInv[i] = j;
-                }
             }
         }
     }

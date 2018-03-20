@@ -87,7 +87,6 @@ public class Tools {
         read(CubieCube.FlipS2R, in);
         read(CubieCube.TwistS2R, in);
         read(CubieCube.EPermS2R, in);
-        read(CubieCube.MtoEPerm, in);
         in.readFully(CubieCube.Perm2Comb);
         read(CoordCube.TwistMove, in);
         read(CoordCube.FlipMove, in);
@@ -124,7 +123,6 @@ public class Tools {
         write(CubieCube.FlipS2R, out);                  //          672
         write(CubieCube.TwistS2R, out);                 // +        648
         write(CubieCube.EPermS2R, out);                 // +      5,536
-        write(CubieCube.MtoEPerm, out);                 // +     80,640
         out.write(CubieCube.Perm2Comb);                 // +      2,768
         write(CoordCube.TwistMove, out);                // +     11,664
         write(CoordCube.FlipMove, out);                 // +     12,096

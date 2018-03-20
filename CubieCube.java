@@ -44,8 +44,6 @@ class CubieCube {
         return idx ^ (SYM_E2C_MAGIC >> ((idx & 0xf) << 1) & 3);
     }
 
-    static char[] MtoEPerm = new char[40320];
-
     /**
      * Raw-Coordnate to Sym-Coordnate, only for speeding up initializaion.
      */
@@ -269,19 +267,11 @@ class CubieCube {
     }
 
     int getUDSlice() {
-        return Util.getComb(ea, 8, true);
+        return Util.getComb(ea, 8, true) & 0x1ff;
     }
 
     void setUDSlice(int idx) {
         Util.setComb(ea, idx, 8, true);
-    }
-
-    int getU4Comb() {
-        return Util.getComb(ea, 0, true);
-    }
-
-    int getD4Comb() {
-        return Util.getComb(ea, 4, true);
     }
 
     // ++++++++++++++++++++ Phase 2 Coordnates ++++++++++++++++++++
@@ -549,11 +539,8 @@ class CubieCube {
                 case 1: idx = d.getTwist();
                     break;
                 case 2: idx = d.getEPerm();
-                    int a = d.getU4Comb();
-                    int m = 494 - (a & 0x1ff) + (a >> 9) * 70 + (d.getD4Comb() >> 9) * 1680;
-                    MtoEPerm[m] = (char) (count << 4 | s);
                     if (s == 0) {
-                        Perm2Comb[count] = (byte) (494 - (a & 0x1ff));
+                        Perm2Comb[count] = (byte) (494 - (Util.getComb(d.ea, 0, true) & 0x1ff));
                     }
                     break;
                 }

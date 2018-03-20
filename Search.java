@@ -49,16 +49,11 @@ public class Search {
     static boolean inited = false;
 
     private int[] move = new int[31];
+    private int[] moveSol = new int[31];
 
     private CoordCube[] nodeUD = new CoordCube[21];
     private CoordCube[] nodeRL = new CoordCube[21];
     private CoordCube[] nodeFB = new CoordCube[21];
-
-    private int p2corn;
-    private int p2csym;
-    private int p2edge;
-    private int p2esym;
-    private int p2mid;
 
     private long selfSym;
     private int conjMask;
@@ -72,16 +67,18 @@ public class Search {
     private long probeMax;
     private long probeMin;
     private int verbose;
+    private int valid1;
+    private boolean allowShorter = false;
     private CubieCube cc = new CubieCube();
     private CubieCube[] urfCubieCube = new CubieCube[6];
     private CoordCube[] urfCoordCube = new CoordCube[6];
+    private CubieCube[] phase1Cubie = new CubieCube[21];
 
     CubieCube[] preMoveCubes = new CubieCube[MAX_PRE_MOVES + 1];
     int[] preMoves = new int[MAX_PRE_MOVES];
     int preMoveLen = 0;
     int maxPreMoves = 0;
-    CubieCube curPreCube;
-    CoordCube curSearchNode = new CoordCube();
+    CubieCube phase2Cubie;
 
     private boolean isRec = false;
 
@@ -112,6 +109,7 @@ public class Search {
             nodeUD[i] = new CoordCube();
             nodeRL[i] = new CoordCube();
             nodeFB[i] = new CoordCube();
+            phase1Cubie[i] = new CubieCube();
         }
         for (int i = 0; i < 6; i++) {
             urfCubieCube[i] = new CubieCube();
@@ -288,18 +286,16 @@ public class Search {
         return cc.verify();
     }
 
-    boolean allowShorter = false;
-
     private int phase1PreMoves(int maxl, int lm, CubieCube cc, int ssym) {
         preMoveLen = maxPreMoves - maxl;
         if (isRec ? depth1 == length1 - preMoveLen
                 : (preMoveLen == 0 || (0x36FB7 >> lm & 1) == 0)) {
             depth1 = length1 - preMoveLen;
-            curPreCube = cc;
+            phase1Cubie[0] = cc;
             allowShorter = depth1 == MIN_P1LENGTH_PRE && preMoveLen != 0;
 
-            if (curSearchNode.setWithPrun(cc, depth1)
-                    && phase1(curSearchNode, ssym, depth1, -1) == 0) {
+            if (nodeUD[depth1 + 1].setWithPrun(cc, depth1)
+                    && phase1(nodeUD[depth1 + 1], ssym, depth1, -1) == 0) {
                 return 0;
             }
         }
@@ -355,57 +351,21 @@ public class Search {
         }
         ++probe;
 
-        int corn0 = curPreCube.getCPermSym();
-        p2corn = corn0 >> 4;
-        p2csym = corn0 & 0xf;
-        p2mid = curSearchNode.slice;
-        int u4e = curPreCube.getU4Comb();
-        int d4e = curPreCube.getD4Comb();
-        for (int i = 0; i < depth1; i++) {
-            int m = move[i];
-            p2corn = CoordCube.CPermMove[p2corn][Util.std2ud[CubieCube.SymMove[p2csym][m]]];
-            p2csym = CubieCube.SymMult[p2corn & 0xf][p2csym];
-            p2corn >>= 4;
-
-            int cx = CoordCube.UDSliceMove[p2mid & 0x1ff][m];
-            p2mid = Util.permMult[p2mid >> 9][cx >> 9] << 9 | cx & 0x1ff;
-
-            cx = CoordCube.UDSliceMove[u4e & 0x1ff][m];
-            u4e = Util.permMult[u4e >> 9][cx >> 9] << 9 | cx & 0x1ff;
-
-            cx = CoordCube.UDSliceMove[d4e & 0x1ff][m];
-            d4e = Util.permMult[d4e >> 9][cx >> 9] << 9 | cx & 0x1ff;
+        for (int i = valid1; i < depth1; i++) {
+            CubieCube.CornMult(phase1Cubie[i], CubieCube.moveCube[move[i]], phase1Cubie[i + 1]);
+            CubieCube.EdgeMult(phase1Cubie[i], CubieCube.moveCube[move[i]], phase1Cubie[i + 1]);
         }
-        p2mid >>= 9;
-
-        p2edge = CubieCube.MtoEPerm[494 - (u4e & 0x1ff) + (u4e >> 9) * 70 + (d4e >> 9) * 1680];
-        p2esym = p2edge & 0xf;
-        p2edge >>= 4;
+        phase2Cubie = phase1Cubie[depth1];
 
         int ret = initPhase2();
         if (ret == 0 || preMoveLen == 0) {
             return ret;
         }
 
-        int m = Util.std2ud[preMoves[preMoveLen - 1] / 3 * 3 + 1];
-
-        int p2edgeI = CubieCube.getPermSymInv(p2edge, p2esym, false);
-        int p2cornI = CubieCube.getPermSymInv(p2corn, p2csym, true);
-        int p2midI = Util.permInv[p2mid];
-
-        int p2cornIx = CoordCube.CPermMove[p2cornI >> 4][CubieCube.SymMoveUD[p2cornI & 0xf][m]];
-        int p2csymIx = CubieCube.SymMult[p2cornIx & 0xf][p2cornI & 0xf];
-        int p2edgeIx = CoordCube.EPermMove[p2edgeI >> 4][CubieCube.SymMoveUD[p2edgeI & 0xf][m]];
-        int p2esymIx = CubieCube.SymMult[p2edgeIx & 0xf][p2edgeI & 0xf];
-        int p2midIx = CoordCube.MPermMove[p2midI][m];
-
-        p2edge = CubieCube.getPermSymInv(p2edgeIx >> 4, p2esymIx, false);
-        p2esym = p2edge & 0xf;
-        p2edge >>= 4;
-        p2corn = CubieCube.getPermSymInv(p2cornIx >> 4, p2csymIx, true);
-        p2csym = p2corn & 0xf;
-        p2corn >>= 4;
-        p2mid = Util.permInv[p2midIx];
+        int m = preMoves[preMoveLen - 1] / 3 * 3 + 1;
+        phase2Cubie = new CubieCube();
+        CubieCube.CornMult(CubieCube.moveCube[m], phase1Cubie[depth1], phase2Cubie);
+        CubieCube.EdgeMult(CubieCube.moveCube[m], phase1Cubie[depth1], phase2Cubie);
 
         preMoves[preMoveLen - 1] += 2 - preMoves[preMoveLen - 1] % 3 * 2;
 
@@ -416,6 +376,14 @@ public class Search {
     }
 
     private int initPhase2() {
+        int p2corn = phase2Cubie.getCPermSym();
+        int p2csym = p2corn & 0xf;
+        p2corn >>= 4;
+        int p2edge = phase2Cubie.getEPermSym();
+        int p2esym = p2edge & 0xf;
+        p2edge >>= 4;
+        int p2mid = phase2Cubie.getMPerm();
+
         int prun = Math.max(
                        CoordCube.getPruning(CoordCube.EPermCCombPrun,
                                             p2edge * 70 + CoordCube.CCombConj[CubieCube.Perm2Comb[p2corn]][CubieCube.SymMultInv[p2esym][p2csym]]),
@@ -429,29 +397,19 @@ public class Search {
             return prun > maxDep2 ? 2 : 1;
         }
 
-        int lm = 10;
-        if (depth1 >= 2 && move[depth1 - 1] / 3 % 3 == move[depth1 - 2] / 3 % 3) {
-            lm = Util.std2ud[Math.max(move[depth1 - 1], move[depth1 - 2]) / 3 * 3 + 1];
-        } else if (depth1 >= 1) {
-            lm = Util.std2ud[move[depth1 - 1] / 3 * 3 + 1];
-            if (move[depth1 - 1] > Util.Fx3) {
-                lm = -lm;
-            }
-        }
-
         int depth2;
         for (depth2 = maxDep2 - 1; depth2 >= prun; depth2--) {
-            int ret = phase2(p2edge, p2esym, p2corn, p2csym, p2mid, depth2, depth1, lm);
+            int ret = phase2(p2edge, p2esym, p2corn, p2csym, p2mid, depth2, depth1, 10);
             if (ret < 0) {
                 break;
             }
-            depth2 = depth2 - ret;
-            sol = depth1 + depth2;
-            if (preMoveLen != 0) {
-                assert depth2 > 0; //If depth2 == 0, the solution is optimal. In this case, we won't try preScramble to find shorter solutions.
-                for (int i = preMoveLen - 1; i >= 0; i--) {
-                    appendPreMove(preMoves[i], depth2);
-                }
+            depth2 -= ret;
+            sol = 0;
+            for (int i = 0; i < depth1 + depth2; i++) {
+                appendSolMove(move[i]);
+            }
+            for (int i = preMoveLen - 1; i >= 0; i--) {
+                appendSolMove(preMoves[i]);
             }
             solution = solutionToString();
         }
@@ -513,6 +471,7 @@ public class Search {
                 }
 
                 move[depth1 - maxl] = m;
+                valid1 = Math.min(valid1, depth1 - maxl);
                 int ret = phase1(nodeUD[maxl], ssym & (int) CubieCube.moveCubeSym[m], maxl - 1, axis);
                 if (ret == 0) {
                     return 0;
@@ -536,8 +495,7 @@ public class Search {
             }
         }
         urfIdx = maxprun2 > maxprun1 ? 3 : 0;
-        curPreCube = urfCubieCube[urfIdx];
-        curSearchNode = urfCoordCube[urfIdx];
+        phase1Cubie[0] = urfCubieCube[urfIdx];
         for (length1 = isRec ? length1 : 0; length1 < sol; length1++) {
             CoordCube ud = urfCoordCube[0 + urfIdx];
             CoordCube rl = urfCoordCube[1 + urfIdx];
@@ -625,21 +583,35 @@ public class Search {
         return 1;
     }
 
-    void appendPreMove(int preMove, int depth2) {
-        assert depth2 > 0; //If depth2 == 0, the solution is optimal. In this case, we won't try preScramble to find shorter solutions.
-        int axisPre = preMove / 3;
-        int axisLast = move[sol - 1] / 3;
-        if (axisPre == axisLast) {
-            int pow = (preMove % 3 + move[sol - 1] % 3 + 1) % 4;
-            move[sol - 1] = axisPre * 3 + pow;
-        } else if (depth2 > 1
-                   && axisPre % 3 == axisLast % 3
-                   && move[sol - 2] / 3 == axisPre) {
-            int pow = (preMove % 3 + move[sol - 2] % 3 + 1) % 4;
-            move[sol - 2] = axisPre * 3 + pow;
-        } else {
-            move[sol++] = preMove;
+    void appendSolMove(int curMove) {
+        if (sol == 0) {
+            moveSol[sol++] = curMove;
+            return;
         }
+        int axisCur = curMove / 3;
+        int axisLast = moveSol[sol - 1] / 3;
+        if (axisCur == axisLast) {
+            int pow = (curMove % 3 + moveSol[sol - 1] % 3 + 1) % 4;
+            if (pow == 3) {
+                sol--;
+            } else {
+                moveSol[sol - 1] = axisCur * 3 + pow;
+            }
+            return;
+        }
+        if (sol > 1
+                && axisCur % 3 == axisLast % 3
+                && axisCur == moveSol[sol - 2] / 3) {
+            int pow = (curMove % 3 + moveSol[sol - 2] % 3 + 1) % 4;
+            if (pow == 3) {
+                moveSol[sol - 2] = moveSol[sol - 1];
+                sol--;
+            } else {
+                moveSol[sol - 2] = axisCur * 3 + pow;
+            }
+            return;
+        }
+        moveSol[sol++] = curMove;
     }
 
     //-1: no solution found
@@ -648,7 +620,7 @@ public class Search {
         if (edge == 0 && corn == 0 && mid == 0) {
             return maxl;
         }
-        int moveMask = lm < 0 ? (1 << (-lm)) : Util.ckmv2bit[lm];
+        int moveMask = Util.ckmv2bit[lm];
         for (int m = 0; m < 10; m++) {
             if ((moveMask >> m & 1) != 0) {
                 m += 0x42 >> m & 3;
@@ -680,7 +652,7 @@ public class Search {
                 continue;
             }
 
-            int ret = phase2(edgex, esymx, cornx, csymx, midx, maxl - 1, depth + 1, (lm < 0 && m + lm == -5) ? -lm : m);
+            int ret = phase2(edgex, esymx, cornx, csymx, midx, maxl - 1, depth + 1, m);
             if (ret >= 0) {
                 move[depth] = Util.ud2std[m];
                 return ret;
@@ -697,11 +669,11 @@ public class Search {
                 if ((verbose & USE_SEPARATOR) != 0 && s == depth1) {
                     sb.append(".  ");
                 }
-                sb.append(Util.move2str[CubieCube.urfMove[urf][move[s]]]).append(' ');
+                sb.append(Util.move2str[CubieCube.urfMove[urf][moveSol[s]]]).append(' ');
             }
         } else {
             for (int s = sol - 1; s >= 0; s--) {
-                sb.append(Util.move2str[CubieCube.urfMove[urf][move[s]]]).append(' ');
+                sb.append(Util.move2str[CubieCube.urfMove[urf][moveSol[s]]]).append(' ');
                 if ((verbose & USE_SEPARATOR) != 0 && s == depth1) {
                     sb.append(".  ");
                 }

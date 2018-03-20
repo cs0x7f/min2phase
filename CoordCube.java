@@ -101,15 +101,14 @@ class CoordCube {
             }
             for (int j = 0; j < 16; j += 2) {
                 CubieCube.EdgeConjugate(c, CubieCube.SymMultInv[0][j], d);
-                UDSliceConj[i][j >> 1] = (char) (d.getUDSlice() & 0x1ff);
+                UDSliceConj[i][j >> 1] = (char) d.getUDSlice();
             }
         }
         for (int i = 0; i < N_SLICE; i++) {
             for (int j = 0; j < N_MOVES; j += 3) {
                 int udslice = UDSliceMove[i][j];
                 for (int k = 1; k < 3; k++) {
-                    int cx = UDSliceMove[udslice & 0x1ff][j];
-                    udslice = Util.permMult[udslice >> 9][cx >> 9] << 9 | cx & 0x1ff;
+                    udslice = UDSliceMove[udslice][j];
                     UDSliceMove[i][j + k] = (char) udslice;
                 }
             }
@@ -279,7 +278,7 @@ class CoordCube {
                                    FlipMove[flip][CubieCube.Sym8Move[m << 3 | fsym]] ^
                                    fsym ^ (symx & SYM_MASK)];
                     } else {
-                        rawx = RawConj[RawMove[raw][m] & 0x1ff][symx & SYM_MASK];
+                        rawx = RawConj[RawMove[raw][m]][symx & SYM_MASK];
 
                     }
                     symx >>= SYM_SHIFT;
@@ -399,9 +398,9 @@ class CoordCube {
         prun = Math.max(
                    Math.max(
                        getPruning(UDSliceTwistPrun,
-                                  twist * N_SLICE + UDSliceConj[slice & 0x1ff][tsym]),
+                                  twist * N_SLICE + UDSliceConj[slice][tsym]),
                        getPruning(UDSliceFlipPrun,
-                                  flip * N_SLICE + UDSliceConj[slice & 0x1ff][fsym])),
+                                  flip * N_SLICE + UDSliceConj[slice][fsym])),
                    Math.max(
                        Search.USE_CONJ_PRUN ? getPruning(TwistFlipPrun,
                                (twistc >> 3) << 11 | CubieCube.FlipS2RF[flipc ^ (twistc & 7)]) : 0,
@@ -427,9 +426,9 @@ class CoordCube {
         slice = cc.getUDSlice();
         prun = Math.max(prun, Math.max(
                             getPruning(UDSliceTwistPrun,
-                                       twist * N_SLICE + UDSliceConj[slice & 0x1ff][tsym]),
+                                       twist * N_SLICE + UDSliceConj[slice][tsym]),
                             getPruning(UDSliceFlipPrun,
-                                       flip * N_SLICE + UDSliceConj[slice & 0x1ff][fsym])));
+                                       flip * N_SLICE + UDSliceConj[slice][fsym])));
         if (prun > depth) {
             return false;
         }
@@ -452,7 +451,7 @@ class CoordCube {
      * @return pruning value
      */
     int doMovePrun(CoordCube cc, int m, boolean isPhase1) {
-        slice = UDSliceMove[cc.slice & 0x1ff][m] & 0x1ff;
+        slice = UDSliceMove[cc.slice][m];
 
         flip = FlipMove[cc.flip][CubieCube.Sym8Move[m << 3 | cc.fsym]];
         fsym = (flip & 7) ^ cc.fsym;

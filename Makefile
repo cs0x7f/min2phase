@@ -35,6 +35,9 @@ run: build
 testRnd: test.class
 	@java -ea -cp .:twophase.jar test 40 $(ntest) $(maxl) 10000000 $(probe) 0
 
+testRndMP: test.class
+	@java -ea -cp .:twophase.jar test 72 $(ntest) $(maxl) 10000000 $(probe) 0
+
 testRndStd: test.class
 	@java -ea -cp .:twophase.jar test 40 $(ntest) 30 10000000 $(probe) 0 | grep AvgT
 	@java -ea -cp .:twophase.jar test 40 $(ntest) 21 10000000 $(probe) 0 | grep AvgT
