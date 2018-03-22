@@ -573,6 +573,7 @@ public class Search {
                 m = CubieCube.urfMove[2][m];
 
                 move[length1 - maxl] = m;
+                valid1 = Math.min(valid1, length1 - maxl);
                 int ret = phase1opt(nodeUD[maxl], nodeRL[maxl], nodeFB[maxl], ssym & CubieCube.moveCubeSym[m], maxl - 1, axis);
                 if (ret == 0) {
                     return 0;
