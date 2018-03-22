@@ -169,7 +169,7 @@ class CubieCube {
         int ret = 0;
         for (int i = 1; (ssym >>= 1) != 0; i++) {
             if ((ssym & 1) == 1) {
-                ret |= CubieCube.firstMoveSym[i];
+                ret |= firstMoveSym[i];
             }
         }
         return ret;

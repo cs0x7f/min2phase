@@ -28,7 +28,7 @@ class CoordCube {
     static int[] TwistFlipPrun = Search.USE_TWIST_FLIP_PRUN ? new int[N_FLIP * N_TWIST_SYM / 8 + 1] : null;
 
     //phase2
-    static char[][] CPermMove = new char[N_PERM_SYM][N_MOVES];
+    static char[][] CPermMove = new char[N_PERM_SYM][N_MOVES2];
     static char[][] EPermMove = new char[N_PERM_SYM][N_MOVES2];
     static char[][] MPermMove = new char[N_MPERM][N_MOVES2];
     static char[][] MPermConj = new char[N_MPERM][16];
@@ -144,7 +144,7 @@ class CoordCube {
         CubieCube d = new CubieCube();
         for (int i = 0; i < N_PERM_SYM; i++) {
             c.setCPerm(CubieCube.EPermS2R[i]);
-            for (int j = 0; j < N_MOVES; j++) {
+            for (int j = 0; j < N_MOVES2; j++) {
                 CubieCube.CornMult(c, CubieCube.moveCube[Util.ud2std[j]], d);
                 CPermMove[i][j] = (char) d.getCPermSym();
             }

@@ -355,10 +355,11 @@ public class Search {
             CubieCube.CornMult(phase1Cubie[i], CubieCube.moveCube[move[i]], phase1Cubie[i + 1]);
             CubieCube.EdgeMult(phase1Cubie[i], CubieCube.moveCube[move[i]], phase1Cubie[i + 1]);
         }
+        valid1 = depth1;
         phase2Cubie = phase1Cubie[depth1];
 
         int ret = initPhase2();
-        if (ret == 0 || preMoveLen == 0) {
+        if (ret == 0 || preMoveLen == 0 || ret == 2) {
             return ret;
         }
 
@@ -368,9 +369,7 @@ public class Search {
         CubieCube.EdgeMult(CubieCube.moveCube[m], phase1Cubie[depth1], phase2Cubie);
 
         preMoves[preMoveLen - 1] += 2 - preMoves[preMoveLen - 1] % 3 * 2;
-
-        ret = Math.min(ret, initPhase2());
-
+        ret = initPhase2();
         preMoves[preMoveLen - 1] += 2 - preMoves[preMoveLen - 1] % 3 * 2;
         return ret;
     }
