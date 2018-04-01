@@ -80,9 +80,9 @@ public class Tools {
         read(CubieCube.FlipS2R, in);
         read(CubieCube.TwistS2R, in);
         read(CubieCube.EPermS2R, in);
-        read(CubieCube.FlipR2S, in);
-        read(CubieCube.TwistR2S, in);
-        read(CubieCube.EPermR2S, in);
+        in.readFully(CubieCube.FlipR2S);
+        in.readFully(CubieCube.TwistR2S);
+        in.readFully(CubieCube.EPermR2S);
         in.readFully(CubieCube.Perm2CombP);
         read(CubieCube.PermInvEdgeSym, in);
 
@@ -124,9 +124,9 @@ public class Tools {
         write(CubieCube.FlipS2R, out);            //       672
         write(CubieCube.TwistS2R, out);           //       648
         write(CubieCube.EPermS2R, out);           //     5,536
-        write(CubieCube.FlipR2S, out);            //     4,096
-        write(CubieCube.TwistR2S, out);           //     4,374
-        write(CubieCube.EPermR2S, out);           //    80,640
+        out.write(CubieCube.FlipR2S);             //     3,072
+        out.write(CubieCube.TwistR2S);            //     3,281
+        out.write(CubieCube.EPermR2S);            //    20,160
         out.write(CubieCube.Perm2CombP);          //     2,768
         write(CubieCube.PermInvEdgeSym, out);     //     5,536
 
@@ -147,7 +147,7 @@ public class Tools {
         if (Search.USE_TWIST_FLIP_PRUN) {
             write(CubieCube.FlipS2RF, out);       //           +   5,376
             write(CoordCube.TwistFlipPrun, out);  //           + 331,780
-        }                                         // = 561,438 + 436,276 = 997,714
+        }                                         // = 498,841 + 436,276 = 935,117
     }
 
     /**

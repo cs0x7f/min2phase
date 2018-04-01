@@ -47,9 +47,9 @@ class CubieCube {
     /**
      * Raw-Coordnate to Sym-Coordnate, only for speeding up initializaion.
      */
-    static char[] FlipR2S = new char[CoordCube.N_FLIP];
-    static char[] TwistR2S = new char[CoordCube.N_TWIST];
-    static char[] EPermR2S = new char[CoordCube.N_PERM];
+    static byte[] FlipR2S = new byte[CoordCube.N_FLIP_HALF + CoordCube.N_FLIP];
+    static byte[] TwistR2S = new byte[CoordCube.N_TWIST_HALF + CoordCube.N_TWIST];
+    static byte[] EPermR2S = new byte[CoordCube.N_PERM_HALF];
     static char[] FlipS2RF = Search.USE_TWIST_FLIP_PRUN ? new char[CoordCube.N_FLIP_SYM * 8] : null;
 
     /**
@@ -214,21 +214,11 @@ class CubieCube {
     }
 
     int getFlipSym() {
-        if (FlipR2S != null) {
-            return FlipR2S[getFlip()];
-        }
-        if (temps == null) {
-            temps = new CubieCube();
-        }
-        for (int k = 0; k < 16; k += 2) {
-            EdgeConjugate(this, SymMultInv[0][k], temps);
-            int idx = Arrays.binarySearch(FlipS2R, (char) temps.getFlip());
-            if (idx >= 0) {
-                return idx << 3 | k >> 1;
-            }
-        }
-        assert false;
-        return 0;
+        return flipRaw2Sym(getFlip());
+    }
+
+    static int flipRaw2Sym(int raw) {
+        return 0xfff & FlipR2S[raw + CoordCube.N_FLIP_HALF] << 4 | CoordCube.getPruning(FlipR2S, raw);
     }
 
     int getTwist() {
@@ -249,21 +239,8 @@ class CubieCube {
     }
 
     int getTwistSym() {
-        if (TwistR2S != null) {
-            return TwistR2S[getTwist()];
-        }
-        if (temps == null) {
-            temps = new CubieCube();
-        }
-        for (int k = 0; k < 16; k += 2) {
-            CornConjugate(this, SymMultInv[0][k], temps);
-            int idx = Arrays.binarySearch(TwistS2R, (char) temps.getTwist());
-            if (idx >= 0) {
-                return idx << 3 | k >> 1;
-            }
-        }
-        assert false;
-        return 0;
+        int raw = getTwist();
+        return 0xfff & TwistR2S[raw + CoordCube.N_TWIST_HALF] << 4 | CoordCube.getPruning(TwistR2S, raw);
     }
 
     int getUDSlice() {
@@ -288,21 +265,14 @@ class CubieCube {
     }
 
     int getCPermSym() {
-        if (EPermR2S != null) {
-            return ESym2CSym(EPermR2S[getCPerm()]);
-        }
+        int k = ESym2CSym(CoordCube.getPruning(EPermR2S, getCPerm())) & 0xf;
         if (temps == null) {
             temps = new CubieCube();
         }
-        for (int k = 0; k < 16; k++) {
-            CornConjugate(this, SymMultInv[0][k], temps);
-            int idx = Arrays.binarySearch(EPermS2R, (char) temps.getCPerm());
-            if (idx >= 0) {
-                return idx << 4 | k;
-            }
-        }
-        assert false;
-        return 0;
+        CornConjugate(this, SymMultInv[0][k], temps);
+        int idx = Arrays.binarySearch(EPermS2R, (char) temps.getCPerm());
+        assert idx >= 0;
+        return idx << 4 | k;
     }
 
     int getEPerm() {
@@ -314,20 +284,15 @@ class CubieCube {
     }
 
     int getEPermSym() {
-        if (EPermR2S != null) {
-            return EPermR2S[getEPerm()];
-        }
+        int raw = getEPerm();
+        int k = CoordCube.getPruning(EPermR2S, raw);
         if (temps == null) {
             temps = new CubieCube();
         }
-        for (int k = 0; k < 16; k++) {
-            EdgeConjugate(this, SymMultInv[0][k], temps);
-            int idx = Arrays.binarySearch(EPermS2R, (char) temps.getEPerm());
-            if (idx >= 0) {
-                return idx << 4 | k;
-            }
-        }
-        return 0;
+        EdgeConjugate(this, SymMultInv[0][k], temps);
+        int idx = Arrays.binarySearch(EPermS2R, (char) temps.getEPerm());
+        assert idx >= 0;
+        return idx << 4 | k;
     }
 
     int getMPerm() {
@@ -508,7 +473,8 @@ class CubieCube {
         }
     }
 
-    static int initSym2Raw(final int N_RAW, char[] Sym2Raw, char[] Raw2Sym, char[] SymState, int coord) {
+    static int initSym2Raw(final int N_RAW, char[] Sym2Raw, byte[] Raw2Sym, char[] SymState, int coord) {
+        final int N_RAW_HALF = (N_RAW + 1) / 2;
         CubieCube c = new CubieCube();
         CubieCube d = new CubieCube();
         int count = 0, idx = 0;
@@ -516,7 +482,7 @@ class CubieCube {
         boolean isEdge = coord != 1;
 
         for (int i = 0; i < N_RAW; i++) {
-            if (Raw2Sym[i] != 0) {
+            if (CoordCube.getPruning(Raw2Sym, i) != 0) {
                 continue;
             }
             switch (coord) {
@@ -547,7 +513,13 @@ class CubieCube {
                 if (idx == i) {
                     SymState[count] |= 1 << (s / sym_inc);
                 }
-                Raw2Sym[idx] = (char) ((count << 4 | s) / sym_inc);
+                int symIdx = (count << 4 | s) / sym_inc;
+                if (CoordCube.getPruning(Raw2Sym, idx) == 0) {
+                    CoordCube.setPruning(Raw2Sym, idx, symIdx & 0xf);
+                    if (coord != 2) {
+                        Raw2Sym[idx + N_RAW_HALF] = (byte) (symIdx >> 4);
+                    }
+                }
             }
             Sym2Raw[count++] = (char) i;
         }

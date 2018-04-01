@@ -6,10 +6,13 @@ class CoordCube {
 
     static final int N_SLICE = 495;
     static final int N_TWIST = 2187;
+    static final int N_TWIST_HALF = (N_TWIST + 1) / 2;
     static final int N_TWIST_SYM = 324;
     static final int N_FLIP = 2048;
+    static final int N_FLIP_HALF = (N_FLIP + 1) / 2;
     static final int N_FLIP_SYM = 336;
     static final int N_PERM = 40320;
+    static final int N_PERM_HALF = (N_PERM + 1) / 2;
     static final int N_PERM_SYM = 2768;
     static final int N_MPERM = 24;
     static final int N_COMB = Search.USE_COMBP_PRUN ? 140 : 70;
@@ -92,6 +95,14 @@ class CoordCube {
 
     static int getPruning(int[] table, int index) {
         return table[index >> 3] >> (index << 2) & 0xf; // index << 2 <=> (index & 7) << 2
+    }
+
+    static void setPruning(byte[] table, int index, int value) {
+        table[index >> 1] ^= value << ((index & 1) << 2);
+    }
+
+    static int getPruning(byte[] table, int index) {
+        return table[index >> 1] >> ((index & 1) << 2) & 0xf;
     }
 
     static void initUDSliceMoveConj() {
@@ -272,7 +283,7 @@ class CoordCube {
                 int sym = i / N_RAW;
                 int flip = 0, fsym = 0;
                 if (ISTFP) {
-                    flip = CubieCube.FlipR2S[raw];
+                    flip = CubieCube.flipRaw2Sym(raw);
                     fsym = flip & 7;
                     flip >>= 3;
                 }
@@ -309,7 +320,7 @@ class CoordCube {
                         }
                         int idxx = symx * N_RAW;
                         if (ISTFP) {
-                            idxx += CubieCube.FlipS2RF[CubieCube.FlipR2S[rawx] ^ j];
+                            idxx += CubieCube.FlipS2RF[CubieCube.flipRaw2Sym(rawx) ^ j];
                         } else {
                             idxx += RawConj[rawx][j ^ (SYM_E2C_MAGIC >> (j << 1) & 3)];
                         }
