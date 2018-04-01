@@ -13,58 +13,50 @@ public class Tools {
     private static Random gen = new Random();
 
     private static void read(char[] arr, DataInput in) throws IOException {
-        for (int i = 0, len = arr.length; i < len; i++) {
+        for (int i = 0; i < arr.length; i++) {
             arr[i] = in.readChar();
         }
     }
 
     private static void read(int[] arr, DataInput in) throws IOException {
-        for (int i = 0, len = arr.length; i < len; i++) {
+        for (int i = 0; i < arr.length; i++) {
             arr[i] = in.readInt();
         }
     }
 
     private static void read(char[][] arr, DataInput in) throws IOException {
-        for (int i = 0, leng = arr.length; i < leng; i++) {
-            for (int j = 0, len = arr[i].length; j < len; j++) {
-                arr[i][j] = in.readChar();
-            }
+        for (int i = 0; i < arr.length; i++) {
+            read(arr[i], in);
         }
     }
 
     private static void read(int[][] arr, DataInput in) throws IOException {
-        for (int i = 0, leng = arr.length; i < leng; i++) {
-            for (int j = 0, len = arr[i].length; j < len; j++) {
-                arr[i][j] = in.readInt();
-            }
+        for (int i = 0; i < arr.length; i++) {
+            read(arr[i], in);
         }
     }
 
     private static void write(char[] arr, DataOutput out) throws IOException {
-        for (int i = 0, len = arr.length; i < len; i++) {
+        for (int i = 0; i < arr.length; i++) {
             out.writeChar(arr[i]);
         }
     }
 
     private static void write(int[] arr, DataOutput out) throws IOException {
-        for (int i = 0, len = arr.length; i < len; i++) {
+        for (int i = 0; i < arr.length; i++) {
             out.writeInt(arr[i]);
         }
     }
 
     private static void write(char[][] arr, DataOutput out) throws IOException {
-        for (int i = 0, leng = arr.length; i < leng; i++) {
-            for (int j = 0, len = arr[i].length; j < len; j++) {
-                out.writeChar(arr[i][j]);
-            }
+        for (int i = 0; i < arr.length; i++) {
+            write(arr[i], out);
         }
     }
 
     private static void write(int[][] arr, DataOutput out) throws IOException {
-        for (int i = 0, leng = arr.length; i < leng; i++) {
-            for (int j = 0, len = arr[i].length; j < len; j++) {
-                out.writeInt(arr[i][j]);
-            }
+        for (int i = 0; i < arr.length; i++) {
+            write(arr[i], out);
         }
     }
 
@@ -79,35 +71,41 @@ public class Tools {
      * @see cs.min2phase.Tools#saveTo(java.io.DataOutput)
      */
     public static void initFrom(DataInput in) throws IOException {
-        if (Search.inited) {
+        if (Search.inited && CoordCube.initLevel == 2) {
             return;
         }
         CubieCube.initMove();
         CubieCube.initSym();
+
         read(CubieCube.FlipS2R, in);
         read(CubieCube.TwistS2R, in);
         read(CubieCube.EPermS2R, in);
-        in.readFully(CubieCube.Perm2Comb);
+        read(CubieCube.FlipR2S, in);
+        read(CubieCube.TwistR2S, in);
+        read(CubieCube.EPermR2S, in);
+        in.readFully(CubieCube.Perm2CombP);
+        read(CubieCube.PermInvEdgeSym, in);
+
+        read(CoordCube.UDSliceMove, in);
         read(CoordCube.TwistMove, in);
         read(CoordCube.FlipMove, in);
-        read(CoordCube.UDSliceMove, in);
         read(CoordCube.UDSliceConj, in);
+        read(CoordCube.UDSliceTwistPrun, in);
+        read(CoordCube.UDSliceFlipPrun, in);
         read(CoordCube.CPermMove, in);
         read(CoordCube.EPermMove, in);
         read(CoordCube.MPermMove, in);
         read(CoordCube.MPermConj, in);
-        // read(CoordCube.CCombMove, in);
-        read(CoordCube.CCombConj, in);
+        read(CoordCube.CCombPConj, in);
         read(CoordCube.MCPermPrun, in);
-        read(CoordCube.MEPermPrun, in);
-        read(CoordCube.EPermCCombPrun, in);
-        read(CoordCube.UDSliceTwistPrun, in);
-        read(CoordCube.UDSliceFlipPrun, in);
+        read(CoordCube.EPermCCombPPrun, in);
+
         if (Search.USE_TWIST_FLIP_PRUN) {
             read(CubieCube.FlipS2RF, in);
             read(CoordCube.TwistFlipPrun, in);
         }
         Search.inited = true;
+        CoordCube.initLevel = 2;
     }
 
     /**
@@ -120,29 +118,36 @@ public class Tools {
      */
     public static void saveTo(DataOutput out) throws IOException {
         Search.init();
-        write(CubieCube.FlipS2R, out);                  //          672
-        write(CubieCube.TwistS2R, out);                 // +        648
-        write(CubieCube.EPermS2R, out);                 // +      5,536
-        out.write(CubieCube.Perm2Comb);                 // +      2,768
-        write(CoordCube.TwistMove, out);                // +     11,664
-        write(CoordCube.FlipMove, out);                 // +     12,096
-        write(CoordCube.UDSliceMove, out);              // +     17,820
-        write(CoordCube.UDSliceConj, out);              // +      7,920
-        write(CoordCube.CPermMove, out);                // +     99,648
-        write(CoordCube.EPermMove, out);                // +     55,360
-        write(CoordCube.MPermMove, out);                // +        480
-        write(CoordCube.MPermConj, out);                // +        768
-        // write(CoordCube.CCombMove, out);                // +      1,400
-        write(CoordCube.CCombConj, out);                // +      2,240
-        write(CoordCube.MCPermPrun, out);               // +     33,216
-        write(CoordCube.MEPermPrun, out);               // +     33,216
-        write(CoordCube.EPermCCombPrun, out);           // +     96,880                                //
-        write(CoordCube.UDSliceTwistPrun, out);     // +     80,192
-        write(CoordCube.UDSliceFlipPrun, out);      // +     83,160
-        if (Search.USE_TWIST_FLIP_PRUN) {           // =    626,324 Bytes
-            write(CubieCube.FlipS2RF, out);         // +      5,376
-            write(CoordCube.TwistFlipPrun, out);    // +    331,776
-        }                                           // =    963,476 Bytes
+        while (CoordCube.initLevel != 2) {
+            CoordCube.init();
+        }                                         //   w/o TFP    w/ TFP
+        write(CubieCube.FlipS2R, out);            //       672
+        write(CubieCube.TwistS2R, out);           //       648
+        write(CubieCube.EPermS2R, out);           //     5,536
+        write(CubieCube.FlipR2S, out);            //     4,096
+        write(CubieCube.TwistR2S, out);           //     4,374
+        write(CubieCube.EPermR2S, out);           //    80,640
+        out.write(CubieCube.Perm2CombP);          //     2,768
+        write(CubieCube.PermInvEdgeSym, out);     //     5,536
+
+        write(CoordCube.UDSliceMove, out);        //    17,820
+        write(CoordCube.TwistMove, out);          //    11,664
+        write(CoordCube.FlipMove, out);           //    12,096
+        write(CoordCube.UDSliceConj, out);        //     7,920
+        write(CoordCube.UDSliceTwistPrun, out);   //    80,192
+        write(CoordCube.UDSliceFlipPrun, out);    //    83,164
+        write(CoordCube.CPermMove, out);          //    55,360
+        write(CoordCube.EPermMove, out);          //    55,360
+        write(CoordCube.MPermMove, out);          //       480
+        write(CoordCube.MPermConj, out);          //       768
+        write(CoordCube.CCombPConj, out);         //     2,240 +   2,240
+        write(CoordCube.MCPermPrun, out);         //    33,220
+        write(CoordCube.EPermCCombPPrun, out);    //    96,884 +  96,880
+
+        if (Search.USE_TWIST_FLIP_PRUN) {
+            write(CubieCube.FlipS2RF, out);       //           +   5,376
+            write(CoordCube.TwistFlipPrun, out);  //           + 331,780
+        }                                         // = 561,438 + 436,276 = 997,714
     }
 
     /**

@@ -12,7 +12,8 @@ class CoordCube {
     static final int N_PERM = 40320;
     static final int N_PERM_SYM = 2768;
     static final int N_MPERM = 24;
-    static final int N_COMB = 70;
+    static final int N_COMB = Search.USE_COMBP_PRUN ? 140 : 70;
+    static final int P2_PARITY_MOVE = Search.USE_COMBP_PRUN ? 0xA5 : 0;
 
     //XMove = Move Table
     //XPrun = Pruning Table
@@ -32,11 +33,10 @@ class CoordCube {
     static char[][] EPermMove = new char[N_PERM_SYM][N_MOVES2];
     static char[][] MPermMove = new char[N_MPERM][N_MOVES2];
     static char[][] MPermConj = new char[N_MPERM][16];
-    static char[][] CCombMove = new char[N_COMB][N_MOVES2];
-    static char[][] CCombConj = new char[N_COMB][16];
+    static char[][] CCombPMove;// = new char[N_COMB][N_MOVES2];
+    static char[][] CCombPConj = new char[N_COMB][16];
     static int[] MCPermPrun = new int[N_MPERM * N_PERM_SYM / 8 + 1];
-    static int[] MEPermPrun = new int[N_MPERM * N_PERM_SYM / 8 + 1];
-    static int[] EPermCCombPrun = new int[N_COMB * N_PERM_SYM / 8 + 1];
+    static int[] EPermCCombPPrun = new int[N_COMB * N_PERM_SYM / 8 + 1];
 
     /**
      *  0: not initialized, 1: partially initialized, 2: finished
@@ -49,11 +49,10 @@ class CoordCube {
         }
         if (initLevel == 0) {
             CubieCube.initPermSym2Raw();
-
             initCPermMove();
             initEPermMove();
             initMPermMoveConj();
-            initCombMoveConj();
+            initCombPMoveConj();
 
             CubieCube.initFlipSym2Raw();
             CubieCube.initTwistSym2Raw();
@@ -63,6 +62,12 @@ class CoordCube {
         }
         if (initPruning(initLevel == 0)) {
             initLevel = 2;
+
+            //clean up
+            CubieCube.SymStateTwist = null;
+            CubieCube.SymStateFlip = null;
+            CubieCube.SymStatePerm = null;
+            CCombPMove = null;
         } else {
             initLevel = 1;
         }
@@ -71,9 +76,8 @@ class CoordCube {
 
     static boolean initPruning(boolean isFirst) {
         boolean initedPrun = true;
-        initedPrun = (initedPrun || isFirst) && initMEPermPrun();
         initedPrun = (initedPrun || isFirst) && initMCPermPrun();
-        initedPrun = (initedPrun || isFirst) && initPermCombPrun();
+        initedPrun = (initedPrun || isFirst) && initPermCombPPrun();
         initedPrun = (initedPrun || isFirst) && initSliceTwistPrun();
         initedPrun = (initedPrun || isFirst) && initSliceFlipPrun();
         if (Search.USE_TWIST_FLIP_PRUN) {
@@ -83,11 +87,11 @@ class CoordCube {
     }
 
     static void setPruning(int[] table, int index, int value) {
-        table[index >> 3] ^= value << ((index & 7) << 2);
+        table[index >> 3] ^= value << (index << 2); // index << 2 <=> (index & 7) << 2
     }
 
     static int getPruning(int[] table, int index) {
-        return table[index >> 3] >> ((index & 7) << 2) & 0xf;
+        return table[index >> 3] >> (index << 2) & 0xf; // index << 2 <=> (index & 7) << 2
     }
 
     static void initUDSliceMoveConj() {
@@ -179,18 +183,19 @@ class CoordCube {
         }
     }
 
-    static void initCombMoveConj() {
+    static void initCombPMoveConj() {
         CubieCube c = new CubieCube();
         CubieCube d = new CubieCube();
+        CCombPMove = new char[N_COMB][N_MOVES2];
         for (int i = 0; i < N_COMB; i++) {
-            c.setCComb(i);
+            c.setCComb(i % 70);
             for (int j = 0; j < N_MOVES2; j++) {
                 CubieCube.CornMult(c, CubieCube.moveCube[Util.ud2std[j]], d);
-                CCombMove[i][j] = (char) d.getCComb();
+                CCombPMove[i][j] = (char) (d.getCComb() + 70 * ((P2_PARITY_MOVE >> j & 1) ^ (i / 70)));
             }
             for (int j = 0; j < 16; j++) {
                 CubieCube.CornConjugate(c, CubieCube.SymMultInv[0][j], d);
-                CCombConj[i][j] = (char) d.getCComb();
+                CCombPConj[i][j] = (char) (d.getCComb() + 70 * (i / 70));
             }
         }
     }
@@ -199,6 +204,8 @@ class CoordCube {
         return ((val - 0x11111111) & ~val & 0x88888888) != 0;
     }
 
+    //          |   4 bits  |   4 bits  |   4 bits  |  2 bits | 1b |  1b |   4 bits  |
+    //PrunFlag: | MIN_DEPTH | MAX_DEPTH | INV_DEPTH | Padding | P2 | E2C | SYM_SHIFT |
     static boolean initRawSymPrun(int[] PrunTable,
                                   final char[][] RawMove, final char[][] RawConj,
                                   final char[][] SymMove, final char[] SymState,
@@ -343,14 +350,6 @@ class CoordCube {
                );
     }
 
-    static boolean initMEPermPrun() {
-        return initRawSymPrun(
-                   MEPermPrun,
-                   MPermMove, MPermConj,
-                   EPermMove, CubieCube.SymStatePerm, 0x7c724
-               );
-    }
-
     static boolean initMCPermPrun() {
         return initRawSymPrun(
                    MCPermPrun,
@@ -359,11 +358,11 @@ class CoordCube {
                );
     }
 
-    static boolean initPermCombPrun() {
+    static boolean initPermCombPPrun() {
         return initRawSymPrun(
-                   EPermCCombPrun,
-                   CCombMove, CCombConj,
-                   EPermMove, CubieCube.SymStatePerm, 0x7c824
+                   EPermCCombPPrun,
+                   CCombPMove, CCombPConj,
+                   EPermMove, CubieCube.SymStatePerm, 0x7d824
                );
     }
 

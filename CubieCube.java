@@ -26,11 +26,11 @@ class CubieCube {
     /**
      * ClassIndexToRepresentantArrays
      */
-    static char[] FlipS2R = new char[336];
-    static char[] TwistS2R = new char[324];
-    static char[] EPermS2R = new char[2768];
-    static byte[] Perm2Comb = new byte[2768];
-    static char[] PermInvEdgeSym = new char[2768];
+    static char[] FlipS2R = new char[CoordCube.N_FLIP_SYM];
+    static char[] TwistS2R = new char[CoordCube.N_TWIST_SYM];
+    static char[] EPermS2R = new char[CoordCube.N_PERM_SYM];
+    static byte[] Perm2CombP = new byte[CoordCube.N_PERM_SYM];
+    static char[] PermInvEdgeSym = new char[CoordCube.N_PERM_SYM];
 
     /**
      * Notice that Edge Perm Coordnate and Corner Perm Coordnate are the same symmetry structure.
@@ -47,17 +47,17 @@ class CubieCube {
     /**
      * Raw-Coordnate to Sym-Coordnate, only for speeding up initializaion.
      */
-    static char[] FlipR2S;// = new char[2048];
-    static char[] TwistR2S;// = new char[2187];
-    static char[] EPermR2S;// = new char[40320];
-    static char[] FlipS2RF = Search.USE_TWIST_FLIP_PRUN ? new char[336 * 8] : null;
+    static char[] FlipR2S = new char[CoordCube.N_FLIP];
+    static char[] TwistR2S = new char[CoordCube.N_TWIST];
+    static char[] EPermR2S = new char[CoordCube.N_PERM];
+    static char[] FlipS2RF = Search.USE_TWIST_FLIP_PRUN ? new char[CoordCube.N_FLIP_SYM * 8] : null;
 
     /**
      *
      */
-    static char[] SymStateTwist = new char[324];
-    static char[] SymStateFlip = new char[336];
-    static char[] SymStatePerm = new char[2768];
+    static char[] SymStateTwist;// = new char[CoordCube.N_TWIST_SYM];
+    static char[] SymStateFlip;// = new char[CoordCube.N_FLIP_SYM];
+    static char[] SymStatePerm;// = new char[CoordCube.N_PERM_SYM];
 
     static CubieCube urf1 = new CubieCube(2531, 1373, 67026819, 1367);
     static CubieCube urf2 = new CubieCube(2089, 1906, 322752913, 2040);
@@ -267,11 +267,11 @@ class CubieCube {
     }
 
     int getUDSlice() {
-        return Util.getComb(ea, 8, true) & 0x1ff;
+        return 494 - Util.getComb(ea, 8, true);
     }
 
     void setUDSlice(int idx) {
-        Util.setComb(ea, idx, 8, true);
+        Util.setComb(ea, 494 - idx, 8, true);
     }
 
     // ++++++++++++++++++++ Phase 2 Coordnates ++++++++++++++++++++
@@ -331,19 +331,19 @@ class CubieCube {
     }
 
     int getMPerm() {
-        return Util.getComb(ea, 8, true) >> 9;
+        return Util.getNPerm(ea, 12, true) % 24;
     }
 
     void setMPerm(int idx) {
-        Util.setComb(ea, idx << 9, 8, true);
+        Util.setNPerm(ea, idx, 12, true);
     }
 
     int getCComb() {
-        return 69 - (Util.getComb(ca, 0, false) & 0x1ff);
+        return Util.getComb(ca, 0, false);
     }
 
     void setCComb(int idx) {
-        Util.setComb(ca, 69 - idx, 0, false);
+        Util.setComb(ca, idx, 0, false);
     }
 
     /**
@@ -540,7 +540,7 @@ class CubieCube {
                     break;
                 case 2: idx = d.getEPerm();
                     if (s == 0) {
-                        Perm2Comb[count] = (byte) (494 - (Util.getComb(d.ea, 0, true) & 0x1ff));
+                        Perm2CombP[count] = (byte) (Util.getComb(d.ea, 0, true) + (Search.USE_COMBP_PRUN ? Util.getNParity(idx, 8) * 70 : 0));
                     }
                     break;
                 }
@@ -555,17 +555,20 @@ class CubieCube {
     }
 
     static void initFlipSym2Raw() {
-        initSym2Raw(2048, FlipS2R, FlipR2S = new char[2048], SymStateFlip, 0);
+        initSym2Raw(CoordCube.N_FLIP, FlipS2R, FlipR2S,
+                    SymStateFlip = new char[CoordCube.N_FLIP_SYM], 0);
     }
 
     static void initTwistSym2Raw() {
-        initSym2Raw(2187, TwistS2R, TwistR2S = new char[2187], SymStateTwist, 1);
+        initSym2Raw(CoordCube.N_TWIST, TwistS2R, TwistR2S,
+                    SymStateTwist = new char[CoordCube.N_TWIST_SYM], 1);
     }
 
     static void initPermSym2Raw() {
-        initSym2Raw(40320, EPermS2R, EPermR2S = new char[40320], SymStatePerm, 2);
+        initSym2Raw(CoordCube.N_PERM, EPermS2R, EPermR2S,
+                    SymStatePerm = new char[CoordCube.N_PERM_SYM], 2);
         CubieCube cc = new CubieCube();
-        for (int i = 0; i < 2768; i++) {
+        for (int i = 0; i < CoordCube.N_PERM_SYM; i++) {
             cc.setEPerm(EPermS2R[i]);
             cc.invCubieCube();
             PermInvEdgeSym[i] = (char) cc.getEPermSym();

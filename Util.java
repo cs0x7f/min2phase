@@ -236,37 +236,23 @@ class Util {
 
     static int getComb(byte[] arr, int mask, boolean isEdge) {
         int end = arr.length - 1;
-        int idxC = 0, idxP = 0, r = 4, val = 0x0123;
+        int idxC = 0, r = 4;
         for (int i = end; i >= 0; i--) {
             int perm = getVal(arr[i], isEdge);
             if ((perm & 0xc) == mask) {
-                int v = (perm & 3) << 2;
-                idxP = r * idxP + (val >> v & 0xf);
-                val -= 0x0111 >> (12 - v);
                 idxC += Cnk[i][r--];
             }
         }
-        return idxP << 9 | Cnk[arr.length][4] - 1 - idxC;
+        return idxC;
     }
 
-    static void setComb(byte[] arr, int idx, int mask, boolean isEdge) {
+    static void setComb(byte[] arr, int idxC, int mask, boolean isEdge) {
         int end = arr.length - 1;
-        int r = 4, fill = end, val = 0x0123;
-        int idxC = Cnk[arr.length][4] - 1 - (idx & 0x1ff);
-        int idxP = idx >> 9;
-        int extract = 0;
-        for (int p = 2; p <= 4; p++) {
-            extract = extract << 4 | idxP % p;
-            idxP /= p;
-        }
+        int r = 4, fill = end;
         for (int i = end; i >= 0; i--) {
             if (idxC >= Cnk[i][r]) {
                 idxC -= Cnk[i][r--];
-                int v = (extract & 0xf) << 2;
-                extract >>= 4;
-                arr[i] = setVal(arr[i], val >> v & 3 | mask, isEdge);
-                int m = (1 << v) - 1;
-                val = val & m | val >> 4 & ~m;
+                arr[i] = setVal(arr[i], r | mask, isEdge);
             } else {
                 if ((fill & 0xc) == mask) {
                     fill -= 4;

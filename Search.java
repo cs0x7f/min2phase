@@ -42,6 +42,7 @@ public class Search {
     static final boolean TRY_INVERSE = true;
     static final boolean TRY_THREE_AXES = true;
 
+    static final boolean USE_COMBP_PRUN = USE_TWIST_FLIP_PRUN;
     static final boolean USE_CONJ_PRUN = USE_TWIST_FLIP_PRUN;
     static final int MIN_P1LENGTH_PRE = 7;
     static final int MAX_DEPTH2 = 13;
@@ -384,13 +385,10 @@ public class Search {
         int p2mid = phase2Cubie.getMPerm();
 
         int prun = Math.max(
-                       CoordCube.getPruning(CoordCube.EPermCCombPrun,
-                                            p2edge * 70 + CoordCube.CCombConj[CubieCube.Perm2Comb[p2corn]][CubieCube.SymMultInv[p2esym][p2csym]]),
-                       Math.max(
-                           CoordCube.getPruning(CoordCube.MEPermPrun,
-                                                p2edge * 24 + CoordCube.MPermConj[p2mid][p2esym]),
-                           CoordCube.getPruning(CoordCube.MCPermPrun,
-                                                p2corn * 24 + CoordCube.MPermConj[p2mid][p2csym])));
+                       CoordCube.getPruning(CoordCube.EPermCCombPPrun,
+                                            p2edge * CoordCube.N_COMB + CoordCube.CCombPConj[CubieCube.Perm2CombP[p2corn] & 0xff][CubieCube.SymMultInv[p2esym][p2csym]]),
+                       CoordCube.getPruning(CoordCube.MCPermPrun,
+                                            p2corn * CoordCube.N_MPERM + CoordCube.MPermConj[p2mid][p2csym]));
 
         if (prun >= maxDep2) {
             return prun > maxDep2 ? 2 : 1;
@@ -631,24 +629,20 @@ public class Search {
             int csymx = CubieCube.SymMult[cornx & 0xf][csym];
             cornx >>= 4;
             if (CoordCube.getPruning(CoordCube.MCPermPrun,
-                                     cornx * 24 + CoordCube.MPermConj[midx][csymx]) >= maxl) {
+                                     cornx * CoordCube.N_MPERM + CoordCube.MPermConj[midx][csymx]) >= maxl) {
                 continue;
             }
             int edgex = CoordCube.EPermMove[edge][CubieCube.SymMoveUD[esym][m]];
             int esymx = CubieCube.SymMult[edgex & 0xf][esym];
             edgex >>= 4;
-            if (CoordCube.getPruning(CoordCube.EPermCCombPrun,
-                                     edgex * 70 + CoordCube.CCombConj[CubieCube.Perm2Comb[cornx]][CubieCube.SymMultInv[esymx][csymx]]) >= maxl) {
-                continue;
-            }
-            if (CoordCube.getPruning(CoordCube.MEPermPrun,
-                                     edgex * 24 + CoordCube.MPermConj[midx][esymx]) >= maxl) {
+            if (CoordCube.getPruning(CoordCube.EPermCCombPPrun,
+                                     edgex * CoordCube.N_COMB + CoordCube.CCombPConj[CubieCube.Perm2CombP[cornx] & 0xff][CubieCube.SymMultInv[esymx][csymx]]) >= maxl) {
                 continue;
             }
             int edgei = CubieCube.getPermSymInv(edgex, esymx, false);
             int corni = CubieCube.getPermSymInv(cornx, csymx, true);
-            if (CoordCube.getPruning(CoordCube.EPermCCombPrun,
-                                     (edgei >> 4) * 70 + CoordCube.CCombConj[CubieCube.Perm2Comb[corni >> 4]][CubieCube.SymMultInv[edgei & 0xf][corni & 0xf]]) >= maxl) {
+            if (CoordCube.getPruning(CoordCube.EPermCCombPPrun,
+                                     (edgei >> 4) * CoordCube.N_COMB + CoordCube.CCombPConj[CubieCube.Perm2CombP[corni >> 4] & 0xff][CubieCube.SymMultInv[edgei & 0xf][corni & 0xf]]) >= maxl) {
                 continue;
             }
 
