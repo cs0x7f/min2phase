@@ -62,12 +62,12 @@ There are several compilation options that can be modified for different purpose
     |   Flag   | Unlimited |  21 moves |  20 moves | Init Time |
     |:--------:|:---------:|:---------:|:---------:|:---------:|
     | Kociemba |  28.5 ms  |  53.5 ms  |     ? ms  |    -  ms  |
-    |  -T---   |  1.02 ms  |  7.05 ms  |  283. ms  |    -  ms  |
-    |  -TA--   |  .905 ms  |  2.29 ms  |  56.9 ms  |    -  ms  |
-    |  -TAI-   |  .918 ms  |  1.49 ms  |  21.8 ms  |    -  ms  |
-    |**-TAIP** |**1.05 ms**|**1.13 ms**|**4.64 ms**|**184. ms**|
-    |  R-AIP   |  2.78 ms  |  3.06 ms  |  12.7 ms  |  71.1 ms  |
-    |  RTAIP   |  3.17 ms  |  3.46 ms  |  18.4 ms  |  78.2 ms  |
+    |  -T---   |  .638 ms  |  6.47 ms  |  266. ms  |    -  ms  |
+    |  -TA--   |  .584 ms  |  1.83 ms  |  54.7 ms  |    -  ms  |
+    |  -TAI-   |  .598 ms  |  1.10 ms  |  20.3 ms  |    -  ms  |
+    |**-TAIP** |**.633 ms**|**.735 ms**|**4.13 ms**|**197. ms**|
+    |  R-AIP   |  2.59 ms  |  2.75 ms  |  11.6 ms  |  65.5 ms  |
+    |  RTAIP   |  2.83 ms  |  3.22 ms  |  16.5 ms  |  77.6 ms  |
 
 
 # File description

@@ -113,6 +113,7 @@ public class test {
             int[] lengthDis = new int[30];
             long totalProbe2 = 0;
             long[] timeList = new long[nSolves];
+            long tm = System.nanoTime();
             for (int i = 0; i < nSolves; i++) {
                 long[] ret = retQueue.take();
                 int length = (int) ret[0];
@@ -127,6 +128,11 @@ public class test {
                 lengthDis[length]++;
                 timeList[i] = curTime;
                 int x = i + 1;
+                if (x % 100 == 0 || System.nanoTime() - tm > 100000000) {
+                    tm = System.nanoTime();
+                    System.out.print(String.format("%6d AvgT: %6.3f ms, MaxT: %8.3f ms, MinT: %6.3f ms, AvgL: %6.3f, AvgP: %6.3f\r", x,
+                                                   (totalTime / 1000000d) / x, maxT / 1000000d, minT / 1000000d, totalLength / 1.0d / x, totalProbe2 / 1.0d / x));
+                }
                 System.out.print(String.format("%6d AvgT: %6.3f ms, MaxT: %8.3f ms, MinT: %6.3f ms, AvgL: %6.3f, AvgP: %6.3f\r", x,
                                                (totalTime / 1000000d) / x, maxT / 1000000d, minT / 1000000d, totalLength / 1.0d / x, totalProbe2 / 1.0d / x));
             }
@@ -318,7 +324,10 @@ public class test {
                 "ProbeMax: " + probeMax + "\n" +
                 "ProbeMin: " + probeMin + "\n" +
                 "verbose: " + verbose);
-            tm = System.nanoTime();
+            //Let JIT do optimization.
+            while (System.nanoTime() - tm < 1e9) {
+                search.solution(Tools.randomCube(), 20, 50, 0, 0);
+            }
             int total = 0;
             int x = 0;
             //          System.out.print("Average Solving Time: - nanoSecond(s)\r");
@@ -330,9 +339,9 @@ public class test {
             int[] lengthDis = new int[30];
             long totalProbe2 = 0;
             long[] timeList = new long[nSolves];
-            while (System.nanoTime() - tm < 6000000000000L && x < nSolves) {
-                long curTime = System.nanoTime();
+            while (x < nSolves) {
                 String cube = Tools.randomCube();
+                long curTime = System.nanoTime();
                 String s = search.solution(cube, maxLength, probeMax, probeMin, verbose | search.INVERSE_SOLUTION);
                 // if (s.length() > 63) {
                 //     s = search.next(probeMax, 0, verbose);
@@ -347,8 +356,11 @@ public class test {
                 totalLength += search.length();
                 lengthDis[search.length()]++;
                 timeList[x++] = curTime;
-                System.out.print(String.format("%6d AvgT: %6.3f ms, MaxT: %8.3f ms, MinT: %6.3f ms, AvgL: %6.3f, AvgP: %6.3f\r", x,
-                                               (totalTime / 1000000d) / x, maxT / 1000000d, minT / 1000000d, totalLength / 1.0d / x, totalProbe2 / 1.0d / x));
+                if (x % 100 == 0 || System.nanoTime() - tm > 100000000) {
+                    tm = System.nanoTime();
+                    System.out.print(String.format("%6d AvgT: %6.3f ms, MaxT: %8.3f ms, MinT: %6.3f ms, AvgL: %6.3f, AvgP: %6.3f\r", x,
+                                                   (totalTime / 1000000d) / x, maxT / 1000000d, minT / 1000000d, totalLength / 1.0d / x, totalProbe2 / 1.0d / x));
+                }
             }
             java.util.Arrays.sort(timeList);
             System.out.println(
