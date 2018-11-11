@@ -628,24 +628,29 @@ public class Search {
             int cornx = CoordCube.CPermMove[corn][CubieCube.SymMoveUD[csym][m]];
             int csymx = CubieCube.SymMult[cornx & 0xf][csym];
             cornx >>= 4;
-            if (CoordCube.getPruning(CoordCube.MCPermPrun,
-                                     cornx * CoordCube.N_MPERM + CoordCube.MPermConj[midx][csymx]) >= maxl) {
-                continue;
-            }
             int edgex = CoordCube.EPermMove[edge][CubieCube.SymMoveUD[esym][m]];
             int esymx = CubieCube.SymMult[edgex & 0xf][esym];
             edgex >>= 4;
-            if (CoordCube.getPruning(CoordCube.EPermCCombPPrun,
-                                     edgex * CoordCube.N_COMB + CoordCube.CCombPConj[CubieCube.Perm2CombP[cornx] & 0xff][CubieCube.SymMultInv[esymx][csymx]]) >= maxl) {
-                continue;
-            }
             int edgei = CubieCube.getPermSymInv(edgex, esymx, false);
             int corni = CubieCube.getPermSymInv(cornx, csymx, true);
-            if (CoordCube.getPruning(CoordCube.EPermCCombPPrun,
-                                     (edgei >> 4) * CoordCube.N_COMB + CoordCube.CCombPConj[CubieCube.Perm2CombP[corni >> 4] & 0xff][CubieCube.SymMultInv[edgei & 0xf][corni & 0xf]]) >= maxl) {
+
+            int prun = CoordCube.getPruning(CoordCube.EPermCCombPPrun,
+                                            (edgei >> 4) * CoordCube.N_COMB + CoordCube.CCombPConj[CubieCube.Perm2CombP[corni >> 4] & 0xff][CubieCube.SymMultInv[edgei & 0xf][corni & 0xf]]);
+            if (prun > maxl + 1) {
+                break;
+            } else if (prun >= maxl) {
+                m += 0x42 >> m & 3 & (maxl - prun);
                 continue;
             }
-
+            prun = Math.max(
+                       CoordCube.getPruning(CoordCube.MCPermPrun,
+                                            cornx * CoordCube.N_MPERM + CoordCube.MPermConj[midx][csymx]),
+                       CoordCube.getPruning(CoordCube.EPermCCombPPrun,
+                                            edgex * CoordCube.N_COMB + CoordCube.CCombPConj[CubieCube.Perm2CombP[cornx] & 0xff][CubieCube.SymMultInv[esymx][csymx]]));
+            if (prun >= maxl) {
+                m += 0x42 >> m & 3 & (maxl - prun);
+                continue;
+            }
             int ret = phase2(edgex, esymx, cornx, csymx, midx, maxl - 1, depth + 1, m);
             if (ret >= 0) {
                 move[depth] = Util.ud2std[m];
