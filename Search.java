@@ -44,36 +44,36 @@ public class Search {
 
     static final boolean USE_COMBP_PRUN = USE_TWIST_FLIP_PRUN;
     static final boolean USE_CONJ_PRUN = USE_TWIST_FLIP_PRUN;
-    static final int MIN_P1LENGTH_PRE = 7;
-    static final int MAX_DEPTH2 = 13;
+    protected static int MIN_P1LENGTH_PRE = 7;
+    protected static int MAX_DEPTH2 = 13;
 
     static boolean inited = false;
 
-    private int[] move = new int[31];
-    private int[] moveSol = new int[31];
+    protected int[] move = new int[31];
+    protected int[] moveSol = new int[31];
 
-    private CoordCube[] nodeUD = new CoordCube[21];
-    private CoordCube[] nodeRL = new CoordCube[21];
-    private CoordCube[] nodeFB = new CoordCube[21];
+    protected CoordCube[] nodeUD = new CoordCube[21];
+    protected CoordCube[] nodeRL = new CoordCube[21];
+    protected CoordCube[] nodeFB = new CoordCube[21];
 
-    private long selfSym;
-    private int conjMask;
-    private int urfIdx;
-    private int length1;
-    private int depth1;
-    private int maxDep2;
-    private int sol;
-    private String solution;
-    private long probe;
-    private long probeMax;
-    private long probeMin;
-    private int verbose;
-    private int valid1;
-    private boolean allowShorter = false;
-    private CubieCube cc = new CubieCube();
-    private CubieCube[] urfCubieCube = new CubieCube[6];
-    private CoordCube[] urfCoordCube = new CoordCube[6];
-    private CubieCube[] phase1Cubie = new CubieCube[21];
+    protected long selfSym;
+    protected int conjMask;
+    protected int urfIdx;
+    protected int length1;
+    protected int depth1;
+    protected int maxDep2;
+    protected int sol;
+    protected String solution;
+    protected long probe;
+    protected long probeMax;
+    protected long probeMin;
+    protected int verbose;
+    protected int valid1;
+    protected boolean allowShorter = false;
+    protected CubieCube cc = new CubieCube();
+    protected CubieCube[] urfCubieCube = new CubieCube[6];
+    protected CoordCube[] urfCoordCube = new CoordCube[6];
+    protected CubieCube[] phase1Cubie = new CubieCube[21];
 
     CubieCube[] preMoveCubes = new CubieCube[MAX_PRE_MOVES + 1];
     int[] preMoves = new int[MAX_PRE_MOVES];
@@ -81,7 +81,7 @@ public class Search {
     int maxPreMoves = 0;
     CubieCube phase2Cubie;
 
-    private boolean isRec = false;
+    protected boolean isRec = false;
 
     /**
      *     Verbose_Mask determines if a " . " separates the phase1 and phase2 parts of the solver string like in F' R B R L2 F .
@@ -204,7 +204,7 @@ public class Search {
         return (verbose & OPTIMAL_SOLUTION) == 0 ? search() : searchopt();
     }
 
-    private void initSearch() {
+    protected void initSearch() {
         conjMask = (TRY_INVERSE ? 0 : 0x38) | (TRY_THREE_AXES ? 0 : 0x36);
         selfSym = cc.selfSymmetry();
         conjMask |= (selfSym >> 16 & 0xffff) != 0 ? 0x12 : 0;
@@ -287,7 +287,7 @@ public class Search {
         return cc.verify();
     }
 
-    private int phase1PreMoves(int maxl, int lm, CubieCube cc, int ssym) {
+    protected int phase1PreMoves(int maxl, int lm, CubieCube cc, int ssym) {
         preMoveLen = maxPreMoves - maxl;
         if (isRec ? depth1 == length1 - preMoveLen
                 : (preMoveLen == 0 || (0x36FB7 >> lm & 1) == 0)) {
@@ -330,7 +330,7 @@ public class Search {
         return 1;
     }
 
-    private String search() {
+    protected String search() {
         for (length1 = isRec ? length1 : 0; length1 < sol; length1++) {
             maxDep2 = Math.min(MAX_DEPTH2, sol - length1);
             for (urfIdx = isRec ? urfIdx : 0; urfIdx < 6; urfIdx++) {
@@ -345,7 +345,7 @@ public class Search {
         return solution == null ? "Error 7" : solution;
     }
 
-    private int initPhase2Pre() {
+    protected int initPhase2Pre() {
         isRec = false;
         if (probe >= (solution == null ? probeMax : probeMin)) {
             return 0;
@@ -375,7 +375,7 @@ public class Search {
         return ret;
     }
 
-    private int initPhase2() {
+    protected int initPhase2() {
         int p2corn = phase2Cubie.getCPermSym();
         int p2csym = p2corn & 0xf;
         p2corn >>= 4;
@@ -425,7 +425,7 @@ public class Search {
      *      1: Try Next Power
      *      2: Try Next Axis
      */
-    private int phase1(CoordCube node, int ssym, int maxl, int lm) {
+    protected int phase1(CoordCube node, int ssym, int maxl, int lm) {
         if (node.prun == 0 && maxl < 5) {
             if (allowShorter || maxl == 0) {
                 depth1 -= maxl;
@@ -480,7 +480,7 @@ public class Search {
         return 1;
     }
 
-    private String searchopt() {
+    protected String searchopt() {
         int maxprun1 = 0;
         int maxprun2 = 0;
         for (int i = 0; i < 6; i++) {
@@ -512,7 +512,7 @@ public class Search {
      *      1: Try Next Power
      *      2: Try Next Axis
      */
-    private int phase1opt(CoordCube ud, CoordCube rl, CoordCube fb, long ssym, int maxl, int lm) {
+    protected int phase1opt(CoordCube ud, CoordCube rl, CoordCube fb, long ssym, int maxl, int lm) {
         if (ud.prun == 0 && rl.prun == 0 && fb.prun == 0 && maxl < 5) {
             maxDep2 = maxl + 1;
             depth1 = length1 - maxl;
@@ -614,7 +614,7 @@ public class Search {
 
     //-1: no solution found
     // X: solution with X moves shorter than expectation. Hence, the length of the solution is  depth - X
-    private int phase2(int edge, int esym, int corn, int csym, int mid, int maxl, int depth, int lm) {
+    protected int phase2(int edge, int esym, int corn, int csym, int mid, int maxl, int depth, int lm) {
         if (edge == 0 && corn == 0 && mid == 0) {
             return maxl;
         }
@@ -660,7 +660,7 @@ public class Search {
         return -1;
     }
 
-    private String solutionToString() {
+    protected String solutionToString() {
         StringBuffer sb = new StringBuffer();
         int urf = (verbose & INVERSE_SOLUTION) != 0 ? (urfIdx + 3) % 6 : urfIdx;
         if (urf < 3) {

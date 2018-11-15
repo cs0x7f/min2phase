@@ -498,17 +498,14 @@ class CubieCube {
                 }
                 switch (coord) {
                 case 0: idx = d.getFlip();
-                    if (Search.USE_TWIST_FLIP_PRUN) {
-                        FlipS2RF[count << 3 | s >> 1] = (char) idx;
-                    }
                     break;
                 case 1: idx = d.getTwist();
                     break;
                 case 2: idx = d.getEPerm();
-                    if (s == 0) {
-                        Perm2CombP[count] = (byte) (Util.getComb(d.ea, 0, true) + (Search.USE_COMBP_PRUN ? Util.getNParity(idx, 8) * 70 : 0));
-                    }
                     break;
+                }
+                if (coord == 0 && Search.USE_TWIST_FLIP_PRUN) {
+                    FlipS2RF[count << 3 | s >> 1] = (char) idx;
                 }
                 if (idx == i) {
                     SymState[count] |= 1 << (s / sym_inc);
@@ -542,6 +539,7 @@ class CubieCube {
         CubieCube cc = new CubieCube();
         for (int i = 0; i < CoordCube.N_PERM_SYM; i++) {
             cc.setEPerm(EPermS2R[i]);
+            Perm2CombP[i] = (byte) (Util.getComb(cc.ea, 0, true) + (Search.USE_COMBP_PRUN ? Util.getNParity(EPermS2R[i], 8) * 70 : 0));
             cc.invCubieCube();
             PermInvEdgeSym[i] = (char) cc.getEPermSym();
         }
