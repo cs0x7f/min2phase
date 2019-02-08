@@ -1,8 +1,11 @@
 SRC = \
 CoordCube.java \
+CoordCube2L.java \
 CubieCube.java \
+CubieCube2L.java \
 MainProgram.java \
 Search.java \
+Search2L.java \
 Util.java \
 Tools.java
 

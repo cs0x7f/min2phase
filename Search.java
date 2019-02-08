@@ -38,9 +38,9 @@ public class Search {
     public static final int PARTIAL_INIT_LEVEL = 0;
 
     //Options for research purpose.
-    static final int MAX_PRE_MOVES = 20;
-    static final boolean TRY_INVERSE = true;
-    static final boolean TRY_THREE_AXES = true;
+    protected static int MAX_PRE_MOVES = 20;
+    protected static boolean TRY_INVERSE = true;
+    protected static boolean TRY_THREE_AXES = true;
 
     static final boolean USE_COMBP_PRUN = USE_TWIST_FLIP_PRUN;
     static final boolean USE_CONJ_PRUN = USE_TWIST_FLIP_PRUN;
