@@ -10,15 +10,25 @@ public class test {
     static void other() {
     }
 
+    static long cumNProbe = 0L;
+    static long maxNProbe = 0L;
+    final static long PROBES_PER_NEXT = 1L;
+
     static int testOptimal(int maxl, int length, int[] arr, int lm, Search search, int verbose) {
         if (maxl == 0) {
             String sol = search.solution(Tools.fromScramble(arr), 100, 0, 0, verbose | Search.INVERSE_SOLUTION);
+            long nProbe = 0;
             while (sol.startsWith("Error") || search.length() > length) {
                 if (sol.startsWith("Error") && !sol.startsWith("Error 8")) {
                     throw new RuntimeException(String.format("Cannot find the optimal solution: %s", sol));
                 }
-                sol = search.next(100, 0, verbose | Search.INVERSE_SOLUTION);
+                sol = search.next(PROBES_PER_NEXT, 0, verbose | Search.INVERSE_SOLUTION);
+                nProbe += search.numberOfProbes();
             }
+            if (nProbe > maxNProbe) {
+                maxNProbe = nProbe;
+            }
+            cumNProbe += nProbe;
             assert Tools.fromScramble(sol).equals(Tools.fromScramble(arr));
             return 1;
         }
@@ -45,13 +55,17 @@ public class test {
             int pow = gen.nextInt(3);
             arr[i] = axis + pow;
         }
+
         String sol = search.solution(Tools.fromScramble(arr), 100, 0, 0, verbose | Search.INVERSE_SOLUTION);
+        long nProbe = 0;
         while (sol.startsWith("Error") || search.length() > length) {
             if (sol.startsWith("Error") && !sol.startsWith("Error 8")) {
                 throw new RuntimeException(String.format("Cannot find the optimal solution: %s", sol));
             }
-            sol = search.next(100, 0, verbose | Search.INVERSE_SOLUTION);
+            sol = search.next(PROBES_PER_NEXT, 0, verbose | Search.INVERSE_SOLUTION);
+            nProbe += search.numberOfProbes();
         }
+        cumNProbe += nProbe;
         assert Tools.fromScramble(sol).equals(Tools.fromScramble(arr));
     }
 
@@ -173,6 +187,44 @@ public class test {
         }
     }
 
+    static void selectedScrambleSolvingTest(boolean isOptimal, Search search, int maxDepth) {
+        System.out.println(
+            isOptimal
+            ? "========== Selected Scramble Solving Test (Optimal Solver) =========="
+            : "========== Selected Scramble Solving Test (Two-phase Solver) ==========");
+        String scr = Tools.fromScramble(new int[0]);
+        System.out.println(String.format("IdCube Test: \"%s\"", search.solution(scr, 21, 100000, 0, Search.OPTIMAL_SOLUTION)));
+
+        int n_test = 0;
+        long curTime;
+        final int MAX_OPT_ALL = 3;
+        for (int length = 1; length <= MAX_OPT_ALL; length++) {
+            System.out.print(String.format("%d-Move: ", length));
+            curTime = System.nanoTime();
+            cumNProbe = 0;
+            maxNProbe = 0;
+            n_test = testOptimal(length, 0, new int[length], -1, search, isOptimal ? Search.OPTIMAL_SOLUTION : 0);
+            System.out.println(String.format("OK, All %d Cube(s) Solved Optimally. AvgTime: %1.3f ms. TotP: %d. MaxP: %d", n_test, (System.nanoTime() - curTime) / 1000000d / n_test, cumNProbe, maxNProbe));
+        }
+
+        final long MAX_TEST_TIME = 100000000;
+        for (int length = MAX_OPT_ALL + 1; length <= maxDepth; length++) {
+            System.out.print(String.format("%d-Move: ", length));
+            Random gen0 = new Random(42L);
+            Random gen = new Random();
+            curTime = System.nanoTime();
+            n_test = 0;
+            cumNProbe = 0;
+            maxNProbe = 0;
+            while (System.nanoTime() - curTime < MAX_TEST_TIME) {
+                gen.setSeed(gen0.nextLong());
+                testRandomOptimal(length, search, gen, isOptimal ? Search.OPTIMAL_SOLUTION : 0);
+                ++n_test;
+            }
+            System.out.println(String.format("OK, All %d Cube(s) Solved Optimally. AvgTime: %1.3f ms. TotP: %d. MaxP: %d", n_test, (System.nanoTime() - curTime) / 1000000d / n_test, cumNProbe, maxNProbe));
+        }
+    }
+
     public static void main(String[] args) {
         if (args.length == 0) {
             System.out.println("java -client test testValue [nSolves maxLength maxProbe minProbe verbose]");
@@ -228,64 +280,11 @@ public class test {
         Search search = new Search();
         String sol;
         if ((testValue & 0x10) != 0) {
-            System.out.println("========== Selected Scramble Solving Test (Optimal Solver) ==========");
-            String scr = Tools.fromScramble(new int[0]);
-            System.out.println(String.format("IdCube Test: \"%s\"", search.solution(scr, 21, 100000, 0, Search.OPTIMAL_SOLUTION)));
-
-            int n_test = 0;
-            long curTime;
-            final int MAX_OPT_ALL = 3;
-            for (int length = 1; length <= MAX_OPT_ALL; length++) {
-                System.out.print(String.format("%d-Move: ", length));
-                curTime = System.nanoTime();
-                n_test = testOptimal(length, 0, new int[length], -1, search, Search.OPTIMAL_SOLUTION);
-                System.out.println(String.format("OK, All %d Cube(s) Solved Optimally. AvgTime: %1.3f ms.", n_test, (System.nanoTime() - curTime) / 1000000d / n_test));
-            }
-
-            final long MAX_TEST_TIME = 100000000;
-            for (int length = MAX_OPT_ALL + 1; length < 15; length++) {
-                System.out.print(String.format("%d-Move: ", length));
-                Random gen0 = new Random(42L);
-                Random gen = new Random();
-                curTime = System.nanoTime();
-                n_test = 0;
-                while (System.nanoTime() - curTime < MAX_TEST_TIME) {
-                    gen.setSeed(gen0.nextLong());
-                    testRandomOptimal(length, search, gen, Search.OPTIMAL_SOLUTION);
-                    ++n_test;
-                }
-                System.out.println(String.format("OK, %d Cube(s) Solved Optimally. AvgTime: %1.3f ms.", n_test, (System.nanoTime() - curTime) / 1000000d / n_test));
-            }
-
-            System.out.println("========== Selected Scramble Solving Test (Two-phase Solver) ==========");
-            System.out.print("IdCube Test: \"");
-            scr = Tools.fromScramble(new int[0]);
-            System.out.print(search.solution(scr, 21, 100000, 0, Search.OPTIMAL_SOLUTION));
-            System.out.println("\"");
-
-            for (int length = 1; length <= MAX_OPT_ALL; length++) {
-                System.out.print(String.format("%d-Move: ", length));
-                curTime = System.nanoTime();
-                n_test = testOptimal(length, 0, new int[length], -1, search, 0);
-                System.out.println(String.format("OK, All %d Cube(s) Solved Optimally. AvgTime: %1.3f ms.", n_test, (System.nanoTime() - curTime) / 1000000d / n_test));
-            }
-
-            for (int length = MAX_OPT_ALL + 1; length < 15; length++) {
-                System.out.print(String.format("%d-Move: ", length));
-                Random gen0 = new Random(42L);
-                Random gen = new Random();
-                curTime = System.nanoTime();
-                n_test = 0;
-                while (System.nanoTime() - curTime < MAX_TEST_TIME) {
-                    gen.setSeed(gen0.nextLong());
-                    testRandomOptimal(length, search, gen, 0);
-                    ++n_test;
-                }
-                System.out.println(String.format("OK, %d Cube(s) Solved Optimally. AvgTime: %1.3f ms.", n_test, (System.nanoTime() - curTime) / 1000000d / n_test));
-            }
+            selectedScrambleSolvingTest(true, search, 13);
+            selectedScrambleSolvingTest(false, search, 14);
 
             System.out.print("SuperFlip: ");
-            curTime = System.nanoTime();
+            long curTime = System.nanoTime();
             sol = search.solution(Tools.superFlip(), 20, 1000000000, 0, 0);
             while (sol.startsWith("Error") || search.length() > 20) {
                 if (sol.startsWith("Error") && !sol.startsWith("Error 8")) {
@@ -307,13 +306,13 @@ public class test {
                 "F' L  B2 R  U' B' L  U2 D' F  L' R2 U2 D2 B2 R2 D  R2 L2 F2",
                 "U2 R2 D2 B  U2 B' F  D' B' R' D  U2 B2 F2 R' D' B  U' F' R2"
             };
-            n_test = 10;
+            int n_test = depth20.length;
             curTime = System.nanoTime();
             for (int i = 0; i < depth20.length; i++) {
                 sol = search.solution(Tools.fromScramble(depth20[i]), 20, 100000, 0, Search.INVERSE_SOLUTION);
                 assert Tools.fromScramble(depth20[i]).equals(Tools.fromScramble(sol));
             }
-            System.out.println(String.format("OK, Random %d Cube(s) Solved. AvgTime: %1.3f ms.", n_test, (System.nanoTime() - curTime) / 1000000d / n_test));
+            System.out.println(String.format("OK, Random %d Cube(s) Solved. AvgTime: %1.3f ms.", depth20.length, (System.nanoTime() - curTime) / 1000000d / n_test));
         }
 
         if ((testValue & 0x20) != 0) {

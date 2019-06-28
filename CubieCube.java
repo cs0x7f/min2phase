@@ -47,9 +47,9 @@ class CubieCube {
     /**
      * Raw-Coordnate to Sym-Coordnate, only for speeding up initializaion.
      */
-    static byte[] FlipR2S = new byte[CoordCube.N_FLIP_HALF + CoordCube.N_FLIP];
-    static byte[] TwistR2S = new byte[CoordCube.N_TWIST_HALF + CoordCube.N_TWIST];
-    static byte[] EPermR2S = new byte[CoordCube.N_PERM_HALF];
+    static char[] FlipR2S = new char[CoordCube.N_FLIP];
+    static char[] TwistR2S = new char[CoordCube.N_TWIST];
+    static char[] EPermR2S = new char[CoordCube.N_PERM];
     static char[] FlipS2RF = Search.USE_TWIST_FLIP_PRUN ? new char[CoordCube.N_FLIP_SYM * 8] : null;
 
     /**
@@ -114,6 +114,17 @@ class CubieCube {
      * prod = a * b, Corner Only.
      */
     static void CornMult(CubieCube a, CubieCube b, CubieCube prod) {
+        for (int corn = 0; corn < 8; corn++) {
+            int oriA = a.ca[b.ca[corn] & 7] >> 3;
+            int oriB = b.ca[corn] >> 3;
+            prod.ca[corn] = (byte) (a.ca[b.ca[corn] & 7] & 7 | (oriA + oriB) % 3 << 3);
+        }
+    }
+
+    /**
+     * prod = a * b, Corner Only. With mirrored cases considered
+     */
+    static void CornMultFull(CubieCube a, CubieCube b, CubieCube prod) {
         for (int corn = 0; corn < 8; corn++) {
             int oriA = a.ca[b.ca[corn] & 7] >> 3;
             int oriB = b.ca[corn] >> 3;
@@ -214,11 +225,7 @@ class CubieCube {
     }
 
     int getFlipSym() {
-        return flipRaw2Sym(getFlip());
-    }
-
-    static int flipRaw2Sym(int raw) {
-        return 0xfff & FlipR2S[raw + CoordCube.N_FLIP_HALF] << 4 | CoordCube.getPruning(FlipR2S, raw);
+        return FlipR2S[getFlip()];
     }
 
     int getTwist() {
@@ -239,8 +246,7 @@ class CubieCube {
     }
 
     int getTwistSym() {
-        int raw = getTwist();
-        return 0xfff & TwistR2S[raw + CoordCube.N_TWIST_HALF] << 4 | CoordCube.getPruning(TwistR2S, raw);
+        return TwistR2S[getTwist()];
     }
 
     int getUDSlice() {
@@ -265,14 +271,7 @@ class CubieCube {
     }
 
     int getCPermSym() {
-        int k = ESym2CSym(CoordCube.getPruning(EPermR2S, getCPerm())) & 0xf;
-        if (temps == null) {
-            temps = new CubieCube();
-        }
-        CornConjugate(this, SymMultInv[0][k], temps);
-        int idx = Arrays.binarySearch(EPermS2R, (char) temps.getCPerm());
-        assert idx >= 0;
-        return idx << 4 | k;
+        return ESym2CSym(EPermR2S[getCPerm()]);
     }
 
     int getEPerm() {
@@ -284,15 +283,7 @@ class CubieCube {
     }
 
     int getEPermSym() {
-        int raw = getEPerm();
-        int k = CoordCube.getPruning(EPermR2S, raw);
-        if (temps == null) {
-            temps = new CubieCube();
-        }
-        EdgeConjugate(this, SymMultInv[0][k], temps);
-        int idx = Arrays.binarySearch(EPermS2R, (char) temps.getEPerm());
-        assert idx >= 0;
-        return idx << 4 | k;
+        return EPermR2S[getEPerm()];
     }
 
     int getMPerm() {
@@ -417,23 +408,23 @@ class CubieCube {
 
         for (int i = 0; i < 16; i++) {
             CubeSym[i] = new CubieCube(c);
-            CornMult(c, u4, d);
+            CornMultFull(c, u4, d);
             EdgeMult(c, u4, d);
             t = d;  d = c;  c = t;
             if (i % 4 == 3) {
-                CornMult(c, lr2, d);
+                CornMultFull(c, lr2, d);
                 EdgeMult(c, lr2, d);
                 t = d;  d = c;  c = t;
             }
             if (i % 8 == 7) {
-                CornMult(c, f2, d);
+                CornMultFull(c, f2, d);
                 EdgeMult(c, f2, d);
                 t = d;  d = c;  c = t;
             }
         }
         for (int i = 0; i < 16; i++) {
             for (int j = 0; j < 16; j++) {
-                CornMult(CubeSym[i], CubeSym[j], c);
+                CornMultFull(CubeSym[i], CubeSym[j], c);
                 for (int k = 0; k < 16; k++) {
                     if (Arrays.equals(CubeSym[k].ca, c.ca)) {
                         SymMult[i][j] = k; // SymMult[i][j] = (k ^ i ^ j ^ (0x14ab4 >> j & i << 1 & 2)));
@@ -473,7 +464,7 @@ class CubieCube {
         }
     }
 
-    static int initSym2Raw(final int N_RAW, char[] Sym2Raw, byte[] Raw2Sym, char[] SymState, int coord) {
+    static int initSym2Raw(final int N_RAW, char[] Sym2Raw, char[] Raw2Sym, char[] SymState, int coord) {
         final int N_RAW_HALF = (N_RAW + 1) / 2;
         CubieCube c = new CubieCube();
         CubieCube d = new CubieCube();
@@ -482,7 +473,7 @@ class CubieCube {
         boolean isEdge = coord != 1;
 
         for (int i = 0; i < N_RAW; i++) {
-            if (CoordCube.getPruning(Raw2Sym, i) != 0) {
+            if (Raw2Sym[i] != 0) {
                 continue;
             }
             switch (coord) {
@@ -511,12 +502,7 @@ class CubieCube {
                     SymState[count] |= 1 << (s / sym_inc);
                 }
                 int symIdx = (count << 4 | s) / sym_inc;
-                if (CoordCube.getPruning(Raw2Sym, idx) == 0) {
-                    CoordCube.setPruning(Raw2Sym, idx, symIdx & 0xf);
-                    if (coord != 2) {
-                        Raw2Sym[idx + N_RAW_HALF] = (byte) (symIdx >> 4);
-                    }
-                }
+                Raw2Sym[idx] = (char) symIdx;
             }
             Sym2Raw[count++] = (char) i;
         }

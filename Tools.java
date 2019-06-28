@@ -80,9 +80,9 @@ public class Tools {
         read(CubieCube.FlipS2R, in);
         read(CubieCube.TwistS2R, in);
         read(CubieCube.EPermS2R, in);
-        in.readFully(CubieCube.FlipR2S);
-        in.readFully(CubieCube.TwistR2S);
-        in.readFully(CubieCube.EPermR2S);
+        read(CubieCube.FlipR2S, in);
+        read(CubieCube.TwistR2S, in);
+        read(CubieCube.EPermR2S, in);
         in.readFully(CubieCube.Perm2CombP);
         read(CubieCube.PermInvEdgeSym, in);
 
@@ -119,14 +119,14 @@ public class Tools {
     public static void saveTo(DataOutput out) throws IOException {
         Search.init();
         while (CoordCube.initLevel != 2) {
-            CoordCube.init();
+            CoordCube.init(true);
         }                                         //   w/o TFP    w/ TFP
         write(CubieCube.FlipS2R, out);            //       672
         write(CubieCube.TwistS2R, out);           //       648
         write(CubieCube.EPermS2R, out);           //     5,536
-        out.write(CubieCube.FlipR2S);             //     3,072
-        out.write(CubieCube.TwistR2S);            //     3,281
-        out.write(CubieCube.EPermR2S);            //    20,160
+        write(CubieCube.FlipR2S, out);             //     3,072
+        write(CubieCube.TwistR2S, out);            //     3,281
+        write(CubieCube.EPermR2S, out);            //    20,160
         out.write(CubieCube.Perm2CombP);          //     2,768
         write(CubieCube.PermInvEdgeSym, out);     //     5,536
 

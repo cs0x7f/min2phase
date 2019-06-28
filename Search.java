@@ -27,16 +27,6 @@ public class Search {
 
     public static final boolean USE_TWIST_FLIP_PRUN = true;
 
-    /**
-     * If this variable is set, only a few entries of the pruning table will be initialized.
-     * Hence, the initialization time will be decreased by about 50%, however, the speed
-     * of the solver is affected.
-     * 0: without partial initialization
-     * 1: enable partial initialization, and the initialization will continue during solving
-     * 2: enable partial initialization, and the initialization will not continue
-     */
-    public static final int PARTIAL_INIT_LEVEL = 0;
-
     //Options for research purpose.
     static final int MAX_PRE_MOVES = 20;
     static final boolean TRY_INVERSE = true;
@@ -79,6 +69,7 @@ public class Search {
     int[] preMoves = new int[MAX_PRE_MOVES];
     int preMoveLen = 0;
     int maxPreMoves = 0;
+    int preMoveSwitch = 0;
     CubieCube phase2Cubie;
 
     protected boolean isRec = false;
@@ -197,8 +188,7 @@ public class Search {
         this.solution = null;
         this.isRec = false;
 
-        init();
-
+        CoordCube.init(false);
         initSearch();
 
         return (verbose & OPTIMAL_SOLUTION) == 0 ? search() : searchopt();
@@ -246,13 +236,7 @@ public class Search {
     }
 
     public synchronized static void init() {
-        if (!inited) {
-            CubieCube.initMove();
-            CubieCube.initSym();
-        }
-
-        CoordCube.init();
-
+        CoordCube.init(true);
         inited = true;
     }
 
@@ -346,12 +330,6 @@ public class Search {
     }
 
     protected int initPhase2Pre() {
-        isRec = false;
-        if (probe >= (solution == null ? probeMax : probeMin)) {
-            return 0;
-        }
-        ++probe;
-
         for (int i = valid1; i < depth1; i++) {
             CubieCube.CornMult(phase1Cubie[i], CubieCube.moveCube[move[i]], phase1Cubie[i + 1]);
             CubieCube.EdgeMult(phase1Cubie[i], CubieCube.moveCube[move[i]], phase1Cubie[i + 1]);
@@ -359,8 +337,9 @@ public class Search {
         valid1 = depth1;
         phase2Cubie = phase1Cubie[depth1];
 
-        int ret = initPhase2();
+        int ret = isRec && preMoveSwitch == 1 ? 1 : initPhase2();
         if (ret == 0 || preMoveLen == 0 || ret == 2) {
+            preMoveSwitch = 0;
             return ret;
         }
 
@@ -368,14 +347,21 @@ public class Search {
         phase2Cubie = new CubieCube();
         CubieCube.CornMult(CubieCube.moveCube[m], phase1Cubie[depth1], phase2Cubie);
         CubieCube.EdgeMult(CubieCube.moveCube[m], phase1Cubie[depth1], phase2Cubie);
+        preMoves[preMoveLen - 1] = m * 2 - preMoves[preMoveLen - 1];
 
-        preMoves[preMoveLen - 1] += 2 - preMoves[preMoveLen - 1] % 3 * 2;
         ret = initPhase2();
-        preMoves[preMoveLen - 1] += 2 - preMoves[preMoveLen - 1] % 3 * 2;
+        preMoves[preMoveLen - 1] = m * 2 - preMoves[preMoveLen - 1];
+        preMoveSwitch = 1;
         return ret;
     }
 
     protected int initPhase2() {
+        isRec = false;
+        if (probe >= (solution == null ? probeMax : probeMin)) {
+            return 0;
+        }
+        ++probe;
+
         int p2corn = phase2Cubie.getCPermSym();
         int p2csym = p2corn & 0xf;
         p2corn >>= 4;
