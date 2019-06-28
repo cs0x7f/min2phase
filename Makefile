@@ -25,7 +25,7 @@ DIST = dist/twophase.jar
 
 DISTTEST = dist/test.class
 
-.PHONY: build clean run testRnd testSel
+.PHONY: build clean run testRnd testRndMP testRndStd testSel demo
 
 build: $(DIST)
 
@@ -50,6 +50,10 @@ testRndStd: $(DISTTEST)
 
 testSel: $(DISTTEST)
 	@java -ea -cp dist:$(DIST) test 24
+
+demo: $(DIST)
+	@javac -d dist -cp dist:$(DIST) example/demo.java
+	@java -ea -cp dist:$(DIST) demo
 
 $(DISTTEST): $(DIST) $(TESTSRC)
 	@javac -d dist -cp dist:$(DIST) $(TESTSRC)
