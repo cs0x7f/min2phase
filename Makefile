@@ -1,10 +1,13 @@
 SRC = \
-CoordCube.java \
-CubieCube.java \
-MainProgram.java \
-Search.java \
-Util.java \
-Tools.java
+src/CoordCube.java \
+src/CubieCube.java \
+src/Search.java \
+src/Util.java \
+src/Tools.java
+
+MAINPROG = example/MainProgram.java
+
+TESTSRC = test/test.java
 
 ifndef probe
 	probe = 0
@@ -18,39 +21,40 @@ ifndef ntest
 	ntest = 1000
 endif
 
-DIST = twophase.jar
+DIST = dist/twophase.jar
+
+DISTTEST = dist/test.class
 
 .PHONY: build clean run testRnd testSel
 
 build: $(DIST)
 
-$(DIST): $(SRC)
-	@javac -d . $(SRC) -Xlint:all
-	@cp -f $(SRC) cs/min2phase/
-	@jar cfe twophase.jar ui.MainProgram ui/*.class cs/min2phase/*.class cs/min2phase/*.java
+$(DIST): $(SRC) $(MAINPROG)
+	@javac -d dist $(SRC) $(MAINPROG) -Xlint:all
+	@cp -f $(SRC) dist/cs/min2phase/
+	@cd dist && jar cfe twophase.jar ui.MainProgram ui/*.class cs/min2phase/*.class cs/min2phase/*.java
 
-run: build
-	@java -jar twophase.jar
+run: $(DIST)
+	@java -jar $(DIST)
 
-testRnd: test.class
-	@java -ea -cp .:twophase.jar test 40 $(ntest) $(maxl) 10000000 $(probe) 0
+testRnd: $(DISTTEST)
+	@java -ea -cp dist:$(DIST) test 40 $(ntest) $(maxl) 10000000 $(probe) 0
 
-testRndMP: test.class
-	@java -ea -cp .:twophase.jar test 72 $(ntest) $(maxl) 10000000 $(probe) 0
+testRndMP: $(DISTTEST)
+	@java -ea -cp dist:$(DIST) test 72 $(ntest) $(maxl) 10000000 $(probe) 0
 
-testRndStd: test.class
-	@java -ea -cp .:twophase.jar test 40 $(ntest) 30 10000000 $(probe) 0 | grep AvgT
-	@java -ea -cp .:twophase.jar test 40 $(ntest) 21 10000000 $(probe) 0 | grep AvgT
-	@java -ea -cp .:twophase.jar test 40 $(ntest) 20 10000000 $(probe) 0 | grep AvgT
+testRndStd: $(DISTTEST)
+	@java -ea -cp dist:$(DIST) test 40 $(ntest) 30 10000000 $(probe) 0 | grep AvgT
+	@java -ea -cp dist:$(DIST) test 40 $(ntest) 21 10000000 $(probe) 0 | grep AvgT
+	@java -ea -cp dist:$(DIST) test 40 $(ntest) 20 10000000 $(probe) 0 | grep AvgT
 
-testSel: test.class
-	@java -ea -cp .:twophase.jar test 24
+testSel: $(DISTTEST)
+	@java -ea -cp dist:$(DIST) test 24
 
-test.class: $(DIST) test.java
-	@javac -d . -cp twophase.jar test.java
+$(DISTTEST): $(DIST) $(TESTSRC)
+	@javac -d dist -cp dist:$(DIST) $(TESTSRC)
 
 rebuild: clean build
 
 clean:
-	@rm $(DIST)
-	@rm -rf cs ui *.class
+	@rm -rf dist/*
