@@ -171,7 +171,11 @@ public class Tools {
      * @see cs.min2phase.Search#solution(java.lang.String facelets, int maxDepth, long timeOut, long timeMin, int verbose)
      */
     public static String randomCube() {
-        return randomState(STATE_RANDOM, STATE_RANDOM, STATE_RANDOM, STATE_RANDOM);
+        return randomState(STATE_RANDOM, STATE_RANDOM, STATE_RANDOM, STATE_RANDOM, gen);
+    }
+
+    public static String randomCube(Random gen) {
+        return randomState(STATE_RANDOM, STATE_RANDOM, STATE_RANDOM, STATE_RANDOM, gen);
     }
 
     private static int resolveOri(byte[] arr, int base) {
@@ -261,7 +265,7 @@ public class Tools {
     protected static final byte[] STATE_RANDOM = null;
     protected static final byte[] STATE_SOLVED = new byte[0];
 
-    protected static String randomState(byte[] cp, byte[] co, byte[] ep, byte[] eo) {
+    protected static String randomState(byte[] cp, byte[] co, byte[] ep, byte[] eo, Random gen) {
         int parity;
         int cntUE = ep == STATE_RANDOM ? 12 : countUnknown(ep);
         int cntUC = cp == STATE_RANDOM ? 8 : countUnknown(cp);
@@ -316,7 +320,7 @@ public class Tools {
                    new byte[] { -1, -1, -1, -1, 4, 5, 6, 7},
                    new byte[] { -1, -1, -1, -1, 0, 0, 0, 0},
                    new byte[] { -1, -1, -1, -1, 4, 5, 6, 7, 8, 9, 10, 11},
-                   new byte[] { -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0});
+                   new byte[] { -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0}, gen);
     }
 
     public static String randomLastSlot() {
@@ -324,7 +328,7 @@ public class Tools {
                    new byte[] { -1, -1, -1, -1, -1, 5, 6, 7},
                    new byte[] { -1, -1, -1, -1, -1, 0, 0, 0},
                    new byte[] { -1, -1, -1, -1, 4, 5, 6, 7, -1, 9, 10, 11},
-                   new byte[] { -1, -1, -1, -1, 0, 0, 0, 0, -1, 0, 0, 0});
+                   new byte[] { -1, -1, -1, -1, 0, 0, 0, 0, -1, 0, 0, 0}, gen);
     }
 
     public static String randomZBLastLayer() {
@@ -332,7 +336,7 @@ public class Tools {
                    new byte[] { -1, -1, -1, -1, 4, 5, 6, 7},
                    new byte[] { -1, -1, -1, -1, 0, 0, 0, 0},
                    new byte[] { -1, -1, -1, -1, 4, 5, 6, 7, 8, 9, 10, 11},
-                   STATE_SOLVED);
+                   STATE_SOLVED, gen);
     }
 
     public static String randomCornerOfLastLayer() {
@@ -340,7 +344,7 @@ public class Tools {
                    new byte[] { -1, -1, -1, -1, 4, 5, 6, 7},
                    new byte[] { -1, -1, -1, -1, 0, 0, 0, 0},
                    STATE_SOLVED,
-                   STATE_SOLVED);
+                   STATE_SOLVED, gen);
     }
 
     public static String randomEdgeOfLastLayer() {
@@ -348,7 +352,7 @@ public class Tools {
                    STATE_SOLVED,
                    STATE_SOLVED,
                    new byte[] { -1, -1, -1, -1, 4, 5, 6, 7, 8, 9, 10, 11},
-                   new byte[] { -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0});
+                   new byte[] { -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0}, gen);
     }
 
     public static String randomCrossSolved() {
@@ -356,7 +360,7 @@ public class Tools {
                    STATE_RANDOM,
                    STATE_RANDOM,
                    new byte[] { -1, -1, -1, -1, 4, 5, 6, 7, -1, -1, -1, -1},
-                   new byte[] { -1, -1, -1, -1, 0, 0, 0, 0, -1, -1, -1, -1});
+                   new byte[] { -1, -1, -1, -1, 0, 0, 0, 0, -1, -1, -1, -1}, gen);
     }
 
     public static String randomEdgeSolved() {
@@ -364,7 +368,7 @@ public class Tools {
                    STATE_RANDOM,
                    STATE_RANDOM,
                    STATE_SOLVED,
-                   STATE_SOLVED);
+                   STATE_SOLVED, gen);
     }
 
     public static String randomCornerSolved() {
@@ -372,7 +376,7 @@ public class Tools {
                    STATE_SOLVED,
                    STATE_SOLVED,
                    STATE_RANDOM,
-                   STATE_RANDOM);
+                   STATE_RANDOM, gen);
     }
 
     public static String superFlip() {

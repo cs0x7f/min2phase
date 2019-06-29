@@ -43,7 +43,7 @@ class CoordCube {
      */
     static int initLevel = 0;
 
-    static void init(boolean fullInit) {
+    static synchronized void init(boolean fullInit) {
         if (initLevel == 2 || initLevel == 1 && !fullInit) {
             return;
         }
