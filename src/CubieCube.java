@@ -31,6 +31,7 @@ class CubieCube {
     static char[] EPermS2R = new char[CoordCube.N_PERM_SYM];
     static byte[] Perm2CombP = new byte[CoordCube.N_PERM_SYM];
     static char[] PermInvEdgeSym = new char[CoordCube.N_PERM_SYM];
+    static byte[] MPermInv = new byte[CoordCube.N_MPERM];
 
     /**
      * Notice that Edge Perm Coordnate and Corner Perm Coordnate are the same symmetry structure.
@@ -528,6 +529,11 @@ class CubieCube {
             Perm2CombP[i] = (byte) (Util.getComb(cc.ea, 0, true) + (Search.USE_COMBP_PRUN ? Util.getNParity(EPermS2R[i], 8) * 70 : 0));
             cc.invCubieCube();
             PermInvEdgeSym[i] = (char) cc.getEPermSym();
+        }
+        for (int i = 0; i < CoordCube.N_MPERM; i++) {
+            cc.setMPerm(i);
+            cc.invCubieCube();
+            MPermInv[i] = (byte) cc.getMPerm();
         }
     }
 }

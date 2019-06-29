@@ -84,6 +84,7 @@ public class Tools {
         read(CubieCube.TwistR2S, in);
         read(CubieCube.EPermR2S, in);
         in.readFully(CubieCube.Perm2CombP);
+        in.readFully(CubieCube.MPermInv);
         read(CubieCube.PermInvEdgeSym, in);
 
         read(CoordCube.UDSliceMove, in);
@@ -128,6 +129,7 @@ public class Tools {
         write(CubieCube.TwistR2S, out);            //     3,281
         write(CubieCube.EPermR2S, out);            //    20,160
         out.write(CubieCube.Perm2CombP);          //     2,768
+        out.write(CubieCube.MPermInv);
         write(CubieCube.PermInvEdgeSym, out);     //     5,536
 
         write(CoordCube.UDSliceMove, out);        //    17,820

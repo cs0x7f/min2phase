@@ -20,7 +20,7 @@ public class test {
             long nProbe = 0;
             while (sol.startsWith("Error") || search.length() > length) {
                 if (sol.startsWith("Error") && !sol.startsWith("Error 8")) {
-                    throw new RuntimeException(String.format("Cannot find the optimal solution: %s", sol));
+                    throw new RuntimeException(String.format("Cannot find the optimal solution: %s\n%s", sol, Tools.fromScramble(arr)));
                 }
                 sol = search.next(PROBES_PER_NEXT, 0, verbose | Search.INVERSE_SOLUTION);
                 nProbe += search.numberOfProbes();
@@ -60,10 +60,13 @@ public class test {
         long nProbe = 0;
         while (sol.startsWith("Error") || search.length() > length) {
             if (sol.startsWith("Error") && !sol.startsWith("Error 8")) {
-                throw new RuntimeException(String.format("Cannot find the optimal solution: %s", sol));
+                throw new RuntimeException(String.format("Cannot find the optimal solution: %s\n%s", sol, Tools.fromScramble(arr)));
             }
             sol = search.next(PROBES_PER_NEXT, 0, verbose | Search.INVERSE_SOLUTION);
             nProbe += search.numberOfProbes();
+        }
+        if (nProbe > maxNProbe) {
+            maxNProbe = nProbe;
         }
         cumNProbe += nProbe;
         assert Tools.fromScramble(sol).equals(Tools.fromScramble(arr));

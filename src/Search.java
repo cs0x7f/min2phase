@@ -69,8 +69,6 @@ public class Search {
     int[] preMoves = new int[MAX_PRE_MOVES];
     int preMoveLen = 0;
     int maxPreMoves = 0;
-    int preMoveSwitch = 0;
-    CubieCube phase2Cubie;
 
     protected boolean isRec = false;
 
@@ -336,48 +334,88 @@ public class Search {
      *      2: at least 2 + maxDep2 moves away, Try next axis
      */
     protected int initPhase2Pre() {
-        for (int i = valid1; i < depth1; i++) {
-            CubieCube.CornMult(phase1Cubie[i], CubieCube.moveCube[move[i]], phase1Cubie[i + 1]);
-            CubieCube.EdgeMult(phase1Cubie[i], CubieCube.moveCube[move[i]], phase1Cubie[i + 1]);
-        }
-        valid1 = depth1;
-        phase2Cubie = phase1Cubie[depth1];
-
-        preMoveSwitch = isRec ? preMoveSwitch : 0;
-        int ret = preMoveSwitch == 1 ? 1 : initPhase2();
-        if (ret == 0 || preMoveLen == 0 || ret >= 2) {
-            return preMoveLen == 0 || ret == 0 ? ret : Math.max(1, ret - 1);
-        }
-
-        int m = preMoves[preMoveLen - 1] / 3 * 3 + 1;
-        phase2Cubie = new CubieCube();
-        CubieCube.CornMult(CubieCube.moveCube[m], phase1Cubie[depth1], phase2Cubie);
-        CubieCube.EdgeMult(CubieCube.moveCube[m], phase1Cubie[depth1], phase2Cubie);
-        preMoves[preMoveLen - 1] = m * 2 - preMoves[preMoveLen - 1];
-
-        preMoveSwitch = 1;
-        ret = initPhase2();
-        preMoves[preMoveLen - 1] = m * 2 - preMoves[preMoveLen - 1];
-        return ret == 0 ? 0 : Math.max(1, ret - 1);
-    }
-
-    protected int initPhase2() {
         isRec = false;
         if (probe >= (solution == null ? probeMax : probeMin)) {
             return 0;
         }
         ++probe;
 
-        int p2corn = phase2Cubie.getCPermSym();
+        for (int i = valid1; i < depth1; i++) {
+            CubieCube.CornMult(phase1Cubie[i], CubieCube.moveCube[move[i]], phase1Cubie[i + 1]);
+            CubieCube.EdgeMult(phase1Cubie[i], CubieCube.moveCube[move[i]], phase1Cubie[i + 1]);
+        }
+        valid1 = depth1;
+
+        int p2corn = phase1Cubie[depth1].getCPermSym();
         int p2csym = p2corn & 0xf;
         p2corn >>= 4;
-        int p2edge = phase2Cubie.getEPermSym();
+        int p2edge = phase1Cubie[depth1].getEPermSym();
         int p2esym = p2edge & 0xf;
         p2edge >>= 4;
-        int p2mid = phase2Cubie.getMPerm();
-
+        int p2mid = phase1Cubie[depth1].getMPerm();
         int edgei = CubieCube.getPermSymInv(p2edge, p2esym, false);
         int corni = CubieCube.getPermSymInv(p2corn, p2csym, true);
+
+        int lastMove = depth1 == 0 ? -1 : move[depth1 - 1];
+        int lastPre = preMoveLen == 0 ? -1 : preMoves[preMoveLen - 1];
+
+        int ret = 0;
+        int p2switchMax = (preMoveLen == 0 ? 1 : 2) * (depth1 == 0 ? 1 : 2);
+        for (int p2switch = 0, p2switchMask = (1 << p2switchMax) - 1;
+                p2switch < p2switchMax; p2switch++) {
+            // 0 normal; 1 lastmove; 2 lastmove + premove; 3 premove
+            if ((p2switchMask >> p2switch & 1) != 0) {
+                p2switchMask &= ~(1 << p2switch);
+                ret = initPhase2(p2corn, p2csym, p2edge, p2esym, p2mid, edgei, corni);
+                if (ret == 0 || ret > 2) {
+                    break;
+                } else if (ret == 2) {
+                    p2switchMask &= 0x4 << p2switch; // 0->2; 1=>3; 2=>N/A
+                }
+            }
+            if (p2switchMask == 0) {
+                break;
+            }
+            if ((p2switch & 1) == 0 && depth1 > 0) {
+                int m = Util.std2ud[lastMove / 3 * 3 + 1];
+                move[depth1 - 1] = Util.ud2std[m] * 2 - move[depth1 - 1];
+
+                p2mid = CoordCube.MPermMove[p2mid][m];
+                p2corn = CoordCube.CPermMove[p2corn][CubieCube.SymMoveUD[p2csym][m]];
+                p2csym = CubieCube.SymMult[p2corn & 0xf][p2csym];
+                p2corn >>= 4;
+                p2edge = CoordCube.EPermMove[p2edge][CubieCube.SymMoveUD[p2esym][m]];
+                p2esym = CubieCube.SymMult[p2edge & 0xf][p2esym];
+                p2edge >>= 4;
+                corni = CubieCube.getPermSymInv(p2corn, p2csym, true);
+                edgei = CubieCube.getPermSymInv(p2edge, p2esym, false);
+            } else if (preMoveLen > 0) {
+                int m = Util.std2ud[lastPre / 3 * 3 + 1];
+                preMoves[preMoveLen - 1] = Util.ud2std[m] * 2 - preMoves[preMoveLen - 1];
+
+                p2mid = CubieCube.MPermInv[CoordCube.MPermMove[CubieCube.MPermInv[p2mid]][m]];
+                p2corn = CoordCube.CPermMove[corni >> 4][CubieCube.SymMoveUD[corni & 0xf][m]];
+                corni = p2corn & ~0xf | CubieCube.SymMult[p2corn & 0xf][corni & 0xf];
+                p2corn = CubieCube.getPermSymInv(corni >> 4, corni & 0xf, true);
+                p2csym = p2corn & 0xf;
+                p2corn >>= 4;
+                p2edge = CoordCube.EPermMove[edgei >> 4][CubieCube.SymMoveUD[edgei & 0xf][m]];
+                edgei = p2edge & ~0xf | CubieCube.SymMult[p2edge & 0xf][edgei & 0xf];
+                p2edge = CubieCube.getPermSymInv(edgei >> 4, edgei & 0xf, false);
+                p2esym = p2edge & 0xf;
+                p2edge >>= 4;
+            }
+        }
+        if (depth1 > 0) {
+            move[depth1 - 1] = lastMove;
+        }
+        if (preMoveLen > 0) {
+            preMoves[preMoveLen - 1] = lastPre;
+        }
+        return ret == 0 ? 0 : 2;
+    }
+
+    protected int initPhase2(int p2corn, int p2csym, int p2edge, int p2esym, int p2mid, int edgei, int corni) {
         int prun = Math.max(
                        CoordCube.getPruning(CoordCube.EPermCCombPPrun,
                                             (edgei >> 4) * CoordCube.N_COMB + CoordCube.CCombPConj[CubieCube.Perm2CombP[corni >> 4] & 0xff][CubieCube.SymMultInv[edgei & 0xf][corni & 0xf]]),
