@@ -35,7 +35,7 @@ public class Search {
     static final boolean USE_COMBP_PRUN = USE_TWIST_FLIP_PRUN;
     static final boolean USE_CONJ_PRUN = USE_TWIST_FLIP_PRUN;
     protected static int MIN_P1LENGTH_PRE = 7;
-    protected static int MAX_DEPTH2 = 13;
+    protected static int MAX_DEPTH2 = 12;
 
     static boolean inited = false;
 
@@ -316,7 +316,7 @@ public class Search {
 
     protected String search() {
         for (length1 = isRec ? length1 : 0; length1 < sol; length1++) {
-            maxDep2 = Math.min(MAX_DEPTH2, sol - length1);
+            maxDep2 = Math.min(MAX_DEPTH2, sol - length1 - 1);
             for (urfIdx = isRec ? urfIdx : 0; urfIdx < 6; urfIdx++) {
                 if ((conjMask & 1 << urfIdx) != 0) {
                     continue;
@@ -329,6 +329,12 @@ public class Search {
         return solution == null ? "Error 7" : solution;
     }
 
+    /**
+     * @return
+     *      0: Found or Probe limit exceeded
+     *      1: at least 1 + maxDep2 moves away, Try next power
+     *      2: at least 2 + maxDep2 moves away, Try next axis
+     */
     protected int initPhase2Pre() {
         for (int i = valid1; i < depth1; i++) {
             CubieCube.CornMult(phase1Cubie[i], CubieCube.moveCube[move[i]], phase1Cubie[i + 1]);
@@ -337,10 +343,10 @@ public class Search {
         valid1 = depth1;
         phase2Cubie = phase1Cubie[depth1];
 
-        int ret = isRec && preMoveSwitch == 1 ? 1 : initPhase2();
-        if (ret == 0 || preMoveLen == 0 || ret == 2) {
-            preMoveSwitch = 0;
-            return ret;
+        preMoveSwitch = isRec ? preMoveSwitch : 0;
+        int ret = preMoveSwitch == 1 ? 1 : initPhase2();
+        if (ret == 0 || preMoveLen == 0 || ret >= 2) {
+            return preMoveLen == 0 || ret == 0 ? ret : Math.max(1, ret - 1);
         }
 
         int m = preMoves[preMoveLen - 1] / 3 * 3 + 1;
@@ -349,10 +355,10 @@ public class Search {
         CubieCube.EdgeMult(CubieCube.moveCube[m], phase1Cubie[depth1], phase2Cubie);
         preMoves[preMoveLen - 1] = m * 2 - preMoves[preMoveLen - 1];
 
+        preMoveSwitch = 1;
         ret = initPhase2();
         preMoves[preMoveLen - 1] = m * 2 - preMoves[preMoveLen - 1];
-        preMoveSwitch = 1;
-        return ret;
+        return ret == 0 ? 0 : Math.max(1, ret - 1);
     }
 
     protected int initPhase2() {
@@ -370,18 +376,23 @@ public class Search {
         p2edge >>= 4;
         int p2mid = phase2Cubie.getMPerm();
 
+        int edgei = CubieCube.getPermSymInv(p2edge, p2esym, false);
+        int corni = CubieCube.getPermSymInv(p2corn, p2csym, true);
         int prun = Math.max(
                        CoordCube.getPruning(CoordCube.EPermCCombPPrun,
-                                            p2edge * CoordCube.N_COMB + CoordCube.CCombPConj[CubieCube.Perm2CombP[p2corn] & 0xff][CubieCube.SymMultInv[p2esym][p2csym]]),
-                       CoordCube.getPruning(CoordCube.MCPermPrun,
-                                            p2corn * CoordCube.N_MPERM + CoordCube.MPermConj[p2mid][p2csym]));
+                                            (edgei >> 4) * CoordCube.N_COMB + CoordCube.CCombPConj[CubieCube.Perm2CombP[corni >> 4] & 0xff][CubieCube.SymMultInv[edgei & 0xf][corni & 0xf]]),
+                       Math.max(
+                           CoordCube.getPruning(CoordCube.EPermCCombPPrun,
+                                                p2edge * CoordCube.N_COMB + CoordCube.CCombPConj[CubieCube.Perm2CombP[p2corn] & 0xff][CubieCube.SymMultInv[p2esym][p2csym]]),
+                           CoordCube.getPruning(CoordCube.MCPermPrun,
+                                                p2corn * CoordCube.N_MPERM + CoordCube.MPermConj[p2mid][p2csym])));
 
-        if (prun >= maxDep2) {
-            return prun > maxDep2 ? 2 : 1;
+        if (prun > maxDep2) {
+            return prun - maxDep2;
         }
 
         int depth2;
-        for (depth2 = maxDep2 - 1; depth2 >= prun; depth2--) {
+        for (depth2 = maxDep2; depth2 >= prun; depth2--) {
             int ret = phase2(p2edge, p2esym, p2corn, p2csym, p2mid, depth2, depth1, 10);
             if (ret < 0) {
                 break;
@@ -397,12 +408,11 @@ public class Search {
             solution = solutionToString();
         }
 
-        if (depth2 != maxDep2 - 1) { //At least one solution has been found.
-            maxDep2 = Math.min(MAX_DEPTH2, sol - length1);
+        if (depth2 != maxDep2) { //At least one solution has been found.
+            maxDep2 = Math.min(MAX_DEPTH2, sol - length1 - 1);
             return probe >= probeMin ? 0 : 1;
-        } else {
-            return 1;
         }
+        return 1;
     }
 
     /**
@@ -458,7 +468,7 @@ public class Search {
                 int ret = phase1(nodeUD[maxl], ssym & (int) CubieCube.moveCubeSym[m], maxl - 1, axis);
                 if (ret == 0) {
                     return 0;
-                } else if (ret == 2) {
+                } else if (ret >= 2) {
                     break;
                 }
             }
@@ -500,7 +510,7 @@ public class Search {
      */
     protected int phase1opt(CoordCube ud, CoordCube rl, CoordCube fb, long ssym, int maxl, int lm) {
         if (ud.prun == 0 && rl.prun == 0 && fb.prun == 0 && maxl < 5) {
-            maxDep2 = maxl + 1;
+            maxDep2 = maxl;
             depth1 = length1 - maxl;
             return initPhase2Pre() == 0 ? 0 : 1;
         }
@@ -623,7 +633,7 @@ public class Search {
             int prun = CoordCube.getPruning(CoordCube.EPermCCombPPrun,
                                             (edgei >> 4) * CoordCube.N_COMB + CoordCube.CCombPConj[CubieCube.Perm2CombP[corni >> 4] & 0xff][CubieCube.SymMultInv[edgei & 0xf][corni & 0xf]]);
             if (prun > maxl + 1) {
-                break;
+                return maxl - prun + 1;
             } else if (prun >= maxl) {
                 m += 0x42 >> m & 3 & (maxl - prun);
                 continue;
