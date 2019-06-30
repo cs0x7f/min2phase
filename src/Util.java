@@ -1,30 +1,6 @@
 package cs.min2phase;
 
 class Util {
-    /*  //Edges
-        static final byte UR = 0;
-        static final byte UF = 1;
-        static final byte UL = 2;
-        static final byte UB = 3;
-        static final byte DR = 4;
-        static final byte DF = 5;
-        static final byte DL = 6;
-        static final byte DB = 7;
-        static final byte FR = 8;
-        static final byte FL = 9;
-        static final byte BL = 10;
-        static final byte BR = 11;
-
-        //Corners
-        static final byte URF = 0;
-        static final byte UFL = 1;
-        static final byte ULB = 2;
-        static final byte UBR = 3;
-        static final byte DFR = 4;
-        static final byte DLF = 5;
-        static final byte DBL = 6;
-        static final byte DRB = 7;
-    */
     //Moves
     static final byte Ux1 = 0;
     static final byte Ux2 = 1;
@@ -127,24 +103,95 @@ class Util {
     static int[] std2ud = new int[18];
     static int[] ckmv2bit = new int[11];
 
+    static class Solution {
+        int length = 0;
+        int depth1 = 0;
+        int verbose = 0;
+        int urfIdx = 0;
+        int[] moves = new int[31];
+
+        Solution() {}
+
+        void setArgs(int verbose, int urfIdx, int depth1) {
+            this.verbose = verbose;
+            this.urfIdx = urfIdx;
+            this.depth1 = depth1;
+        }
+
+        void appendSolMove(int curMove) {
+            if (length == 0) {
+                moves[length++] = curMove;
+                return;
+            }
+            int axisCur = curMove / 3;
+            int axisLast = moves[length - 1] / 3;
+            if (axisCur == axisLast) {
+                int pow = (curMove % 3 + moves[length - 1] % 3 + 1) % 4;
+                if (pow == 3) {
+                    length--;
+                } else {
+                    moves[length - 1] = axisCur * 3 + pow;
+                }
+                return;
+            }
+            if (length > 1
+                    && axisCur % 3 == axisLast % 3
+                    && axisCur == moves[length - 2] / 3) {
+                int pow = (curMove % 3 + moves[length - 2] % 3 + 1) % 4;
+                if (pow == 3) {
+                    moves[length - 2] = moves[length - 1];
+                    length--;
+                } else {
+                    moves[length - 2] = axisCur * 3 + pow;
+                }
+                return;
+            }
+            moves[length++] = curMove;
+        }
+
+        public String toString() {
+            StringBuffer sb = new StringBuffer();
+            int urf = (verbose & Search.INVERSE_SOLUTION) != 0 ? (urfIdx + 3) % 6 : urfIdx;
+            if (urf < 3) {
+                for (int s = 0; s < length; s++) {
+                    if ((verbose & Search.USE_SEPARATOR) != 0 && s == depth1) {
+                        sb.append(".  ");
+                    }
+                    sb.append(move2str[CubieCube.urfMove[urf][moves[s]]]).append(' ');
+                }
+            } else {
+                for (int s = length - 1; s >= 0; s--) {
+                    sb.append(move2str[CubieCube.urfMove[urf][moves[s]]]).append(' ');
+                    if ((verbose & Search.USE_SEPARATOR) != 0 && s == depth1) {
+                        sb.append(".  ");
+                    }
+                }
+            }
+            if ((verbose & Search.APPEND_LENGTH) != 0) {
+                sb.append("(").append(length).append("f)");
+            }
+            return sb.toString();
+        }
+    }
+
     static void toCubieCube(byte[] f, CubieCube ccRet) {
         byte ori;
-        for (int i = 0; i < 8; i++)
-            ccRet.ca[i] = 0;// invalidate corners
-        for (int i = 0; i < 12; i++)
-            ccRet.ea[i] = 0;// and edges
+        for (int i = 0; i < 8; i++) {
+            ccRet.ca[i] = 0;
+        }
+        for (int i = 0; i < 12; i++) {
+            ccRet.ea[i] = 0;
+        }
         byte col1, col2;
         for (byte i = 0; i < 8; i++) {
-            // get the colors of the cubie at corner i, starting with U/D
-            for (ori = 0; ori < 3; ori++)
+            for (ori = 0; ori < 3; ori++){
                 if (f[cornerFacelet[i][ori]] == U || f[cornerFacelet[i][ori]] == D)
                     break;
+            }
             col1 = f[cornerFacelet[i][(ori + 1) % 3]];
             col2 = f[cornerFacelet[i][(ori + 2) % 3]];
-
             for (byte j = 0; j < 8; j++) {
                 if (col1 == cornerFacelet[j][1] / 9 && col2 == cornerFacelet[j][2] / 9) {
-                    // in cornerposition i we have cornercubie j
                     ccRet.ca[i] = (byte) (ori % 3 << 3 | j);
                     break;
                 }
@@ -173,18 +220,18 @@ class Util {
             f[i] = ts[i / 9];
         }
         for (byte c = 0; c < 8; c++) {
-            int j = cc.ca[c] & 0x7;// cornercubie with index j is at
-            // cornerposition with index c
-            int ori = cc.ca[c] >> 3;// Orientation of this cubie
-            for (byte n = 0; n < 3; n++)
+            int j = cc.ca[c] & 0x7;
+            int ori = cc.ca[c] >> 3;
+            for (byte n = 0; n < 3; n++) {
                 f[cornerFacelet[c][(n + ori) % 3]] = ts[cornerFacelet[j][n] / 9];
+            }
         }
         for (byte e = 0; e < 12; e++) {
-            int j = cc.ea[e] >> 1;// edgecubie with index j is at edgeposition
-            // with index e
-            int ori = cc.ea[e] & 1;// Orientation of this cubie
-            for (byte n = 0; n < 2; n++)
+            int j = cc.ea[e] >> 1;
+            int ori = cc.ea[e] & 1;
+            for (byte n = 0; n < 2; n++) {
                 f[edgeFacelet[e][(n + ori) % 2]] = ts[edgeFacelet[j][n] / 9];
+            }
         }
         return new String(f);
     }
@@ -199,7 +246,7 @@ class Util {
     }
 
     static byte setVal(int val0, int val, boolean isEdge) {
-        return (byte) (isEdge ? (val << 1 | val0 & 1) : (val | val0 & 0xf8));
+        return (byte) (isEdge ? (val << 1 | val0 & 1) : (val | val0 & ~7));
     }
 
     static int getVal(int val0, boolean isEdge) {

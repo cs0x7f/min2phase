@@ -220,9 +220,9 @@ class CubieCube {
         int parity = 0, val;
         for (int i = 10; i >= 0; i--, idx >>= 1) {
             parity ^= (val = idx & 1);
-            ea[i] = (byte) (ea[i] & 0xfe | val);
+            ea[i] = (byte) (ea[i] & ~1 | val);
         }
-        ea[11] = (byte) (ea[11] & 0xfe | parity);
+        ea[11] = (byte) (ea[11] & ~1 | parity);
     }
 
     int getFlipSym() {
@@ -346,19 +346,23 @@ class CubieCube {
     long selfSymmetry() {
         CubieCube c = new CubieCube(this);
         CubieCube d = new CubieCube();
+        int cperm = c.getCPermSym() >> 4;
         long sym = 0L;
-        for (int i = 0; i < 96; i++) {
-            CornConjugate(c, SymMultInv[0][i % 16], d);
-            if (Arrays.equals(d.ca, ca)) {
-                EdgeConjugate(c, SymMultInv[0][i % 16], d);
-                if (Arrays.equals(d.ea, ea)) {
-                    sym |= 1L << Math.min(i, 48);
+        for (int urfInv = 0; urfInv < 6; urfInv++) {
+            int cpermx = c.getCPermSym() >> 4;
+            if (cperm == cpermx) {
+                for (int i = 0; i < 16; i++) {
+                    CornConjugate(c, SymMultInv[0][i], d);
+                    if (Arrays.equals(d.ca, ca)) {
+                        EdgeConjugate(c, SymMultInv[0][i], d);
+                        if (Arrays.equals(d.ea, ea)) {
+                            sym |= 1L << Math.min(urfInv << 4 | i, 48);
+                        }
+                    }
                 }
             }
-            if (i % 16 == 15) {
-                c.URFConjugate();
-            }
-            if (i % 48 == 47) {
+            c.URFConjugate();
+            if (urfInv % 3 == 2) {
                 c.invCubieCube();
             }
         }

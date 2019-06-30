@@ -40,7 +40,6 @@ public class Search {
     static boolean inited = false;
 
     protected int[] move = new int[31];
-    protected int[] moveSol = new int[31];
 
     protected CoordCube[] nodeUD = new CoordCube[21];
     protected CoordCube[] nodeRL = new CoordCube[21];
@@ -52,8 +51,8 @@ public class Search {
     protected int length1;
     protected int depth1;
     protected int maxDep2;
-    protected int sol;
-    protected String solution;
+    protected int solLen;
+    protected Util.Solution solution;
     protected long probe;
     protected long probeMax;
     protected long probeMin;
@@ -178,7 +177,7 @@ public class Search {
         if (check != 0) {
             return "Error " + Math.abs(check);
         }
-        this.sol = maxDepth + 1;
+        this.solLen = maxDepth + 1;
         this.probe = 0;
         this.probeMax = probeMax;
         this.probeMin = Math.min(probeMin, probeMax);
@@ -230,7 +229,7 @@ public class Search {
     }
 
     public int length() {
-        return sol;
+        return solLen;
     }
 
     public synchronized static void init() {
@@ -313,18 +312,18 @@ public class Search {
     }
 
     protected String search() {
-        for (length1 = isRec ? length1 : 0; length1 < sol; length1++) {
-            maxDep2 = Math.min(MAX_DEPTH2, sol - length1 - 1);
+        for (length1 = isRec ? length1 : 0; length1 < solLen; length1++) {
+            maxDep2 = Math.min(MAX_DEPTH2, solLen - length1 - 1);
             for (urfIdx = isRec ? urfIdx : 0; urfIdx < 6; urfIdx++) {
                 if ((conjMask & 1 << urfIdx) != 0) {
                     continue;
                 }
                 if (phase1PreMoves(maxPreMoves, -30, urfCubieCube[urfIdx], (int) (selfSym & 0xffff)) == 0) {
-                    return solution == null ? "Error 8" : solution;
+                    return solution == null ? "Error 8" : solution.toString();
                 }
             }
         }
-        return solution == null ? "Error 7" : solution;
+        return solution == null ? "Error 7" : solution.toString();
     }
 
     /**
@@ -436,18 +435,20 @@ public class Search {
                 break;
             }
             depth2 -= ret;
-            sol = 0;
+            solLen = 0;
+            solution = new Util.Solution();
+            solution.setArgs(verbose, urfIdx, depth1);
             for (int i = 0; i < depth1 + depth2; i++) {
-                appendSolMove(move[i]);
+                solution.appendSolMove(move[i]);
             }
             for (int i = preMoveLen - 1; i >= 0; i--) {
-                appendSolMove(preMoves[i]);
+                solution.appendSolMove(preMoves[i]);
             }
-            solution = solutionToString();
+            solLen = solution.length;
         }
 
         if (depth2 != maxDep2) { //At least one solution has been found.
-            maxDep2 = Math.min(MAX_DEPTH2, sol - length1 - 1);
+            maxDep2 = Math.min(MAX_DEPTH2, solLen - length1 - 1);
             return probe >= probeMin ? 0 : 1;
         }
         return 1;
@@ -527,17 +528,17 @@ public class Search {
         }
         urfIdx = maxprun2 > maxprun1 ? 3 : 0;
         phase1Cubie[0] = urfCubieCube[urfIdx];
-        for (length1 = isRec ? length1 : 0; length1 < sol; length1++) {
+        for (length1 = isRec ? length1 : 0; length1 < solLen; length1++) {
             CoordCube ud = urfCoordCube[0 + urfIdx];
             CoordCube rl = urfCoordCube[1 + urfIdx];
             CoordCube fb = urfCoordCube[2 + urfIdx];
 
             if (ud.prun <= length1 && rl.prun <= length1 && fb.prun <= length1
                     && phase1opt(ud, rl, fb, selfSym, length1, -1) == 0) {
-                return solution == null ? "Error 8" : solution;
+                return solution == null ? "Error 8" : solution.toString();
             }
         }
-        return solution == null ? "Error 7" : solution;
+        return solution == null ? "Error 7" : solution.toString();
     }
 
     /**
@@ -615,37 +616,6 @@ public class Search {
         return 1;
     }
 
-    void appendSolMove(int curMove) {
-        if (sol == 0) {
-            moveSol[sol++] = curMove;
-            return;
-        }
-        int axisCur = curMove / 3;
-        int axisLast = moveSol[sol - 1] / 3;
-        if (axisCur == axisLast) {
-            int pow = (curMove % 3 + moveSol[sol - 1] % 3 + 1) % 4;
-            if (pow == 3) {
-                sol--;
-            } else {
-                moveSol[sol - 1] = axisCur * 3 + pow;
-            }
-            return;
-        }
-        if (sol > 1
-                && axisCur % 3 == axisLast % 3
-                && axisCur == moveSol[sol - 2] / 3) {
-            int pow = (curMove % 3 + moveSol[sol - 2] % 3 + 1) % 4;
-            if (pow == 3) {
-                moveSol[sol - 2] = moveSol[sol - 1];
-                sol--;
-            } else {
-                moveSol[sol - 2] = axisCur * 3 + pow;
-            }
-            return;
-        }
-        moveSol[sol++] = curMove;
-    }
-
     //-1: no solution found
     // X: solution with X moves shorter than expectation. Hence, the length of the solution is  depth - X
     protected int phase2(int edge, int esym, int corn, int csym, int mid, int maxl, int depth, int lm) {
@@ -690,31 +660,13 @@ public class Search {
                 move[depth] = Util.ud2std[m];
                 return ret;
             }
+            if (ret < -2) {
+                break;
+            }
+            if (ret < -1) {
+                m += 0x42 >> m & 3;
+            }
         }
         return -1;
-    }
-
-    protected String solutionToString() {
-        StringBuffer sb = new StringBuffer();
-        int urf = (verbose & INVERSE_SOLUTION) != 0 ? (urfIdx + 3) % 6 : urfIdx;
-        if (urf < 3) {
-            for (int s = 0; s < sol; s++) {
-                if ((verbose & USE_SEPARATOR) != 0 && s == depth1) {
-                    sb.append(".  ");
-                }
-                sb.append(Util.move2str[CubieCube.urfMove[urf][moveSol[s]]]).append(' ');
-            }
-        } else {
-            for (int s = sol - 1; s >= 0; s--) {
-                sb.append(Util.move2str[CubieCube.urfMove[urf][moveSol[s]]]).append(' ');
-                if ((verbose & USE_SEPARATOR) != 0 && s == depth1) {
-                    sb.append(".  ");
-                }
-            }
-        }
-        if ((verbose & APPEND_LENGTH) != 0) {
-            sb.append("(").append(sol).append("f)");
-        }
-        return sb.toString();
     }
 }

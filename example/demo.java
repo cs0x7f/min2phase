@@ -29,8 +29,6 @@ public class demo {
         result = searchObj.next(500, 0, 0);
         System.out.println(result);// Error 8, no solution is found after 500 phase2 probes. Let's try more probes.
         result = searchObj.next(500, 0, 0);
-        System.out.println(result);// Error 8, no solution is found after 500 phase2 probes. Let's try more probes.
-        result = searchObj.next(500, 0, 0);
         System.out.println(result);// L2 U  D2 R' B  U2 L  F  U  R2 D2 F2 U' L2 U  B  D  R'
     }
 }
