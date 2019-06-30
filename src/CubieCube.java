@@ -540,4 +540,9 @@ class CubieCube {
             MPermInv[i] = (byte) cc.getMPerm();
         }
     }
+
+    static {
+        CubieCube.initMove();
+        CubieCube.initSym();
+    }
 }
