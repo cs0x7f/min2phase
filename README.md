@@ -91,7 +91,7 @@ public class demo {
          * -> U1 U2 ... U9 R1 ... R9 F1 ... F9 D1 ... D9 L1 ... L9 B1 ... B9
          */
         String scrambledCube = "DUUBULDBFRBFRRULLLBRDFFFBLURDBFDFDRFRULBLUFDURRBLBDUDL";
-        // scrambledCube can also be optained by specific moves
+        // scrambledCube can also be obtained by specific moves
         scrambledCube = Tools.fromScramble("R L2 D R F U2 F' L F' B2 D' R2 B2 R2 L2 U F2 L2 B2 U2 R2");
         System.out.println(scrambledCube);
 
