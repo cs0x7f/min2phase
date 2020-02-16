@@ -3,11 +3,14 @@ src/CoordCube.java \
 src/CubieCube.java \
 src/Search.java \
 src/Util.java \
-src/Tools.java
+src/Tools.java \
+src/CubieCubeKoc.java \
+src/CoordCubeKoc.java \
+src/SearchKoc.java
 
 MAINPROG = example/MainProgram.java
 
-TESTSRC = test/test.java
+TESTSRC = test/test.java test/testKoc.java
 
 ifndef probe
 	probe = 0
@@ -19,6 +22,10 @@ endif
 
 ifndef ntest
 	ntest = 1000
+endif
+
+ifndef testClass
+	testClass = test
 endif
 
 DIST = dist/twophase.jar
@@ -38,18 +45,18 @@ run: $(DIST)
 	@java -jar $(DIST)
 
 testRnd: $(DISTTEST)
-	@java -ea -cp dist:$(DIST) test 40 $(ntest) $(maxl) 10000000 $(probe) 0
+	@java -ea -cp dist:$(DIST) $(testClass) 40 $(ntest) $(maxl) 10000000 $(probe) 0
 
 testRndMP: $(DISTTEST)
-	@java -ea -cp dist:$(DIST) test 72 $(ntest) $(maxl) 10000000 $(probe) 0
+	@java -ea -cp dist:$(DIST) $(testClass) 72 $(ntest) $(maxl) 10000000 $(probe) 0
 
 testRndStd: $(DISTTEST)
-	@java -ea -cp dist:$(DIST) test 40 $(ntest) 30 10000000 $(probe) 0 | grep AvgT
-	@java -ea -cp dist:$(DIST) test 40 $(ntest) 21 10000000 $(probe) 0 | grep AvgT
-	@java -ea -cp dist:$(DIST) test 40 $(ntest) 20 10000000 $(probe) 0 | grep AvgT
+	@java -ea -cp dist:$(DIST) $(testClass) 40 $(ntest) 30 10000000 $(probe) 0 | grep AvgT
+	@java -ea -cp dist:$(DIST) $(testClass) 40 $(ntest) 21 10000000 $(probe) 0 | grep AvgT
+	@java -ea -cp dist:$(DIST) $(testClass) 40 $(ntest) 20 10000000 $(probe) 0 | grep AvgT
 
 testSel: $(DISTTEST)
-	@java -ea -cp dist:$(DIST) test 24
+	@java -ea -cp dist:$(DIST) $(testClass) 24
 
 demo: $(DIST)
 	@javac -d dist -cp dist:$(DIST) example/demo.java
