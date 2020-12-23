@@ -34,10 +34,10 @@ class CubieCube {
     static byte[] MPermInv = new byte[CoordCube.N_MPERM];
 
     /**
-     * Notice that Edge Perm Coordnate and Corner Perm Coordnate are the same symmetry structure.
+     * Notice that Edge Perm Coordinate and Corner Perm Coordinate are the same symmetry structure.
      * So their ClassIndexToRepresentantArray are the same.
-     * And when x is RawEdgePermCoordnate, y*16+k is SymEdgePermCoordnate, y*16+(k^e2c[k]) will
-     * be the SymCornerPermCoordnate of the State whose RawCornerPermCoordnate is x.
+     * And when x is RawEdgePermCoordinate, y*16+k is SymEdgePermCoordinate, y*16+(k^e2c[k]) will
+     * be the SymCornerPermCoordinate of the State whose RawCornerPermCoordinate is x.
      */
     // static byte[] e2c = {0, 0, 0, 0, 1, 3, 1, 3, 1, 3, 1, 3, 0, 0, 0, 0};
     static final int SYM_E2C_MAGIC = 0x00DDDD00;
@@ -201,9 +201,9 @@ class CubieCube {
     }
 
     // ********************************************* Get and set coordinates *********************************************
-    // XSym : Symmetry Coordnate of X. MUST be called after initialization of ClassIndexToRepresentantArrays.
+    // XSym : Symmetry Coordinate of X. MUST be called after initialization of ClassIndexToRepresentantArrays.
 
-    // ++++++++++++++++++++ Phase 1 Coordnates ++++++++++++++++++++
+    // ++++++++++++++++++++ Phase 1 Coordinates ++++++++++++++++++++
     // Flip : Orientation of 12 Edges. Raw[0, 2048) Sym[0, 336 * 8)
     // Twist : Orientation of 8 Corners. Raw[0, 2187) Sym[0, 324 * 8)
     // UDSlice : Positions of the 4 UDSlice edges, the order is ignored. [0, 495)
@@ -258,7 +258,7 @@ class CubieCube {
         Util.setComb(ea, 494 - idx, 8, true);
     }
 
-    // ++++++++++++++++++++ Phase 2 Coordnates ++++++++++++++++++++
+    // ++++++++++++++++++++ Phase 2 Coordinates ++++++++++++++++++++
     // EPerm : Permutations of 8 UD Edges. Raw[0, 40320) Sym[0, 2187 * 16)
     // Cperm : Permutations of 8 Corners. Raw[0, 40320) Sym[0, 2187 * 16)
     // MPerm : Permutations of 4 UDSlice Edges. [0, 24)
