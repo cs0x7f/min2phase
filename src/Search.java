@@ -172,7 +172,7 @@ public class Search {
      *      Error 7: No solution exists for the given maxDepth<br>
      *      Error 8: Probe limit exceeded, no solution within given probMax
      */
-    public synchronized String solution(String facelets, int maxDepth, long probeMax, long probeMin, int verbose) {
+    public String solution(String facelets, int maxDepth, long probeMax, long probeMin, int verbose) {
         int check = verify(facelets);
         if (check != 0) {
             return "Error " + Math.abs(check);
@@ -184,8 +184,10 @@ public class Search {
         this.verbose = verbose;
         this.solution = null;
         this.isRec = false;
-
-        CoordCube.init(false);
+        
+        if(CoordCube.initLevel==0){
+            CoordCube.init(false);
+        }
         initSearch();
 
         return (verbose & OPTIMAL_SOLUTION) == 0 ? search() : searchopt();
